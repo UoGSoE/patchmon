@@ -1,13 +1,29 @@
 # Cronmon
 
-Watchdog for cron-style jobs. Each registered job has a unique
-check-in URL; if the URL isn't hit within the schedule plus a grace
-period, Cronmon emails the responsible person or team.
+A watchdog for cron-style jobs. Teams register the jobs they care
+about, each job gets a unique check-in URL, and Cronmon emails the
+responsible person or team if a job doesn't check in within its
+schedule plus a grace period.
+
+## What it does
+
+Cronmon sits between your scheduled tasks and the people who need
+to know when they break. Every job has a schedule (either a cron
+expression or a simple interval like "daily") and a grace period.
+When the job runs, it pings its check-in URL; if the ping doesn't
+arrive in time, Cronmon raises an alert and keeps re-alerting on
+each missed window until the job checks in again.
+
+It's intended for internal IT use: nightly backups, config
+snapshots, tape rotation reminders, and the small army of quiet
+cron jobs that nobody notices until they stop running.
+Authentication is handled by SSO (Keycloak via Socialite), so
+there's no public signup.
 
 ## Checking in a job
 
-Append a curl to whatever runs your job. The URL is shown on the
-job's detail page in Cronmon.
+Append a `curl` to whatever your cron entry runs. The full URL is
+shown on each job's detail page in Cronmon.
 
 ```bash
 0 2 * * * /usr/local/bin/nightly-backup && curl -fsS \
@@ -15,70 +31,81 @@ job's detail page in Cronmon.
   > /dev/null
 ```
 
-Notes:
-- The token in the URL is per-job. Treat it like a webhook URL —
+A few things worth knowing:
+
+- The token in the URL is per-job. Treat it like a webhook URL:
   unguessable, but not a high-stakes secret.
-- Use `-fsS` so curl fails the cron command on a non-2xx response
-  (handy if Cronmon itself is down).
-- The response body is empty; the 200 status code is the ack.
+- Use `-fsS` so curl fails the cron command on a non-2xx response.
+- The response body is empty; the 200 status is the acknowledgement.
 
----
+## Prerequisites
 
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+- PHP 8.4
+- [Lando](https://lando.dev/) for the local development environment
+- A [Flux UI](https://fluxui.dev/) Pro licence (Cronmon uses Flux Pro
+  components, so the licence is needed to install Composer
+  dependencies)
+- Composer credentials for the Flux Pro repository in `auth.json`
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
-
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Getting started
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cp .env.example .env
+lando start
+lando mfs        # drop, migrate and seed the dev database
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The `.env.example` file is pre-configured for Lando, so the
+defaults should work without further changes. `lando mfs` runs
+the `TestDataSeeder`, which creates a small set of users, teams
+and jobs to make the UI usable straight away.
+
+Sign in as **admin2x** / **secret** (admin) or **user2x** / **secret**
+(standard user). MailHog is exposed on the Lando proxy so you can
+read alert emails locally.
+
+### Useful Lando commands
+
+```bash
+lando artisan ...     # any artisan command
+lando composer ...    # composer inside the appserver
+lando npm ...         # npm inside the node container
+lando mfs             # drop + migrate + seed
+```
+
+## Running tests
+
+The test suite uses Pest and runs against an in-memory SQLite
+database via `RefreshDatabase`, so no migration step is needed.
+
+```bash
+lando test                              # full suite
+lando test --filter=HomePageTest        # one file or test
+```
+
+Outside of Lando, `php artisan test --compact` works too if you
+have PHP installed locally.
+
+CI runs the suite against both MySQL and PostgreSQL on every push
+(see `.github/workflows/`). Production runs on PostgreSQL but a
+sibling system uses MySQL, and keeping both happy catches the
+occasional dialect difference early.
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Pull requests are welcome. The short version:
 
-## Code of Conduct
+1. Fork or clone the repository.
+2. Follow the [Getting started](#getting-started) steps above.
+3. Write a test for your change, make it pass, then run the full
+   suite with `lando test`.
+4. Run `vendor/bin/pint --dirty` to format any PHP files you've
+   touched.
+5. Open a pull request describing what changed and why.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Project-specific conventions live in `CLAUDE.md` and the `.ai/`
+directory. Worth a skim before making larger changes.
 
-## Security Vulnerabilities
+## Licence
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Cronmon is released under the [MIT licence](LICENSE).
