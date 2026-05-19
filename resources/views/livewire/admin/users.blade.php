@@ -10,7 +10,7 @@
         </flux:table.columns>
         <flux:table.rows>
             @foreach ($users as $user)
-                <flux:table.row>
+                <flux:table.row wire:key="user-row-{{ $user->id }}">
                     <flux:table.cell>{{ $user->full_name }}</flux:table.cell>
                     <flux:table.cell>{{ $user->email }}</flux:table.cell>
                     <flux:table.cell>

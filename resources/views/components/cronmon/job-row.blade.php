@@ -1,6 +1,6 @@
 @props(['job'])
 
-<a href="{{ route('jobs.show', $job) }}" wire:navigate class="block mt-3">
+<a href="{{ route('jobs.show', $job) }}" wire:navigate wire:key="job-row-{{ $job->id }}" class="block mt-3">
 <flux:card class="flex items-start justify-between gap-4 hover:shadow-md transition-shadow">
     <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">

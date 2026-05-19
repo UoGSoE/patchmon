@@ -37,16 +37,16 @@
         </div>
     </div>
 
-    <flux:modal name="silence-self" class="md:w-96">
-        <form wire:submit="silence" class="space-y-4">
+    <flux:modal name="silence-self" variant="flyout">
+        <form wire:submit="silence" class="space-y-6">
             <flux:heading size="lg">Silence yourself</flux:heading>
             <flux:text>Cronmon won't email you about any of your personal jobs until the time you pick.</flux:text>
 
             <flux:input wire:model="silenceUntil" type="datetime-local" label="Silenced until" />
             <flux:input wire:model="silenceReason" label="Reason (optional)" placeholder="On leave" />
 
-            <div class="flex justify-end gap-3">
-                <flux:button type="button" x-on:click="$flux.modal('silence-self').close()" variant="ghost">Cancel</flux:button>
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" x-on:click="$flux.modal('silence-self').close()">Cancel</flux:button>
                 <flux:button type="submit" variant="primary">Silence</flux:button>
             </div>
         </form>

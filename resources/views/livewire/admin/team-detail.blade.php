@@ -1,5 +1,5 @@
 <div class="max-w-3xl">
-    <flux:button :href="route('admin.teams.index')" variant="ghost" icon="arrow-left" size="sm" wire:navigate>Back to teams</flux:button>
+    <flux:button :href="route('admin.teams.index')" icon="arrow-left" size="sm" wire:navigate>Back to teams</flux:button>
 
     <div class="mt-4 flex items-center gap-3">
         <flux:heading size="xl">{{ $team->name }}</flux:heading>
@@ -48,7 +48,7 @@
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($members as $member)
-                        <flux:table.row>
+                        <flux:table.row wire:key="team-member-row-{{ $member->id }}">
                             <flux:table.cell>{{ $member->full_name }}</flux:table.cell>
                             <flux:table.cell>{{ $member->email }}</flux:table.cell>
                             <flux:table.cell>
@@ -56,7 +56,6 @@
                                     wire:click="removeUser({{ $member->id }})"
                                     wire:confirm="Remove {{ $member->full_name ?: $member->email }} from the team?"
                                     size="sm"
-                                    variant="ghost"
                                 >Remove</flux:button>
                             </flux:table.cell>
                         </flux:table.row>
@@ -66,16 +65,16 @@
         @endif
     </div>
 
-    <flux:modal name="silence-team" class="md:w-96">
-        <form wire:submit="silence" class="space-y-4">
+    <flux:modal name="silence-team" variant="flyout">
+        <form wire:submit="silence" class="space-y-6">
             <flux:heading size="lg">Silence this team</flux:heading>
             <flux:text>Cronmon won't email anyone about jobs owned by this team until the time you pick.</flux:text>
 
             <flux:input wire:model="silenceUntil" type="datetime-local" label="Silenced until" />
             <flux:input wire:model="silenceReason" label="Reason (optional)" placeholder="Building works" />
 
-            <div class="flex justify-end gap-3">
-                <flux:button type="button" x-on:click="$flux.modal('silence-team').close()" variant="ghost">Cancel</flux:button>
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" x-on:click="$flux.modal('silence-team').close()">Cancel</flux:button>
                 <flux:button type="submit" variant="primary">Silence</flux:button>
             </div>
         </form>

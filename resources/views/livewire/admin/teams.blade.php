@@ -58,12 +58,12 @@
                             This team owns {{ $deletingTeam->jobs->count() }} {{ \Illuminate\Support\Str::plural('job', $deletingTeam->jobs->count()) }}.
                             Choose what should happen to them before the team can be deleted.
                         </flux:text>
-                        <ul class="mt-3 list-disc list-inside">
+                        <ul class="mt-3 list-disc list-inside text-sm">
                             @foreach ($deletingTeam->jobs->take(5) as $job)
-                                <li><flux:text>{{ $job->name }}</flux:text></li>
+                                <li>{{ $job->name }}</li>
                             @endforeach
                             @if ($deletingTeam->jobs->count() > 5)
-                                <li><flux:text>… and {{ $deletingTeam->jobs->count() - 5 }} more</flux:text></li>
+                                <li>… and {{ $deletingTeam->jobs->count() - 5 }} more</li>
                             @endif
                         </ul>
                     @endif
@@ -116,14 +116,14 @@
         @endif
     </flux:modal>
 
-    <flux:modal name="edit-team" class="md:w-96">
-        <form wire:submit="save" class="space-y-4">
+    <flux:modal name="edit-team" variant="flyout">
+        <form wire:submit="save" class="space-y-6">
             <flux:heading size="lg">{{ $editing['id'] ? 'Edit team' : 'New team' }}</flux:heading>
             <flux:input wire:model="editing.name" label="Name" required />
             <flux:input wire:model="editing.notification_email" type="email" label="Notification email" required />
             <flux:input wire:model="editing.sender_email" type="email" label="Sender email (optional)" />
-            <div class="flex justify-end gap-3">
-                <flux:button type="button" x-on:click="$flux.modal('edit-team').close()" variant="ghost">Cancel</flux:button>
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" x-on:click="$flux.modal('edit-team').close()">Cancel</flux:button>
                 <flux:button type="submit" variant="primary">Save</flux:button>
             </div>
         </form>

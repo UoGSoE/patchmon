@@ -69,10 +69,11 @@ class TeamDetail extends Component
     {
         return view('livewire.admin.team-detail', [
             'team' => $this->team->fresh(),
-            'members' => $this->team->users()->orderBy('name')->get(),
+            'members' => $this->team->users()->orderBy('surname')->orderBy('forenames')->get(),
             'candidates' => User::query()
                 ->whereDoesntHave('teams', fn ($q) => $q->whereKey($this->team->id))
-                ->orderBy('name')
+                ->orderBy('surname')
+                ->orderBy('forenames')
                 ->get(),
         ]);
     }

@@ -80,6 +80,6 @@
 
     <div class="flex items-center gap-3">
         <flux:button type="submit" variant="primary">{{ $submitLabel }}</flux:button>
-        <flux:button :href="$cancelUrl" variant="ghost" wire:navigate>Cancel</flux:button>
+        <flux:button :href="$cancelUrl" wire:navigate>Cancel</flux:button>
     </div>
 </form>

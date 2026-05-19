@@ -49,3 +49,17 @@ it('adds a user to the team', function () {
 
     expect($team->users()->whereKey($candidate->id)->exists())->toBeTrue();
 });
+
+it('renders members and candidate names without errors', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $team = Team::factory()->create();
+    $member = User::factory()->create(['forenames' => 'Alex', 'surname' => 'Member']);
+    $candidate = User::factory()->create(['forenames' => 'Casey', 'surname' => 'Candidate']);
+    $team->users()->attach($member);
+
+    $this->actingAs($admin)
+        ->get(route('admin.teams.show', $team))
+        ->assertOk()
+        ->assertSee('Alex Member')
+        ->assertSee('Casey Candidate');
+});

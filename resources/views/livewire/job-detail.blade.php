@@ -1,5 +1,5 @@
 <div class="max-w-3xl">
-    <flux:button :href="route('home')" variant="ghost" icon="arrow-left" size="sm" wire:navigate>Back to jobs</flux:button>
+    <flux:button :href="route('home')" icon="arrow-left" size="sm" wire:navigate>Back to jobs</flux:button>
 
     <div class="mt-4 flex items-center gap-3">
         <flux:heading size="xl">{{ $job->name }}</flux:heading>
@@ -58,7 +58,7 @@
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($recentCheckIns as $checkIn)
-                        <flux:table.row>
+                        <flux:table.row wire:key="check-in-row-{{ $checkIn->id }}">
                             <flux:table.cell>{{ $checkIn->checked_in_at->toDayDateTimeString() }} ({{ $checkIn->checked_in_at->diffForHumans() }})</flux:table.cell>
                             <flux:table.cell>{{ $checkIn->source_ip ?? '—' }}</flux:table.cell>
                         </flux:table.row>
@@ -84,8 +84,8 @@
         </flux:modal.trigger>
     </div>
 
-    <flux:modal name="silence-job" class="md:w-96">
-        <form wire:submit="silence" class="space-y-4">
+    <flux:modal name="silence-job" variant="flyout">
+        <form wire:submit="silence" class="space-y-6">
             <flux:heading size="lg">Silence this job</flux:heading>
             <flux:text>Cronmon won't email anyone about this job until the time you pick. The check-in URL keeps working.</flux:text>
 
@@ -93,22 +93,22 @@
 
             <flux:input wire:model="silenceReason" label="Reason (optional)" placeholder="Building works" />
 
-            <div class="flex justify-end gap-3">
-                <flux:button type="button" x-on:click="$flux.modal('silence-job').close()" variant="ghost">Cancel</flux:button>
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" x-on:click="$flux.modal('silence-job').close()">Cancel</flux:button>
                 <flux:button type="submit" variant="primary">Silence</flux:button>
             </div>
         </form>
     </flux:modal>
 
-    <flux:modal name="delete-job" class="md:w-96">
-        <div class="space-y-4">
+    <flux:modal name="delete-job" variant="flyout">
+        <div class="space-y-6">
             <flux:heading size="lg">Delete this job?</flux:heading>
             <flux:text>
                 This removes <strong>{{ $job->name }}</strong> and its check-in history.
                 The check-in URL will stop working.
             </flux:text>
-            <div class="flex justify-end gap-3">
-                <flux:button x-on:click="$flux.modal('delete-job').close()" variant="ghost">Cancel</flux:button>
+            <div class="flex justify-end gap-2">
+                <flux:button x-on:click="$flux.modal('delete-job').close()">Cancel</flux:button>
                 <flux:button wire:click="delete" variant="danger">Yes, delete</flux:button>
             </div>
         </div>
