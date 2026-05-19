@@ -34,3 +34,6 @@ Thumbs.db
 !/storage/meilisearch/.gitkeep*
 npm-debug.log
 yarn-error.log
+.ant/
+.ait/
+PLAN.md

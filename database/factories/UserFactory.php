@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -54,6 +55,14 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_staff' => false,
+        ]);
+    }
+
+    public function silenced()
+    {
+        return $this->state(fn (array $attributes) => [
+            'silenced_until' => now()->addDay(),
+            'silence_reason' => fake()->sentence(),
         ]);
     }
 }
