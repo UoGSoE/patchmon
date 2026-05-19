@@ -28,7 +28,7 @@ View in Cronmon
 @if ($job->team)
 If this isn't your problem, the **{{ $job->team->name }}** team owns this job.
 @else
-This job belongs to {{ $job->user->name ?? $job->user->email }}.
+This job belongs to {{ $job->user->full_name ?: $job->user->email }}.
 @endif
 
 Thanks,<br>

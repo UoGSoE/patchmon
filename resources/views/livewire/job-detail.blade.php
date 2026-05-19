@@ -33,10 +33,10 @@
                 @if ($job->team)
                     Team: {{ $job->team->name }}
                 @else
-                    Personal — {{ $job->user->name ?? $job->user->email }}
+                    Personal — {{ $job->user->full_name ?: $job->user->email }}
                 @endif
             </flux:text>
-            <flux:text size="sm" class="mt-1">Created by {{ $job->createdBy->name ?? $job->createdBy->email }}</flux:text>
+            <flux:text size="sm" class="mt-1">Created by {{ $job->createdBy->full_name ?: $job->createdBy->email }}</flux:text>
         </div>
     </div>
 

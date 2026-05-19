@@ -31,7 +31,7 @@
             <flux:select wire:model="userToAddId" class="flex-1">
                 <flux:select.option value="">Add a user…</flux:select.option>
                 @foreach ($candidates as $candidate)
-                    <flux:select.option value="{{ $candidate->id }}">{{ $candidate->name ?? $candidate->email }} ({{ $candidate->email }})</flux:select.option>
+                    <flux:select.option value="{{ $candidate->id }}">{{ $candidate->full_name ?: $candidate->email }} ({{ $candidate->email }})</flux:select.option>
                 @endforeach
             </flux:select>
             <flux:button type="submit" variant="primary">Add</flux:button>
@@ -49,12 +49,12 @@
                 <flux:table.rows>
                     @foreach ($members as $member)
                         <flux:table.row>
-                            <flux:table.cell>{{ $member->name ?? '—' }}</flux:table.cell>
+                            <flux:table.cell>{{ $member->full_name }}</flux:table.cell>
                             <flux:table.cell>{{ $member->email }}</flux:table.cell>
                             <flux:table.cell>
                                 <flux:button
                                     wire:click="removeUser({{ $member->id }})"
-                                    wire:confirm="Remove {{ $member->name ?? $member->email }} from the team?"
+                                    wire:confirm="Remove {{ $member->full_name ?: $member->email }} from the team?"
                                     size="sm"
                                     variant="ghost"
                                 >Remove</flux:button>

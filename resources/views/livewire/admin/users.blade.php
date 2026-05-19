@@ -12,7 +12,7 @@
         <flux:table.rows>
             @foreach ($users as $user)
                 <flux:table.row>
-                    <flux:table.cell>{{ $user->name ?? '—' }}</flux:table.cell>
+                    <flux:table.cell>{{ $user->full_name }}</flux:table.cell>
                     <flux:table.cell>{{ $user->email }}</flux:table.cell>
                     <flux:table.cell>
                         <flux:switch :checked="$user->is_admin" wire:click="toggleAdmin({{ $user->id }})" />

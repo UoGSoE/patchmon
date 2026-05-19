@@ -50,6 +50,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class);
     }
 
+    public function getFullNameAttribute(): string
+    {
+        return $this->forenames.' '.$this->surname;
+    }
+
     public function silenceUntil(Carbon $until, ?string $reason = null): void
     {
         $this->update([

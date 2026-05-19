@@ -32,7 +32,7 @@ class Users extends Component
     public function render()
     {
         return view('livewire.admin.users', [
-            'users' => User::orderBy('name')->orderBy('email')->get(),
+            'users' => User::orderBy('surname')->orderBy('forenames')->get(),
         ]);
     }
 }
