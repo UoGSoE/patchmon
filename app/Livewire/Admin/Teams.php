@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Team;
+use App\Models\User;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -16,6 +17,14 @@ class Teams extends Component
         'notification_email' => '',
         'sender_email' => '',
     ];
+
+    public ?int $deletingId = null;
+
+    public ?int $transferTargetTeamId = null;
+
+    public ?int $transferTargetUserId = null;
+
+    public string $typedConfirmation = '';
 
     public function openCreate(): void
     {
@@ -54,17 +63,89 @@ class Teams extends Component
         Flux::toast('Team saved.', variant: 'success');
     }
 
-    public function delete(int $id): void
+    public function confirmDelete(int $id): void
     {
-        Team::findOrFail($id)->delete();
+        $this->deletingId = $id;
+        $this->transferTargetTeamId = null;
+        $this->transferTargetUserId = null;
+        $this->typedConfirmation = '';
+        Flux::modal('delete-team')->show();
+    }
 
+    public function deleteEmpty(): void
+    {
+        $team = Team::findOrFail($this->deletingId);
+        $team->delete();
+
+        Flux::modal('delete-team')->close();
         Flux::toast('Team deleted.', variant: 'success');
+    }
+
+    public function transferToTeamAndDelete(): void
+    {
+        $this->validate([
+            'deletingId' => ['required', 'exists:teams,id'],
+            'transferTargetTeamId' => ['required', 'different:deletingId', 'exists:teams,id'],
+        ]);
+
+        $team = Team::findOrFail($this->deletingId);
+        $team->jobs()->update([
+            'team_id' => $this->transferTargetTeamId,
+            'user_id' => null,
+        ]);
+        $team->delete();
+
+        Flux::modal('delete-team')->close();
+        Flux::toast('Team deleted; jobs transferred.', variant: 'success');
+    }
+
+    public function transferToUserAndDelete(): void
+    {
+        $this->validate([
+            'deletingId' => ['required', 'exists:teams,id'],
+            'transferTargetUserId' => ['required', 'exists:users,id'],
+        ]);
+
+        $team = Team::findOrFail($this->deletingId);
+        $team->jobs()->update([
+            'team_id' => null,
+            'user_id' => $this->transferTargetUserId,
+        ]);
+        $team->delete();
+
+        Flux::modal('delete-team')->close();
+        Flux::toast('Team deleted; jobs transferred.', variant: 'success');
+    }
+
+    public function deleteWithJobs(): void
+    {
+        $team = Team::findOrFail($this->deletingId);
+
+        if ($this->typedConfirmation !== $team->name) {
+            return;
+        }
+
+        $team->delete();
+
+        Flux::modal('delete-team')->close();
+        Flux::toast('Team and its jobs deleted.', variant: 'success');
     }
 
     public function render()
     {
+        $deletingTeam = $this->deletingId
+            ? Team::with('jobs')->find($this->deletingId)
+            : null;
+
         return view('livewire.admin.teams', [
             'teams' => Team::orderBy('name')->get(),
+            'deletingTeam' => $deletingTeam,
+            'otherTeams' => $deletingTeam
+                ? Team::where('id', '!=', $deletingTeam->id)->orderBy('name')->get()
+                : collect(),
+            'allUsers' => $deletingTeam
+                ? User::orderBy('surname')->orderBy('forenames')->get()
+                : collect(),
         ]);
     }
 }

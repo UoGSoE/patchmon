@@ -20,7 +20,7 @@
             </flux:table.columns>
             <flux:table.rows>
                 @foreach ($teams as $team)
-                    <flux:table.row>
+                    <flux:table.row wire:key="team-row-{{ $team->id }}">
                         <flux:table.cell>
                             <flux:link :href="route('admin.teams.show', $team)" wire:navigate>{{ $team->name }}</flux:link>
                             @if ($team->isCurrentlySilenced())
@@ -34,8 +34,7 @@
                             <div class="flex gap-2">
                                 <flux:button wire:click="openEdit({{ $team->id }})" size="sm">Edit</flux:button>
                                 <flux:button
-                                    wire:click="delete({{ $team->id }})"
-                                    wire:confirm="Delete {{ $team->name }}? This removes the team and all its jobs."
+                                    wire:click="confirmDelete({{ $team->id }})"
                                     size="sm"
                                     variant="danger"
                                 >Delete</flux:button>
@@ -46,6 +45,76 @@
             </flux:table.rows>
         </flux:table>
     @endif
+
+    <flux:modal name="delete-team" variant="flyout">
+        @if ($deletingTeam)
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Delete {{ $deletingTeam->name }}</flux:heading>
+                    @if ($deletingTeam->jobs->isEmpty())
+                        <flux:text class="mt-2">This team owns no jobs.</flux:text>
+                    @else
+                        <flux:text class="mt-2">
+                            This team owns {{ $deletingTeam->jobs->count() }} {{ \Illuminate\Support\Str::plural('job', $deletingTeam->jobs->count()) }}.
+                            Choose what should happen to them before the team can be deleted.
+                        </flux:text>
+                        <ul class="mt-3 list-disc list-inside">
+                            @foreach ($deletingTeam->jobs->take(5) as $job)
+                                <li><flux:text>{{ $job->name }}</flux:text></li>
+                            @endforeach
+                            @if ($deletingTeam->jobs->count() > 5)
+                                <li><flux:text>… and {{ $deletingTeam->jobs->count() - 5 }} more</flux:text></li>
+                            @endif
+                        </ul>
+                    @endif
+                </div>
+
+                @if ($deletingTeam->jobs->isEmpty())
+                    <div class="flex gap-2">
+                        <flux:spacer />
+                        <flux:button x-on:click="$flux.modal('delete-team').close()">Cancel</flux:button>
+                        <flux:button wire:click="deleteEmpty" variant="danger">Delete team</flux:button>
+                    </div>
+                @else
+                    <form wire:submit="transferToTeamAndDelete" class="space-y-3">
+                        <flux:heading size="md">Transfer jobs to another team</flux:heading>
+                        <flux:select wire:model="transferTargetTeamId" variant="listbox" searchable placeholder="Choose a team…">
+                            @foreach ($otherTeams as $candidate)
+                                <flux:select.option :value="$candidate->id">{{ $candidate->name }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <div class="flex">
+                            <flux:spacer />
+                            <flux:button type="submit">Transfer and delete</flux:button>
+                        </div>
+                    </form>
+
+                    <form wire:submit="transferToUserAndDelete" class="space-y-3">
+                        <flux:heading size="md">Transfer jobs to a user</flux:heading>
+                        <flux:select wire:model="transferTargetUserId" variant="listbox" searchable placeholder="Choose a user…">
+                            @foreach ($allUsers as $candidate)
+                                <flux:select.option :value="$candidate->id">{{ $candidate->full_name }} ({{ $candidate->email }})</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <div class="flex">
+                            <flux:spacer />
+                            <flux:button type="submit">Transfer and delete</flux:button>
+                        </div>
+                    </form>
+
+                    <form wire:submit="deleteWithJobs" class="space-y-3">
+                        <flux:heading size="md">Delete the team and all its jobs</flux:heading>
+                        <flux:text>Type <strong>{{ $deletingTeam->name }}</strong> to confirm.</flux:text>
+                        <flux:input wire:model="typedConfirmation" placeholder="{{ $deletingTeam->name }}" />
+                        <div class="flex">
+                            <flux:spacer />
+                            <flux:button type="submit" variant="danger">Delete everything</flux:button>
+                        </div>
+                    </form>
+                @endif
+            </div>
+        @endif
+    </flux:modal>
 
     <flux:modal name="edit-team" class="md:w-96">
         <form wire:submit="save" class="space-y-4">
