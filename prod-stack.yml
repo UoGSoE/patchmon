@@ -1,0 +1,143 @@
+version: "3.7"
+
+x-logging:
+  &default-logging
+  options:
+    max-size: '12m'
+    max-file: '5'
+  driver: json-file
+x-deploy-php:
+  &default-php-deploy
+  replicas: 1
+  labels:
+    - "traefik.enable=false"
+  placement:
+    constraints:
+      - "node.labels.weaksauce==false"
+  resources:
+    limits:
+      memory: 2048M
+      cpus: "1"
+    reservations:
+      memory: 200M
+  update_config:
+    parallelism: 1
+    failure_action: rollback
+    order: start-first
+x-deploy:
+  &default-deploy
+  replicas: 1
+  labels:
+    - "traefik.enable=false"
+  placement:
+    constraints:
+      - "node.labels.weaksauce==false"
+  resources:
+    limits:
+      memory: 2048M
+  update_config:
+    parallelism: 1
+    failure_action: rollback
+    order: start-first
+
+services:
+  app:
+    image: ${IMAGE_NAME}
+    networks:
+      - proxy
+      - default
+    expose:
+      - "80"
+    environment:
+      CONTAINER_ROLE: app
+    secrets:
+      - source: dotenv
+        target: .env
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - "node.labels.weaksauce==false"
+        preferences:
+          - spread: node.labels.site
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: start-first
+      resources:
+        limits:
+          memory: 2048M
+        reservations:
+          memory: 128M
+      labels:
+        # note: this assumes traefik v2
+        - "traefik.enable=true"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}.rule=Host(`${TRAEFIK_HOSTNAME}`)"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}.entrypoints=web"
+        - "traefik.http.services.${TRAEFIK_BACKEND}.loadbalancer.server.port=80" # it seems you always need to give traefik a port so it 'notices' the service
+        - "traefik.http.routers.${TRAEFIK_BACKEND}-secured.rule=Host(`${TRAEFIK_HOSTNAME}`)"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}-secured.entrypoints=web-secured"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}-secured.tls.certresolver=mytlschallenge"
+    stop_grace_period: 2m
+    logging: *default-logging
+
+  scheduler:
+    image: ${IMAGE_NAME}
+    deploy: *default-php-deploy
+    stop_grace_period: 1m
+    networks:
+      - default
+    environment:
+      CONTAINER_ROLE: scheduler
+    secrets:
+      - source: dotenv
+        target: .env
+    logging: *default-logging
+
+  queue:
+    image: ${IMAGE_NAME}
+    deploy: *default-php-deploy
+    stop_grace_period: 1m
+    networks:
+      - default
+    environment:
+      CONTAINER_ROLE: queue
+    secrets:
+      - source: dotenv
+        target: .env
+    logging: *default-logging
+
+  migrations:
+    image: ${IMAGE_NAME}
+    deploy: *default-php-deploy
+    stop_grace_period: 1m
+    networks:
+      - default
+    environment:
+      CONTAINER_ROLE: migrations
+    secrets:
+      - source: dotenv
+        target: .env
+
+  redis:
+    # Keep prod pinned by digest for immutable deployments.
+    # To update this digest:
+    #  docker pull redis:8.2.2
+    #  docker images --digests | grep '^redis'
+    image: redis@sha256:f0957bcaa75fd58a9a1847c1f07caf370579196259d69ac07f2e27b5b389b021
+    deploy: *default-deploy
+    logging: *default-logging
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+
+secrets:
+  dotenv:
+    external: true
+    name: ${DOTENV_NAME}
+
+networks:
+  default:
+  proxy:
+    external: true

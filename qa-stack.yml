@@ -1,0 +1,154 @@
+version: "3.7"
+
+x-logging:
+  &default-logging
+  options:
+    max-size: '12m'
+    max-file: '5'
+  driver: json-file
+x-deploy:
+  &default-deploy
+  replicas: 1
+  labels:
+    - "traefik.enable=false"
+  update_config:
+    parallelism: 1
+    failure_action: rollback
+    order: start-first
+
+
+services:
+  app:
+    image: ${IMAGE_NAME}
+    logging: *default-logging
+    environment:
+      CONTAINER_ROLE: app
+    build:
+      context: .
+    secrets:
+      - source: dotenv
+        target: .env
+    depends_on:
+      - redis
+      - mysql
+      - mailhog
+    networks:
+      - proxy
+      - private
+    expose:
+      - "80"
+    deploy:
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: start-first
+      replicas: 1
+      labels:
+        # note: this assumes traefik v2
+        - "traefik.enable=true"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}.rule=Host(`${TRAEFIK_HOSTNAME}`)"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}.entrypoints=web"
+        - "traefik.http.services.${TRAEFIK_BACKEND}.loadbalancer.server.port=80" # it seems you always need to give traefik a port so it 'notices' the service
+        - "traefik.http.routers.${TRAEFIK_BACKEND}-secured.rule=Host(`${TRAEFIK_HOSTNAME}`)"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}-secured.entrypoints=web-secured"
+        - "traefik.http.routers.${TRAEFIK_BACKEND}-secured.tls.certresolver=mytlschallenge"
+
+  scheduler:
+    image: ${IMAGE_NAME}
+    logging: *default-logging
+    deploy: *default-deploy
+    environment:
+      CONTAINER_ROLE: scheduler
+    depends_on:
+      - app
+    networks:
+      - private
+    secrets:
+      - source: dotenv
+        target: .env
+
+  queue:
+    image: ${IMAGE_NAME}
+    logging: *default-logging
+    deploy: *default-deploy
+    stop_grace_period: 30s
+    environment:
+      CONTAINER_ROLE: queue
+    depends_on:
+      - app
+    networks:
+      - private
+    secrets:
+      - source: dotenv
+        target: .env
+
+  migrations:
+    image: ${IMAGE_NAME}
+    logging: *default-logging
+    deploy: *default-deploy
+    networks:
+      - private
+    environment:
+      CONTAINER_ROLE: migrations
+    depends_on:
+      - app
+    secrets:
+      - source: dotenv
+        target: .env
+
+  redis:
+    image: redis:8.2.2
+    deploy: *default-deploy
+    networks:
+      - private
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+
+  mysql:
+    image: mysql:5.7
+    deploy: *default-deploy
+    networks:
+      - private
+    volumes:
+      - mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: homestead
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: homestead
+      MYSQL_PASSWORD: secret
+
+  mailhog:
+    image: axllent/mailpit
+    deploy:
+      labels:
+        # note: this assumes traefik v2
+        - "traefik.enable=true"
+        - "traefik.http.routers.mailhog-${TRAEFIK_BACKEND}.rule=Host(`mail-${TRAEFIK_HOSTNAME}`)"
+        - "traefik.http.routers.mailhog-${TRAEFIK_BACKEND}.entrypoints=web"
+        - "traefik.http.services.mailhog-${TRAEFIK_BACKEND}.loadbalancer.server.port=8025" # it seems you always need to give traefik a port so it 'notices' the service
+        - "traefik.http.routers.mailhog-${TRAEFIK_BACKEND}-secured.rule=Host(`mail-${TRAEFIK_HOSTNAME}`)"
+        - "traefik.http.routers.mailhog-${TRAEFIK_BACKEND}-secured.entrypoints=web-secured"
+        - "traefik.http.routers.mailhog-${TRAEFIK_BACKEND}-secured.tls.certresolver=mytlschallenge"
+    expose:
+      - "8025"
+    networks:
+      - proxy
+      - private
+
+volumes:
+  redis:
+    driver: "local"
+  mysql:
+    driver: "local"
+
+networks:
+  private:
+  proxy:
+    external: true
+
+secrets:
+  dotenv:
+    external: true
+    name: ${DOTENV_NAME}

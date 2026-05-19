@@ -1,0 +1,100 @@
+name: cronmon
+recipe: laravel
+config:
+  webroot: public
+  php: '8.4'
+  cache: redis
+services:
+  mail:
+    type: mailhog
+    portforward: true
+    hogfrom:
+      - appserver
+  appserver:
+    scanner:
+      okCodes:
+        401
+        200
+#  meilisearch:
+#    type: compose
+#    app_mount: false
+#    services:
+#      image: getmeili/meilisearch:v0.27.0
+#      command: tini -- /bin/meilisearch
+#      volumes:
+#        - ./storage/meilisearch:/meili_data
+#  minio:
+#    type: compose
+#    app_mount: false
+#    services:
+#      image: quay.io/minio/minio:RELEASE.2022-03-08T22-28-51Z
+#      command: minio server /data --console-address ":9001"
+#      volumes:
+#        - ./storage/minio_dev:/data
+#      environment:
+#        MINIO_ROOT_USER: minioadmin
+#        MINIO_ROOT_PASSWORD: minioadmin
+        # MINIO_REGION: "us-east-1"
+        # MINIO_BUCKET: "exampapers"
+        # MINIO_ENDPOINT: "${MINIO_QA_ENDPOINT}"
+  node:
+    type: node
+    build:
+      - npm install
+
+excludes:
+  - node_modules
+tooling:
+  mfs:
+    service: appserver
+    description: "Drop db, migrate and seed"
+    cmd: php artisan migrate:fresh && php artisan db:seed --class=TestDataSeeder
+  horizon:
+    service: appserver
+    description: "Run horizon"
+    cmd: php artisan horizon
+  test:
+    service: appserver
+    description: "Run phpunit"
+    cmd: CI=1 php artisan test --parallel
+  testf:
+    service: appserver
+    description: "Run phpunit with --filter"
+    cmd: php artisan test --filter
+  fixldap:
+    service: appserver
+    description: "Set up insecure ldap"
+    user: root
+    cmd: apt-get update && apt-get install -y libldap-common && printf "\nTLS_REQCERT never\n" >> /etc/ldap/ldap.conf
+  fixmysql:
+    service: database
+    description: "Fix AIO stopping mysql starting up"
+    user: root
+    cmd: echo "\n\n" >> /opt/bitnami/mysql/conf/bitnami/my_custom.cnf 
+  ci:
+    service: appserver
+    description: "Run pseudo CI run"
+    cmd: 
+      - set -e
+      - composer global require enlightn/security-checker 
+      - curl -OL -o /usr/local/bin/phpcs https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar
+      - php /usr/local/bin/phpcs --config-set ignore_warnings_on_exit 1
+      - php /usr/local/bin/phpcs --standard=PSR12 app
+      - "grep -rE '[^a-zA-Z](dd\\(|dump\\(|ray\\()' app && exit 1 || true"
+      - php /root/.composer/vendor/bin/security-checker security:check ./composer.lock
+  npm:
+    service: node
+    description: "Run npm command"
+    cmd: npm
+  npmd:
+    service: node
+    description: "Run npm run dev"
+    cmd: npm run dev
+  npmp:
+    service: node
+    description: "Run npm run prod"
+    cmd: npm run build
+  npmw:
+    service: node
+    description: "Run npm run dev"
+    cmd: npm run dev

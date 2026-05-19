@@ -25,3 +25,12 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+/.fleet
+/storage/minio_dev/bucket/*
+!/storage/minio_dev/bucket/.gitkeep
+/storage/minio_dev/.minio.sys
+/storage/meilisearch/*
+!/storage/meilisearch/.gitkeep*
+npm-debug.log
+yarn-error.log
