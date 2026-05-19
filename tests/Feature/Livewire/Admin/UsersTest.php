@@ -41,3 +41,12 @@ it('does not render an admin toggle for the current user', function () {
         ->assertDontSeeHtml("toggleAdmin({$admin->id})")
         ->assertSeeHtml("toggleAdmin({$other->id})");
 });
+
+it('does not render a staff toggle anywhere on the page', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    User::factory()->count(2)->create();
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->assertDontSeeHtml('toggleStaff');
+});

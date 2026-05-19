@@ -25,14 +25,6 @@ class Users extends Component
         );
     }
 
-    public function toggleStaff(int $id): void
-    {
-        $user = User::findOrFail($id);
-        $user->update(['is_staff' => ! $user->is_staff]);
-
-        Flux::toast('Staff flag updated.', variant: 'success');
-    }
-
     public function render()
     {
         return view('livewire.admin.users', [
