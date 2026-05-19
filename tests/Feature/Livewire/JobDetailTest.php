@@ -5,6 +5,35 @@ use App\Models\Job;
 use App\Models\User;
 use Livewire\Livewire;
 
+it('unsilences the job for the owner via the unsilenceJob action', function () {
+    $owner = User::factory()->create();
+    $job = Job::factory()->forUser($owner)->silenced()->create();
+
+    Livewire::actingAs($owner)
+        ->test(JobDetail::class, ['job' => $job])
+        ->call('unsilenceJob');
+
+    $job->refresh();
+    expect($job->silenced_until)->toBeNull()
+        ->and($job->silence_reason)->toBeNull();
+});
+
+it('silences the job for the owner via the silence action', function () {
+    $owner = User::factory()->create();
+    $job = Job::factory()->forUser($owner)->create();
+    $until = now()->addDay()->startOfSecond();
+
+    Livewire::actingAs($owner)
+        ->test(JobDetail::class, ['job' => $job])
+        ->set('silenceUntil', $until->toDateTimeLocalString())
+        ->set('silenceReason', 'Power works')
+        ->call('silence');
+
+    $job->refresh();
+    expect($job->silenced_until)->not->toBeNull()
+        ->and($job->silence_reason)->toBe('Power works');
+});
+
 it('deletes the job when the owner confirms and redirects to home', function () {
     $owner = User::factory()->create();
     $job = Job::factory()->forUser($owner)->create();

@@ -25,11 +25,14 @@
                 <flux:sidebar.nav>
                     <flux:sidebar.item icon="home" :href="route('home')" wire:navigate>Home</flux:sidebar.item>
                     <flux:sidebar.item icon="plus-circle" :href="route('jobs.create')" wire:navigate>New job</flux:sidebar.item>
+                    @if (auth()->user()->is_admin)
+                        <flux:separator class="my-2" />
+                        <flux:sidebar.item icon="shield-check" :href="route('admin.dashboard')" wire:navigate>Admin</flux:sidebar.item>
+                    @endif
                 </flux:sidebar.nav>
                 <flux:sidebar.spacer />
                 <flux:sidebar.nav>
-                    <flux:sidebar.item icon="cog-6-tooth" href="#">Settings</flux:sidebar.item>
-                    <flux:sidebar.item icon="information-circle" href="#">Help</flux:sidebar.item>
+                    <flux:sidebar.item icon="cog-6-tooth" :href="route('settings')" wire:navigate>My settings</flux:sidebar.item>
                 </flux:sidebar.nav>
                 <flux:sidebar.nav>
                     <flux:sidebar.item tooltip="Logout" icon="arrow-right-start-on-rectangle">

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
 #[Fillable([
     'name',
@@ -19,6 +20,8 @@ use Illuminate\Notifications\Notifiable;
     'sender_email',
     'silenced_until',
     'silence_reason',
+    'is_admin',
+    'is_staff',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -37,11 +40,34 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'silenced_until' => 'datetime',
+            'is_admin' => 'boolean',
+            'is_staff' => 'boolean',
         ];
     }
 
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class);
+    }
+
+    public function silenceUntil(Carbon $until, ?string $reason = null): void
+    {
+        $this->update([
+            'silenced_until' => $until,
+            'silence_reason' => $reason,
+        ]);
+    }
+
+    public function unsilence(): void
+    {
+        $this->update([
+            'silenced_until' => null,
+            'silence_reason' => null,
+        ]);
+    }
+
+    public function isCurrentlySilenced(): bool
+    {
+        return (bool) $this->silenced_until?->isFuture();
     }
 }

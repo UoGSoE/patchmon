@@ -1,10 +1,15 @@
 <?php
 
 use App\Http\Controllers\CheckInController;
+use App\Livewire\Admin\TeamDetail as AdminTeamDetail;
+use App\Livewire\Admin\Teams as AdminTeams;
+use App\Livewire\Admin\Users as AdminUsers;
+use App\Livewire\AdminDashboard;
 use App\Livewire\CreateJob;
 use App\Livewire\EditJob;
 use App\Livewire\HomePage;
 use App\Livewire\JobDetail;
+use App\Livewire\MySettings;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/sso-auth.php';
@@ -17,4 +22,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/jobs/create', CreateJob::class)->name('jobs.create');
     Route::get('/jobs/{job}', JobDetail::class)->name('jobs.show');
     Route::get('/jobs/{job}/edit', EditJob::class)->name('jobs.edit');
+
+    Route::get('/settings', MySettings::class)->name('settings');
+
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', AdminDashboard::class)->name('dashboard');
+        Route::get('/teams', AdminTeams::class)->name('teams.index');
+        Route::get('/teams/{team}', AdminTeamDetail::class)->name('teams.show');
+        Route::get('/users', AdminUsers::class)->name('users.index');
+    });
 });

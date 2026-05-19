@@ -6,6 +6,8 @@ use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class Team extends Model
 {
@@ -30,5 +32,31 @@ class Team extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
+    }
+
+    public function jobs(): HasMany
+    {
+        return $this->hasMany(Job::class);
+    }
+
+    public function silenceUntil(Carbon $until, ?string $reason = null): void
+    {
+        $this->update([
+            'silenced_until' => $until,
+            'silence_reason' => $reason,
+        ]);
+    }
+
+    public function unsilence(): void
+    {
+        $this->update([
+            'silenced_until' => null,
+            'silence_reason' => null,
+        ]);
+    }
+
+    public function isCurrentlySilenced(): bool
+    {
+        return (bool) $this->silenced_until?->isFuture();
     }
 }

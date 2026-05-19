@@ -6,7 +6,7 @@
         @if ($job->alerting_since)
             <flux:badge color="red">Awol since {{ $job->alerting_since->diffForHumans() }}</flux:badge>
         @elseif ($job->isCurrentlySilenced())
-            <flux:badge color="zinc">Silenced</flux:badge>
+            <flux:badge color="zinc">Silenced until {{ $job->silenced_until->format('D j M, H:i') }}</flux:badge>
         @endif
     </div>
 
@@ -68,12 +68,37 @@
         @endif
     </div>
 
-    <div class="mt-8 flex gap-3">
+    <div class="mt-8 flex flex-wrap gap-3">
         <flux:button :href="route('jobs.edit', $job)" wire:navigate>Edit</flux:button>
+
+        @if ($job->isCurrentlySilenced())
+            <flux:button wire:click="unsilenceJob" icon="speaker-wave">Unsilence</flux:button>
+        @else
+            <flux:modal.trigger name="silence-job">
+                <flux:button icon="speaker-x-mark">Silence…</flux:button>
+            </flux:modal.trigger>
+        @endif
+
         <flux:modal.trigger name="delete-job">
             <flux:button variant="danger">Delete</flux:button>
         </flux:modal.trigger>
     </div>
+
+    <flux:modal name="silence-job" class="md:w-96">
+        <form wire:submit="silence" class="space-y-4">
+            <flux:heading size="lg">Silence this job</flux:heading>
+            <flux:text>Cronmon won't email anyone about this job until the time you pick. The check-in URL keeps working.</flux:text>
+
+            <flux:input wire:model="silenceUntil" type="datetime-local" label="Silenced until" />
+
+            <flux:input wire:model="silenceReason" label="Reason (optional)" placeholder="Building works" />
+
+            <div class="flex justify-end gap-3">
+                <flux:button type="button" x-on:click="$flux.modal('silence-job').close()" variant="ghost">Cancel</flux:button>
+                <flux:button type="submit" variant="primary">Silence</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 
     <flux:modal name="delete-job" class="md:w-96">
         <div class="space-y-4">

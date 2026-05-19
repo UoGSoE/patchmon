@@ -22,6 +22,22 @@ it('persists and casts a team', function () {
         ->and($team->silence_reason)->toBe('Building works');
 });
 
+it('silenceUntil and unsilence round-trip on a team', function () {
+    $team = Team::factory()->create();
+    $until = now()->addDay()->startOfSecond();
+
+    $team->silenceUntil($until, 'Building works');
+
+    $team->refresh();
+    expect($team->silenced_until->equalTo($until))->toBeTrue()
+        ->and($team->silence_reason)->toBe('Building works');
+
+    $team->unsilence();
+    $team->refresh();
+    expect($team->silenced_until)->toBeNull()
+        ->and($team->silence_reason)->toBeNull();
+});
+
 it('can have users as members and a user can be in multiple teams', function () {
     $alice = User::factory()->create();
     $bob = User::factory()->create();

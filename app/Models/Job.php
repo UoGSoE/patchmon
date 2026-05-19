@@ -167,6 +167,22 @@ class Job extends Model
         return $checkIn;
     }
 
+    public function silenceUntil(Carbon $until, ?string $reason = null): void
+    {
+        $this->update([
+            'silenced_until' => $until,
+            'silence_reason' => $reason,
+        ]);
+    }
+
+    public function unsilence(): void
+    {
+        $this->update([
+            'silenced_until' => null,
+            'silence_reason' => null,
+        ]);
+    }
+
     public function isCurrentlySilenced(): bool
     {
         if ($this->silenced_until?->isFuture()) {
