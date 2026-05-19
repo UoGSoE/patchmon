@@ -4,11 +4,13 @@ namespace App\Models;
 
 use App\Enums\GraceUnit;
 use App\Enums\ScheduleInterval;
+use Cron\CronExpression;
 use Database\Factories\JobFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class Job extends Model
@@ -30,11 +32,11 @@ class Job extends Model
         'grace_value',
         'grace_units',
         'check_in_token',
-        'requires_bearer_token',
         'notification_email',
         'sender_email',
         'last_checked_in_at',
         'alerting_since',
+        'last_alerted_at',
         'silenced_until',
         'silence_reason',
     ];
@@ -45,11 +47,6 @@ class Job extends Model
             if (! $job->check_in_token) {
                 $job->check_in_token = (string) Str::uuid();
             }
-
-            if (! $job->isDirty('requires_bearer_token')) {
-                $owner = $job->team_id ? $job->team : $job->user;
-                $job->requires_bearer_token = (bool) ($owner?->check_ins_require_token ?? false);
-            }
         });
     }
 
@@ -58,9 +55,9 @@ class Job extends Model
         return [
             'schedule_interval' => ScheduleInterval::class,
             'grace_units' => GraceUnit::class,
-            'requires_bearer_token' => 'boolean',
             'last_checked_in_at' => 'datetime',
             'alerting_since' => 'datetime',
+            'last_alerted_at' => 'datetime',
             'silenced_until' => 'datetime',
         ];
     }
@@ -109,6 +106,65 @@ class Job extends Model
         }
 
         return $this->user->sender_email;
+    }
+
+    public function isOverdue(): bool
+    {
+        if ($this->cron_expression) {
+            $previousFiring = Carbon::instance(
+                (new CronExpression($this->cron_expression))->getPreviousRunDate(now()->toDateTimeString())
+            );
+
+            if (now()->lessThan($previousFiring->copy()->addMinutes($this->graceMinutes()))) {
+                return false;
+            }
+
+            return $this->last_checked_in_at === null
+                || $this->last_checked_in_at->lessThan($previousFiring);
+        }
+
+        $reference = $this->last_checked_in_at ?? $this->created_at;
+        $deadline = $reference->copy()->addMinutes($this->periodMinutes() + $this->graceMinutes());
+
+        return now()->greaterThanOrEqualTo($deadline);
+    }
+
+    public function nextScheduledAfter(Carbon $after): Carbon
+    {
+        if ($this->cron_expression) {
+            return Carbon::instance(
+                (new CronExpression($this->cron_expression))->getNextRunDate($after->toDateTimeString())
+            );
+        }
+
+        return $after->copy()->addMinutes($this->periodMinutes());
+    }
+
+    public function periodMinutes(): int
+    {
+        return intdiv($this->schedule_interval->toMinutes(), max($this->schedule_frequency, 1));
+    }
+
+    public function graceMinutes(): int
+    {
+        return $this->grace_units->toMinutes($this->grace_value);
+    }
+
+    public function recordCheckIn(?string $sourceIp = null, ?Carbon $at = null): CheckIn
+    {
+        $at ??= now();
+
+        $checkIn = $this->checkIns()->create([
+            'checked_in_at' => $at,
+            'source_ip' => $sourceIp,
+        ]);
+
+        $this->last_checked_in_at = $at;
+        $this->alerting_since = null;
+        $this->last_alerted_at = null;
+        $this->save();
+
+        return $checkIn;
     }
 
     public function isCurrentlySilenced(): bool

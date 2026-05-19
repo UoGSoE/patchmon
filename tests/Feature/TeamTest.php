@@ -9,7 +9,6 @@ it('persists and casts a team', function () {
         'name' => 'Network Services',
         'notification_email' => 'netservices@example.ac.uk',
         'sender_email' => 'noreply-net@example.ac.uk',
-        'check_ins_require_token' => true,
         'silenced_until' => now()->addDay(),
         'silence_reason' => 'Building works',
     ]);
@@ -19,7 +18,6 @@ it('persists and casts a team', function () {
     expect($team->name)->toBe('Network Services')
         ->and($team->notification_email)->toBe('netservices@example.ac.uk')
         ->and($team->sender_email)->toBe('noreply-net@example.ac.uk')
-        ->and($team->check_ins_require_token)->toBeTrue()
         ->and($team->silenced_until)->toBeInstanceOf(CarbonInterface::class)
         ->and($team->silence_reason)->toBe('Building works');
 });

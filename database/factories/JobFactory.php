@@ -75,6 +75,7 @@ class JobFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'alerting_since' => now()->subHours(2),
+            'last_alerted_at' => now()->subHours(2),
         ]);
     }
 }

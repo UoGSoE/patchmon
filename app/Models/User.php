@@ -17,7 +17,6 @@ use Illuminate\Notifications\Notifiable;
     'password',
     'notification_email',
     'sender_email',
-    'check_ins_require_token',
     'silenced_until',
     'silence_reason',
 ])]
@@ -38,7 +37,6 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'silenced_until' => 'datetime',
-            'check_ins_require_token' => 'boolean',
         ];
     }
 

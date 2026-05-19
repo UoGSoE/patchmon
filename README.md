@@ -1,3 +1,29 @@
+# Cronmon
+
+Watchdog for cron-style jobs. Each registered job has a unique
+check-in URL; if the URL isn't hit within the schedule plus a grace
+period, Cronmon emails the responsible person or team.
+
+## Checking in a job
+
+Append a curl to whatever runs your job. The URL is shown on the
+job's detail page in Cronmon.
+
+```bash
+0 2 * * * /usr/local/bin/nightly-backup && curl -fsS \
+  https://cronmon.example.ac.uk/check-in/00000000-0000-0000-0000-000000000000 \
+  > /dev/null
+```
+
+Notes:
+- The token in the URL is per-job. Treat it like a webhook URL —
+  unguessable, but not a high-stakes secret.
+- Use `-fsS` so curl fails the cron command on a non-2xx response
+  (handy if Cronmon itself is down).
+- The response body is empty; the 200 status code is the ack.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

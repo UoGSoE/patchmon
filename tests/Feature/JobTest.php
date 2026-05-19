@@ -25,34 +25,6 @@ it('auto-generates a unique check_in_token when one is not provided', function (
         ->and($jobA->check_in_token)->not->toBe($jobB->check_in_token);
 });
 
-it('inherits requires_bearer_token from the owning user when not explicitly set', function () {
-    $strictUser = User::factory()->create(['check_ins_require_token' => true]);
-    $relaxedUser = User::factory()->create(['check_ins_require_token' => false]);
-
-    $strictJob = Job::factory()->forUser($strictUser)->create();
-    $relaxedJob = Job::factory()->forUser($relaxedUser)->create();
-
-    expect($strictJob->requires_bearer_token)->toBeTrue()
-        ->and($relaxedJob->requires_bearer_token)->toBeFalse();
-});
-
-it('inherits requires_bearer_token from the owning team when not explicitly set', function () {
-    $strictTeam = Team::factory()->create(['check_ins_require_token' => true]);
-    $strictJob = Job::factory()->forTeam($strictTeam)->create();
-
-    expect($strictJob->requires_bearer_token)->toBeTrue();
-});
-
-it('keeps an explicitly-set requires_bearer_token rather than inheriting', function () {
-    $strictTeam = Team::factory()->create(['check_ins_require_token' => true]);
-
-    $job = Job::factory()->forTeam($strictTeam)->create([
-        'requires_bearer_token' => false,
-    ]);
-
-    expect($job->requires_bearer_token)->toBeFalse();
-});
-
 it('casts enums and exposes team / createdBy relationships', function () {
     $team = Team::factory()->create();
     $creator = User::factory()->create();

@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('name');
             $table->string('notification_email');
             $table->string('sender_email')->nullable();
-            $table->boolean('check_ins_require_token')->default(false);
             $table->timestamp('silenced_until')->nullable();
             $table->text('silence_reason')->nullable();
             $table->timestamps();

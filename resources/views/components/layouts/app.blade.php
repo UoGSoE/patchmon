@@ -23,11 +23,8 @@
                     <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
                 </flux:sidebar.header>
                 <flux:sidebar.nav>
-                    <flux:sidebar.item icon="home" href="/" wire:navigate>Home</flux:sidebar.item>
-                    <flux:sidebar.item icon="plus-circle" href="" wire:navigate>New</flux:sidebar.item>
-                    <flux:separator class="my-2" />
-                    <flux:sidebar.item badge="3" icon="list-bullet" href="" wire:navigate>List things</flux:sidebar.item>
-                    <flux:sidebar.item icon="chart-bar" href="" wire:navigate>Report</flux:sidebar.item>
+                    <flux:sidebar.item icon="home" :href="route('home')" wire:navigate>Home</flux:sidebar.item>
+                    <flux:sidebar.item icon="plus-circle" :href="route('jobs.create')" wire:navigate>New job</flux:sidebar.item>
                 </flux:sidebar.nav>
                 <flux:sidebar.spacer />
                 <flux:sidebar.nav>

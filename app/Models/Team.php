@@ -16,7 +16,6 @@ class Team extends Model
         'name',
         'notification_email',
         'sender_email',
-        'check_ins_require_token',
         'silenced_until',
         'silence_reason',
     ];
@@ -25,7 +24,6 @@ class Team extends Model
     {
         return [
             'silenced_until' => 'datetime',
-            'check_ins_require_token' => 'boolean',
         ];
     }
 

@@ -18,7 +18,6 @@
         "socialite-development",
         "fluxui-development",
         "livewire-development",
-        "pest-testing",
-        "tailwindcss-development"
+        "pest-testing"
     ]
 }

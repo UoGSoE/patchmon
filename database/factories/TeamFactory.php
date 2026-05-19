@@ -21,7 +21,6 @@ class TeamFactory extends Factory
             'name' => fake()->unique()->company(),
             'notification_email' => fake()->unique()->safeEmail(),
             'sender_email' => null,
-            'check_ins_require_token' => false,
             'silenced_until' => null,
             'silence_reason' => null,
         ];

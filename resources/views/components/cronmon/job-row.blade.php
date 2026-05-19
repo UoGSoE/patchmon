@@ -1,6 +1,7 @@
 @props(['job'])
 
-<flux:card class="mt-3 flex items-start justify-between gap-4">
+<a href="{{ route('jobs.show', $job) }}" wire:navigate class="block mt-3">
+<flux:card class="flex items-start justify-between gap-4 hover:shadow-md transition-shadow">
     <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
             <flux:heading size="lg">{{ $job->name }}</flux:heading>
@@ -33,3 +34,4 @@
         </flux:text>
     </div>
 </flux:card>
+</a>

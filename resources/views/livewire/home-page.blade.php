@@ -1,6 +1,11 @@
 <div>
-    <flux:heading size="xl">Your jobs</flux:heading>
-    <flux:text class="mt-2">Jobs that are awol come to the top so you can see them at a glance.</flux:text>
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <flux:heading size="xl">Your jobs</flux:heading>
+            <flux:text class="mt-2">Jobs that are awol come to the top so you can see them at a glance.</flux:text>
+        </div>
+        <flux:button :href="route('jobs.create')" variant="primary" icon="plus" wire:navigate>New job</flux:button>
+    </div>
 
     <flux:tab.group class="mt-6">
         <flux:tabs wire:model.live="tab">

@@ -21,7 +21,6 @@ return new class extends Migration
             $table->unsignedInteger('grace_value');
             $table->string('grace_units');
             $table->uuid('check_in_token')->unique();
-            $table->boolean('requires_bearer_token')->default(false);
             $table->string('notification_email')->nullable();
             $table->string('sender_email')->nullable();
             $table->timestamp('last_checked_in_at')->nullable();

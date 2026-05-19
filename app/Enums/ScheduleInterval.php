@@ -23,4 +23,14 @@ enum ScheduleInterval: string
             self::Monthly => 'violet',
         };
     }
+
+    public function toMinutes(): int
+    {
+        return match ($this) {
+            self::Hourly => 60,
+            self::Daily => 60 * 24,
+            self::Weekly => 60 * 24 * 7,
+            self::Monthly => 60 * 24 * 30,
+        };
+    }
 }
