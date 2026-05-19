@@ -16,6 +16,12 @@ class TeamDetail extends Component
 
     public ?int $userToAddId = null;
 
+    public ?int $removingMemberId = null;
+
+    public ?string $removingMemberName = null;
+
+    public bool $silenced = false;
+
     public string $silenceUntil = '';
 
     public ?string $silenceReason = null;
@@ -23,7 +29,11 @@ class TeamDetail extends Component
     public function mount(Team $team): void
     {
         $this->team = $team;
-        $this->silenceUntil = now()->addDay()->format('Y-m-d\TH:i');
+        $this->silenced = $team->isCurrentlySilenced();
+        $this->silenceUntil = $team->silenced_until
+            ? $team->silenced_until->format('Y-m-d\TH:i')
+            : now()->addDay()->format('Y-m-d\TH:i');
+        $this->silenceReason = $team->silence_reason;
     }
 
     public function addUser(): void
@@ -38,31 +48,57 @@ class TeamDetail extends Component
         Flux::toast('User added to team.', variant: 'success');
     }
 
+    public function confirmRemoveUser(int $userId): void
+    {
+        $member = $this->team->users()->whereKey($userId)->firstOrFail();
+
+        $this->removingMemberId = $member->id;
+        $this->removingMemberName = $member->full_name ?: $member->email;
+
+        Flux::modal('remove-member')->show();
+    }
+
     public function removeUser(int $userId): void
     {
         $this->team->users()->detach($userId);
 
+        $this->removingMemberId = null;
+        $this->removingMemberName = null;
+
+        Flux::modal('remove-member')->close();
         Flux::toast('User removed from team.', variant: 'success');
     }
 
-    public function silence(): void
+    public function updatedSilenced(bool $value): void
     {
-        $this->validate([
-            'silenceUntil' => ['required', 'date', 'after:now'],
-            'silenceReason' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $this->team->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
-
-        Flux::modal('silence-team')->close();
-        Flux::toast('Team silenced.', variant: 'success');
+        if ($value) {
+            $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
+            $this->team->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
+            Flux::toast('Team silenced.', variant: 'success');
+        } else {
+            $this->team->unsilence();
+            $this->silenceReason = null;
+            $this->silenceUntil = now()->addDay()->format('Y-m-d\TH:i');
+            Flux::toast('Team unsilenced.', variant: 'success');
+        }
     }
 
-    public function unsilence(): void
+    public function updatedSilenceUntil(): void
     {
-        $this->team->unsilence();
+        if (! $this->silenced) {
+            return;
+        }
+        $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
+        $this->team->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
+    }
 
-        Flux::toast('Team unsilenced.', variant: 'success');
+    public function updatedSilenceReason(): void
+    {
+        if (! $this->silenced) {
+            return;
+        }
+        $this->validate(['silenceReason' => ['nullable', 'string', 'max:255']]);
+        $this->team->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
     }
 
     public function render()

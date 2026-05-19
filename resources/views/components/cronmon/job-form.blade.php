@@ -4,46 +4,39 @@
     'intervalOptions',
     'graceUnitOptions',
     'submitLabel' => 'Save',
-    'cancelUrl',
+    'cancelAction' => null,
 ])
 
-<form wire:submit="save" class="mt-6 space-y-6">
+<form wire:submit="save" class="space-y-6">
     <flux:input wire:model="form.name" label="Name" required />
 
     <flux:textarea wire:model="form.description" label="Description" rows="2" />
 
     <div>
         <flux:heading size="sm">Schedule</flux:heading>
-        <flux:radio.group wire:model.live="form.schedule_type" variant="segmented" class="mt-2">
-            <flux:radio value="interval" label="Interval" />
-            <flux:radio value="cron" label="Cron expression" />
-        </flux:radio.group>
-
-        @if ($form->schedule_type === 'interval')
-            <div class="mt-3 flex gap-3">
-                <flux:input wire:model="form.schedule_frequency" type="number" min="1" label="How many" class="w-32" />
-                <flux:select wire:model="form.schedule_interval" label="per">
-                    <flux:select.option value="">Choose…</flux:select.option>
-                    @foreach ($intervalOptions as $interval)
-                        <flux:select.option value="{{ $interval->value }}">{{ $interval->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            </div>
-        @else
-            <flux:input
-                wire:model="form.cron_expression"
-                label="Cron expression"
-                placeholder="0 2 * * *"
-                class="mt-3 font-mono"
-            />
-        @endif
+        <flux:text size="sm">Use either an interval or a cron expression — whichever fits the job.</flux:text>
+        <div class="mt-2 grid gap-3 sm:grid-cols-3">
+            <flux:input wire:model="form.schedule_frequency" type="number" min="1" label="How many" />
+            <flux:select wire:model="form.schedule_interval" label="Per" class="sm:col-span-2">
+                <flux:select.option value="">—</flux:select.option>
+                @foreach ($intervalOptions as $interval)
+                    <flux:select.option value="{{ $interval->value }}">{{ $interval->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+        <flux:input
+            wire:model="form.cron_expression"
+            label="Or cron expression"
+            placeholder="0 2 * * *"
+            class="mt-3 font-mono"
+        />
     </div>
 
     <div>
         <flux:heading size="sm">Grace period</flux:heading>
         <flux:text size="sm">How late can it be before we alert?</flux:text>
-        <div class="mt-2 flex gap-3">
-            <flux:input wire:model="form.grace_value" type="number" min="1" class="w-32" />
+        <div class="mt-2 grid gap-3 sm:grid-cols-2">
+            <flux:input wire:model="form.grace_value" type="number" min="1" />
             <flux:select wire:model="form.grace_units">
                 @foreach ($graceUnitOptions as $unit)
                     <flux:select.option value="{{ $unit->value }}">{{ $unit->label() }}</flux:select.option>
@@ -52,22 +45,12 @@
         </div>
     </div>
 
-    <div>
-        <flux:heading size="sm">Owner</flux:heading>
-        <flux:radio.group wire:model.live="form.ownership_type" variant="segmented" class="mt-2">
-            <flux:radio value="mine" label="Personal (just me)" />
-            <flux:radio value="team" label="A team" :disabled="$teams->isEmpty()" />
-        </flux:radio.group>
-
-        @if ($form->ownership_type === 'team')
-            <flux:select wire:model="form.team_id" label="Team" class="mt-3">
-                <flux:select.option value="">Choose a team…</flux:select.option>
-                @foreach ($teams as $team)
-                    <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        @endif
-    </div>
+    <flux:select wire:model="form.team_id" label="Team (optional)" description="Leave blank to make this a personal job.">
+        <flux:select.option value="">Personal — just me</flux:select.option>
+        @foreach ($teams as $team)
+            <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
+        @endforeach
+    </flux:select>
 
     <div>
         <flux:heading size="sm">Email overrides</flux:heading>
@@ -78,8 +61,10 @@
         </div>
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center justify-end gap-2">
+        @if ($cancelAction)
+            <flux:button type="button" x-on:click="{{ $cancelAction }}">Cancel</flux:button>
+        @endif
         <flux:button type="submit" variant="primary">{{ $submitLabel }}</flux:button>
-        <flux:button :href="$cancelUrl" wire:navigate>Cancel</flux:button>
     </div>
 </form>

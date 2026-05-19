@@ -4,7 +4,7 @@ use App\Livewire\MySettings;
 use App\Models\User;
 use Livewire\Livewire;
 
-it('silences and unsilences the signed-in user', function () {
+it('silences and unsilences the signed-in user via the toggle', function () {
     $alice = User::factory()->create();
     $until = now()->addDay()->startOfSecond();
 
@@ -12,13 +12,14 @@ it('silences and unsilences the signed-in user', function () {
         ->test(MySettings::class)
         ->set('silenceUntil', $until->toDateTimeLocalString())
         ->set('silenceReason', 'On leave')
-        ->call('silence');
+        ->set('silenced', true);
 
-    expect($alice->fresh()->silenced_until)->not->toBeNull();
+    expect($alice->fresh()->silenced_until)->not->toBeNull()
+        ->and($alice->fresh()->silence_reason)->toBe('On leave');
 
-    Livewire::actingAs($alice)
+    Livewire::actingAs($alice->fresh())
         ->test(MySettings::class)
-        ->call('unsilence');
+        ->set('silenced', false);
 
     expect($alice->fresh()->silenced_until)->toBeNull();
 });

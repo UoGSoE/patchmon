@@ -2,7 +2,11 @@
 
 namespace App\Livewire;
 
+use App\Enums\GraceUnit;
+use App\Enums\ScheduleInterval;
+use App\Livewire\Forms\JobForm;
 use App\Models\Job;
+use Flux\Flux;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
@@ -12,6 +16,36 @@ class HomePage extends Component
 {
     #[Url(as: 'tab')]
     public $tab = 'mine';
+
+    public JobForm $form;
+
+    public function mount(): void
+    {
+        if (request()->query('new')) {
+            $this->openCreate();
+        }
+    }
+
+    public function openCreate(): void
+    {
+        $this->form->reset();
+        $this->form->resetErrorBag();
+        $this->form->grace_units = GraceUnit::Minutes->value;
+        $this->form->schedule_frequency = 1;
+        $this->form->grace_value = 1;
+
+        Flux::modal('job-form')->show();
+    }
+
+    public function save(): void
+    {
+        $this->form->save();
+
+        Flux::modal('job-form')->close();
+        Flux::toast('Job created.', variant: 'success');
+
+        unset($this->myJobs, $this->teamJobs);
+    }
 
     #[Computed]
     public function myJobs(): Collection
@@ -45,7 +79,11 @@ class HomePage extends Component
 
     public function render()
     {
-        return view('livewire.home-page');
+        return view('livewire.home-page', [
+            'teams' => auth()->user()->teams()->orderBy('name')->get(),
+            'intervalOptions' => ScheduleInterval::cases(),
+            'graceUnitOptions' => GraceUnit::cases(),
+        ]);
     }
 
     private function sortForListing(Collection $jobs): Collection

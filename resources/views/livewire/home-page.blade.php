@@ -4,7 +4,7 @@
             <flux:heading size="xl">Your jobs</flux:heading>
             <flux:text class="mt-2">Jobs that are awol come to the top so you can see them at a glance.</flux:text>
         </div>
-        <flux:button :href="route('jobs.create')" variant="primary" icon="plus" wire:navigate>New job</flux:button>
+        <flux:button wire:click="openCreate" icon="plus">New job</flux:button>
     </div>
 
     <flux:tab.group class="mt-6">
@@ -33,4 +33,18 @@
             @endforelse
         </flux:tab.panel>
     </flux:tab.group>
+
+    <flux:modal name="job-form" variant="flyout" class="max-w-2xl">
+        <div class="space-y-6">
+            <flux:heading size="lg">New job</flux:heading>
+            <x-cronmon.job-form
+                :form="$form"
+                :teams="$teams"
+                :interval-options="$intervalOptions"
+                :grace-unit-options="$graceUnitOptions"
+                submit-label="Create job"
+                cancel-action="$flux.modal('job-form').close()"
+            />
+        </div>
+    </flux:modal>
 </div>

@@ -4,7 +4,7 @@
             <flux:heading size="xl">Teams</flux:heading>
             <flux:text class="mt-2">Create teams, manage who's in them, edit team defaults.</flux:text>
         </div>
-        <flux:button wire:click="openCreate" variant="primary" icon="plus">New team</flux:button>
+        <flux:button wire:click="openCreate" icon="plus">New team</flux:button>
     </div>
 
     @if ($teams->isEmpty())
@@ -22,22 +22,31 @@
                 @foreach ($teams as $team)
                     <flux:table.row wire:key="team-row-{{ $team->id }}">
                         <flux:table.cell>
-                            <flux:link :href="route('admin.teams.show', $team)" wire:navigate>{{ $team->name }}</flux:link>
-                            @if ($team->isCurrentlySilenced())
-                                <flux:badge color="zinc" size="sm" class="ml-2">Silenced</flux:badge>
-                            @endif
+                            <div class="flex items-center gap-2">
+                                @if ($team->isCurrentlySilenced())
+                                    <flux:icon.speaker-x-mark variant="micro" class="text-zinc-400" />
+                                @endif
+                                <flux:link :href="route('admin.teams.show', $team)" wire:navigate>{{ $team->name }}</flux:link>
+                            </div>
                         </flux:table.cell>
                         <flux:table.cell>{{ $team->notification_email }}</flux:table.cell>
                         <flux:table.cell>{{ $team->users()->count() }}</flux:table.cell>
                         <flux:table.cell>{{ $team->jobs()->count() }}</flux:table.cell>
-                        <flux:table.cell>
-                            <div class="flex gap-2">
-                                <flux:button wire:click="openEdit({{ $team->id }})" size="sm">Edit</flux:button>
+                        <flux:table.cell align="end">
+                            <div class="flex justify-end gap-1">
+                                <flux:button
+                                    wire:click="openEdit({{ $team->id }})"
+                                    size="sm"
+                                    icon="pencil-square"
+                                    tooltip="Edit"
+                                />
                                 <flux:button
                                     wire:click="confirmDelete({{ $team->id }})"
                                     size="sm"
+                                    icon="trash"
+                                    tooltip="Delete"
                                     variant="danger"
-                                >Delete</flux:button>
+                                />
                             </div>
                         </flux:table.cell>
                     </flux:table.row>
@@ -46,7 +55,7 @@
         </flux:table>
     @endif
 
-    <flux:modal name="delete-team" variant="flyout">
+    <flux:modal name="delete-team" variant="flyout" class="max-w-lg">
         @if ($deletingTeam)
             <div class="space-y-6">
                 <div>
@@ -116,7 +125,7 @@
         @endif
     </flux:modal>
 
-    <flux:modal name="edit-team" variant="flyout">
+    <flux:modal name="edit-team" variant="flyout" class="max-w-md">
         <form wire:submit="save" class="space-y-6">
             <flux:heading size="lg">{{ $editing['id'] ? 'Edit team' : 'New team' }}</flux:heading>
             <flux:input wire:model="editing.name" label="Name" required />

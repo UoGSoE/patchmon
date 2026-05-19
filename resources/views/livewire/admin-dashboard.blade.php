@@ -13,7 +13,7 @@
 
         <flux:card>
             <flux:heading size="sm">Users</flux:heading>
-            <flux:text size="sm" class="mt-1">Promote / demote admins and staff.</flux:text>
+            <flux:text size="sm" class="mt-1">Edit, promote and remove user accounts.</flux:text>
             @if (\Illuminate\Support\Facades\Route::has('admin.users.index'))
                 <flux:button :href="route('admin.users.index')" class="mt-3" wire:navigate>Manage users</flux:button>
             @endif

@@ -20,35 +20,14 @@
             Team jobs aren't affected — silence those from the team page.
         </flux:text>
 
-        <div class="mt-3">
-            @if ($user->isCurrentlySilenced())
-                <flux:text>
-                    Silenced until <strong>{{ $user->silenced_until->format('D j M, H:i') }}</strong>
-                    @if ($user->silence_reason)
-                        — {{ $user->silence_reason }}
-                    @endif
-                </flux:text>
-                <flux:button wire:click="unsilence" class="mt-2" icon="speaker-wave">Unsilence me</flux:button>
-            @else
-                <flux:modal.trigger name="silence-self">
-                    <flux:button icon="speaker-x-mark">Silence me…</flux:button>
-                </flux:modal.trigger>
+        <div class="mt-3 space-y-3">
+            <flux:switch wire:model.live="silenced" label="Silenced" />
+            @if ($silenced)
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <flux:input wire:model.blur="silenceUntil" type="datetime-local" label="Silenced until" />
+                    <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="On leave" />
+                </div>
             @endif
         </div>
     </div>
-
-    <flux:modal name="silence-self" variant="flyout">
-        <form wire:submit="silence" class="space-y-6">
-            <flux:heading size="lg">Silence yourself</flux:heading>
-            <flux:text>Cronmon won't email you about any of your personal jobs until the time you pick.</flux:text>
-
-            <flux:input wire:model="silenceUntil" type="datetime-local" label="Silenced until" />
-            <flux:input wire:model="silenceReason" label="Reason (optional)" placeholder="On leave" />
-
-            <div class="flex justify-end gap-2">
-                <flux:button type="button" x-on:click="$flux.modal('silence-self').close()">Cancel</flux:button>
-                <flux:button type="submit" variant="primary">Silence</flux:button>
-            </div>
-        </form>
-    </flux:modal>
 </div>

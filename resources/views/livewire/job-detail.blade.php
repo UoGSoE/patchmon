@@ -1,18 +1,38 @@
 <div class="max-w-3xl">
-    <flux:button :href="route('home')" icon="arrow-left" size="sm" wire:navigate>Back to jobs</flux:button>
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+                @if ($job->alerting_since)
+                    <flux:icon.exclamation-triangle variant="micro" class="text-red-500" />
+                @endif
+                @if ($job->isCurrentlySilenced())
+                    <flux:icon.speaker-x-mark variant="micro" class="text-zinc-400" />
+                @endif
+                <flux:heading size="xl">{{ $job->name }}</flux:heading>
+            </div>
+            @if ($job->description)
+                <flux:text class="mt-2">{{ $job->description }}</flux:text>
+            @endif
+            @if ($job->alerting_since || $job->isCurrentlySilenced())
+                <flux:text size="sm" class="mt-1">
+                    @if ($job->alerting_since)
+                        Awol since {{ $job->alerting_since->diffForHumans() }}@if ($job->isCurrentlySilenced()) · @endif
+                    @endif
+                    @if ($job->isCurrentlySilenced())
+                        Silenced until {{ $job->silenced_until->format('D j M, H:i') }}
+                    @endif
+                </flux:text>
+            @endif
+        </div>
 
-    <div class="mt-4 flex items-center gap-3">
-        <flux:heading size="xl">{{ $job->name }}</flux:heading>
-        @if ($job->alerting_since)
-            <flux:badge color="red">Awol since {{ $job->alerting_since->diffForHumans() }}</flux:badge>
-        @elseif ($job->isCurrentlySilenced())
-            <flux:badge color="zinc">Silenced until {{ $job->silenced_until->format('D j M, H:i') }}</flux:badge>
-        @endif
+        <div class="flex gap-2">
+            <flux:button wire:click="openEdit" icon="pencil-square" tooltip="Edit" />
+
+            <flux:modal.trigger name="delete-job">
+                <flux:button icon="trash" tooltip="Delete" variant="danger" />
+            </flux:modal.trigger>
+        </div>
     </div>
-
-    @if ($job->description)
-        <flux:text class="mt-2">{{ $job->description }}</flux:text>
-    @endif
 
     <div class="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
@@ -47,6 +67,20 @@
     </div>
 
     <div class="mt-8">
+        <flux:heading size="sm">Silencing</flux:heading>
+        <flux:text size="sm">When silenced, Cronmon won't email anyone about this job. The check-in URL keeps working.</flux:text>
+        <div class="mt-2 space-y-3">
+            <flux:switch wire:model.live="silenced" label="Silenced" />
+            @if ($silenced)
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <flux:input wire:model.blur="silenceUntil" type="datetime-local" label="Silenced until" />
+                    <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Building works" />
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <div class="mt-8">
         <flux:heading size="sm">Recent check-ins</flux:heading>
         @if ($recentCheckIns->isEmpty())
             <flux:text class="mt-2">No check-ins yet.</flux:text>
@@ -68,39 +102,21 @@
         @endif
     </div>
 
-    <div class="mt-8 flex flex-wrap gap-3">
-        <flux:button :href="route('jobs.edit', $job)" wire:navigate>Edit</flux:button>
-
-        @if ($job->isCurrentlySilenced())
-            <flux:button wire:click="unsilenceJob" icon="speaker-wave">Unsilence</flux:button>
-        @else
-            <flux:modal.trigger name="silence-job">
-                <flux:button icon="speaker-x-mark">Silence…</flux:button>
-            </flux:modal.trigger>
-        @endif
-
-        <flux:modal.trigger name="delete-job">
-            <flux:button variant="danger">Delete</flux:button>
-        </flux:modal.trigger>
-    </div>
-
-    <flux:modal name="silence-job" variant="flyout">
-        <form wire:submit="silence" class="space-y-6">
-            <flux:heading size="lg">Silence this job</flux:heading>
-            <flux:text>Cronmon won't email anyone about this job until the time you pick. The check-in URL keeps working.</flux:text>
-
-            <flux:input wire:model="silenceUntil" type="datetime-local" label="Silenced until" />
-
-            <flux:input wire:model="silenceReason" label="Reason (optional)" placeholder="Building works" />
-
-            <div class="flex justify-end gap-2">
-                <flux:button type="button" x-on:click="$flux.modal('silence-job').close()">Cancel</flux:button>
-                <flux:button type="submit" variant="primary">Silence</flux:button>
-            </div>
-        </form>
+    <flux:modal name="job-form" variant="flyout" class="max-w-2xl">
+        <div class="space-y-6">
+            <flux:heading size="lg">Edit job</flux:heading>
+            <x-cronmon.job-form
+                :form="$form"
+                :teams="$teams"
+                :interval-options="$intervalOptions"
+                :grace-unit-options="$graceUnitOptions"
+                submit-label="Save changes"
+                cancel-action="$flux.modal('job-form').close()"
+            />
+        </div>
     </flux:modal>
 
-    <flux:modal name="delete-job" variant="flyout">
+    <flux:modal name="delete-job" variant="flyout" class="max-w-md">
         <div class="space-y-6">
             <flux:heading size="lg">Delete this job?</flux:heading>
             <flux:text>

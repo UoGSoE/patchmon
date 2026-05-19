@@ -18,7 +18,22 @@ it('removes a user from the team', function () {
     expect($team->users()->whereKey($member->id)->exists())->toBeFalse();
 });
 
-it('silences and unsilences the team', function () {
+it('stages a member for removal via the confirm modal', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $team = Team::factory()->create();
+    $member = User::factory()->create(['forenames' => 'Alex', 'surname' => 'Member']);
+    $team->users()->attach($member);
+
+    Livewire::actingAs($admin)
+        ->test(TeamDetail::class, ['team' => $team])
+        ->call('confirmRemoveUser', $member->id)
+        ->assertSet('removingMemberId', $member->id)
+        ->assertSet('removingMemberName', 'Alex Member');
+
+    expect($team->users()->whereKey($member->id)->exists())->toBeTrue();
+});
+
+it('silences and unsilences the team via the toggle', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();
     $until = now()->addDay()->startOfSecond();
@@ -26,13 +41,13 @@ it('silences and unsilences the team', function () {
     Livewire::actingAs($admin)
         ->test(TeamDetail::class, ['team' => $team])
         ->set('silenceUntil', $until->toDateTimeLocalString())
-        ->call('silence');
+        ->set('silenced', true);
 
     expect($team->fresh()->silenced_until)->not->toBeNull();
 
     Livewire::actingAs($admin)
         ->test(TeamDetail::class, ['team' => $team->fresh()])
-        ->call('unsilence');
+        ->set('silenced', false);
 
     expect($team->fresh()->silenced_until)->toBeNull();
 });

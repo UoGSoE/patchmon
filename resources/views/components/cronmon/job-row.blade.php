@@ -4,12 +4,13 @@
 <flux:card class="flex items-start justify-between gap-4 hover:shadow-md transition-shadow">
     <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
-            <flux:heading size="lg">{{ $job->name }}</flux:heading>
             @if ($job->alerting_since)
-                <flux:badge color="red" size="sm">Awol since {{ $job->alerting_since->diffForHumans() }}</flux:badge>
-            @elseif ($job->silenced_until && $job->silenced_until->isFuture())
-                <flux:badge color="zinc" size="sm">Silenced until {{ $job->silenced_until->format('D j M, H:i') }}</flux:badge>
+                <flux:icon.exclamation-triangle variant="micro" class="text-red-500" />
             @endif
+            @if ($job->silenced_until && $job->silenced_until->isFuture())
+                <flux:icon.speaker-x-mark variant="micro" class="text-zinc-400" />
+            @endif
+            <flux:heading size="lg">{{ $job->name }}</flux:heading>
         </div>
         @if ($job->description)
             <flux:text class="mt-1">{{ $job->description }}</flux:text>
@@ -30,6 +31,12 @@
                 Last check-in {{ $job->last_checked_in_at->diffForHumans() }}
             @else
                 No check-ins yet
+            @endif
+            @if ($job->alerting_since)
+                · Awol since {{ $job->alerting_since->diffForHumans() }}
+            @endif
+            @if ($job->silenced_until && $job->silenced_until->isFuture())
+                · Silenced until {{ $job->silenced_until->format('D j M, H:i') }}
             @endif
         </flux:text>
     </div>

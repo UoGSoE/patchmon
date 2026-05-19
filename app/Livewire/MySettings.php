@@ -14,6 +14,8 @@ class MySettings extends Component
 
     public ?string $senderEmail = null;
 
+    public bool $silenced = false;
+
     public string $silenceUntil = '';
 
     public ?string $silenceReason = null;
@@ -24,7 +26,11 @@ class MySettings extends Component
 
         $this->notificationEmail = $user->notification_email;
         $this->senderEmail = $user->sender_email;
-        $this->silenceUntil = now()->addDay()->format('Y-m-d\TH:i');
+        $this->silenced = $user->isCurrentlySilenced();
+        $this->silenceUntil = $user->silenced_until
+            ? $user->silenced_until->format('Y-m-d\TH:i')
+            : now()->addDay()->format('Y-m-d\TH:i');
+        $this->silenceReason = $user->silence_reason;
     }
 
     public function saveEmails(): void
@@ -42,24 +48,36 @@ class MySettings extends Component
         Flux::toast('Email preferences saved.', variant: 'success');
     }
 
-    public function silence(): void
+    public function updatedSilenced(bool $value): void
     {
-        $this->validate([
-            'silenceUntil' => ['required', 'date', 'after:now'],
-            'silenceReason' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        auth()->user()->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
-
-        Flux::modal('silence-self')->close();
-        Flux::toast('All your jobs are silenced.', variant: 'success');
+        if ($value) {
+            $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
+            auth()->user()->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
+            Flux::toast('All your jobs are silenced.', variant: 'success');
+        } else {
+            auth()->user()->unsilence();
+            $this->silenceReason = null;
+            $this->silenceUntil = now()->addDay()->format('Y-m-d\TH:i');
+            Flux::toast('You are unsilenced.', variant: 'success');
+        }
     }
 
-    public function unsilence(): void
+    public function updatedSilenceUntil(): void
     {
-        auth()->user()->unsilence();
+        if (! $this->silenced) {
+            return;
+        }
+        $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
+        auth()->user()->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
+    }
 
-        Flux::toast('You are unsilenced.', variant: 'success');
+    public function updatedSilenceReason(): void
+    {
+        if (! $this->silenced) {
+            return;
+        }
+        $this->validate(['silenceReason' => ['nullable', 'string', 'max:255']]);
+        auth()->user()->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
     }
 
     public function render()

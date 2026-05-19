@@ -13,7 +13,9 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 
 #[Fillable([
-    'name',
+    'username',
+    'forenames',
+    'surname',
     'email',
     'password',
     'notification_email',

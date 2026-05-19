@@ -16,19 +16,15 @@ class JobForm extends Form
 
     public ?string $description = null;
 
-    public string $schedule_type = 'interval';
-
     public ?string $cron_expression = null;
 
     public ?string $schedule_interval = null;
 
-    public int $schedule_frequency = 1;
+    public ?int $schedule_frequency = 1;
 
     public int $grace_value = 1;
 
     public string $grace_units = '';
-
-    public string $ownership_type = 'mine';
 
     public ?int $team_id = null;
 
@@ -41,13 +37,11 @@ class JobForm extends Form
         $this->job = $job;
         $this->name = $job->name;
         $this->description = $job->description;
-        $this->schedule_type = $job->cron_expression ? 'cron' : 'interval';
         $this->cron_expression = $job->cron_expression;
         $this->schedule_interval = $job->schedule_interval?->value;
         $this->schedule_frequency = $job->schedule_frequency;
         $this->grace_value = $job->grace_value;
         $this->grace_units = $job->grace_units->value;
-        $this->ownership_type = $job->team_id ? 'team' : 'mine';
         $this->team_id = $job->team_id;
         $this->notification_email = $job->notification_email;
         $this->sender_email = $job->sender_email;
@@ -58,16 +52,13 @@ class JobForm extends Form
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'schedule_type' => ['required', Rule::in(['cron', 'interval'])],
-            'cron_expression' => ['nullable', 'required_if:schedule_type,cron', 'string', 'max:255'],
-            'schedule_interval' => ['nullable', 'required_if:schedule_type,interval', Rule::enum(ScheduleInterval::class)],
-            'schedule_frequency' => ['required_if:schedule_type,interval', 'integer', 'min:1'],
+            'cron_expression' => ['nullable', 'string', 'max:255', 'required_without:schedule_interval'],
+            'schedule_interval' => ['nullable', Rule::enum(ScheduleInterval::class), 'required_without:cron_expression'],
+            'schedule_frequency' => ['nullable', 'integer', 'min:1', 'required_with:schedule_interval'],
             'grace_value' => ['required', 'integer', 'min:1'],
             'grace_units' => ['required', Rule::enum(GraceUnit::class)],
-            'ownership_type' => ['required', Rule::in(['mine', 'team'])],
             'team_id' => [
                 'nullable',
-                'required_if:ownership_type,team',
                 Rule::exists('teams', 'id')->where(fn ($q) => $q->whereIn('id', auth()->user()->teams()->pluck('teams.id'))),
             ],
             'notification_email' => ['nullable', 'email'],
@@ -79,8 +70,8 @@ class JobForm extends Form
     {
         $this->validate();
 
-        $isCron = $this->schedule_type === 'cron';
-        $isTeamOwned = $this->ownership_type === 'team';
+        $isCron = ! empty($this->cron_expression);
+        $isTeamOwned = ! is_null($this->team_id);
 
         $job = $this->job ?? new Job;
         $job->fill([
@@ -88,7 +79,7 @@ class JobForm extends Form
             'description' => $this->description,
             'cron_expression' => $isCron ? $this->cron_expression : null,
             'schedule_interval' => $isCron ? null : $this->schedule_interval,
-            'schedule_frequency' => $isCron ? 1 : $this->schedule_frequency,
+            'schedule_frequency' => $isCron ? 1 : ($this->schedule_frequency ?? 1),
             'grace_value' => $this->grace_value,
             'grace_units' => $this->grace_units,
             'team_id' => $isTeamOwned ? $this->team_id : null,
