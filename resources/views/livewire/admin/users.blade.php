@@ -15,7 +15,11 @@
                     <flux:table.cell>{{ $user->full_name }}</flux:table.cell>
                     <flux:table.cell>{{ $user->email }}</flux:table.cell>
                     <flux:table.cell>
-                        <flux:switch :checked="$user->is_admin" wire:click="toggleAdmin({{ $user->id }})" />
+                        @if ($user->is(auth()->user()))
+                            <flux:switch :checked="$user->is_admin" disabled />
+                        @else
+                            <flux:switch :checked="$user->is_admin" wire:click="toggleAdmin({{ $user->id }})" />
+                        @endif
                     </flux:table.cell>
                     <flux:table.cell>
                         <flux:switch :checked="$user->is_staff" wire:click="toggleStaff({{ $user->id }})" />

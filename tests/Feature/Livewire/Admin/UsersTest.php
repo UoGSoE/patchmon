@@ -21,3 +21,23 @@ it('toggles the admin flag on a user', function () {
 
     expect($target->fresh()->is_admin)->toBeTrue();
 });
+
+it('does not let an admin demote themselves via toggleAdmin', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->call('toggleAdmin', $admin->id);
+
+    expect($admin->fresh()->is_admin)->toBeTrue();
+});
+
+it('does not render an admin toggle for the current user', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $other = User::factory()->create(['is_admin' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->assertDontSeeHtml("toggleAdmin({$admin->id})")
+        ->assertSeeHtml("toggleAdmin({$other->id})");
+});

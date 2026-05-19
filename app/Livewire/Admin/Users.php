@@ -12,6 +12,10 @@ class Users extends Component
 {
     public function toggleAdmin(int $id): void
     {
+        if ($id === auth()->id()) {
+            return;
+        }
+
         $user = User::findOrFail($id);
         $user->update(['is_admin' => ! $user->is_admin]);
 
