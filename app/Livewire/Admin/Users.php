@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Job;
 use App\Models\User;
 use Flux\Flux;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -14,7 +15,8 @@ class Users extends Component
 {
     public ?int $editingUserId = null;
 
-    public array $editing = [
+    public array $form = [
+        'username' => '',
         'forenames' => '',
         'surname' => '',
         'email' => '',
@@ -45,34 +47,66 @@ class Users extends Component
         );
     }
 
+    public function openCreate(): void
+    {
+        $this->editingUserId = null;
+        $this->form = [
+            'username' => '',
+            'forenames' => '',
+            'surname' => '',
+            'email' => '',
+        ];
+        $this->resetErrorBag();
+
+        Flux::modal('user-form')->show();
+    }
+
     public function openEdit(int $id): void
     {
         $user = User::findOrFail($id);
 
         $this->editingUserId = $user->id;
-        $this->editing = [
+        $this->form = [
+            'username' => $user->username,
             'forenames' => $user->forenames,
             'surname' => $user->surname,
             'email' => $user->email,
         ];
         $this->resetErrorBag();
 
-        Flux::modal('edit-user')->show();
+        Flux::modal('user-form')->show();
     }
 
-    public function saveEdit(): void
+    public function save(): void
     {
         $this->validate([
-            'editing.forenames' => ['required', 'string', 'max:255'],
-            'editing.surname' => ['required', 'string', 'max:255'],
-            'editing.email' => ['required', 'email', Rule::unique('users', 'email')->ignore($this->editingUserId)],
+            'form.username' => [
+                'required',
+                'string',
+                'regex:/^[a-z]+[0-9]+[a-z]$/',
+                Rule::unique('users', 'username')->ignore($this->editingUserId),
+            ],
+            'form.forenames' => ['required', 'string', 'max:255'],
+            'form.surname' => ['required', 'string', 'max:255'],
+            'form.email' => ['required', 'email', Rule::unique('users', 'email')->ignore($this->editingUserId)],
         ]);
 
-        $user = User::findOrFail($this->editingUserId);
-        $user->update($this->editing);
+        if ($this->editingUserId) {
+            $user = User::findOrFail($this->editingUserId);
+            $user->update($this->form);
+            $message = 'User updated.';
+        } else {
+            User::create([
+                ...$this->form,
+                'is_staff' => true,
+                'is_admin' => false,
+                'password' => bcrypt(Str::random(64)),
+            ]);
+            $message = 'User created.';
+        }
 
-        Flux::modal('edit-user')->close();
-        Flux::toast('User updated.', variant: 'success');
+        Flux::modal('user-form')->close();
+        Flux::toast($message, variant: 'success');
 
         $this->editingUserId = null;
     }

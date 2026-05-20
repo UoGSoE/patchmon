@@ -52,38 +52,74 @@ it('does not render a staff toggle anywhere on the page', function () {
         ->assertDontSeeHtml('toggleStaff');
 });
 
-it('edits a user via the edit flyout', function () {
+it('edits a user via the user-form flyout', function () {
     $admin = User::factory()->create(['is_admin' => true]);
-    $target = User::factory()->create(['forenames' => 'Old', 'surname' => 'Name', 'email' => 'old@example.test']);
+    $target = User::factory()->create([
+        'username' => 'old1x',
+        'forenames' => 'Old',
+        'surname' => 'Name',
+        'email' => 'old@example.test',
+    ]);
 
     Livewire::actingAs($admin)
         ->test(Users::class)
         ->call('openEdit', $target->id)
-        ->set('editing.forenames', 'New')
-        ->set('editing.surname', 'NewName')
-        ->set('editing.email', 'new@example.test')
-        ->call('saveEdit')
+        ->set('form.username', 'new2y')
+        ->set('form.forenames', 'New')
+        ->set('form.surname', 'NewName')
+        ->set('form.email', 'new@example.test')
+        ->call('save')
         ->assertHasNoErrors();
 
     $fresh = $target->fresh();
-    expect($fresh->forenames)->toBe('New')
+    expect($fresh->username)->toBe('new2y')
+        ->and($fresh->forenames)->toBe('New')
         ->and($fresh->surname)->toBe('NewName')
         ->and($fresh->email)->toBe('new@example.test');
 });
 
 it('rejects an edit that would duplicate another user email', function () {
     $admin = User::factory()->create(['is_admin' => true]);
-    $existing = User::factory()->create(['email' => 'taken@example.test']);
+    User::factory()->create(['email' => 'taken@example.test']);
     $target = User::factory()->create(['email' => 'mine@example.test']);
 
     Livewire::actingAs($admin)
         ->test(Users::class)
         ->call('openEdit', $target->id)
-        ->set('editing.email', 'taken@example.test')
-        ->call('saveEdit')
-        ->assertHasErrors(['editing.email']);
+        ->set('form.email', 'taken@example.test')
+        ->call('save')
+        ->assertHasErrors(['form.email']);
 
     expect($target->fresh()->email)->toBe('mine@example.test');
+});
+
+it('rejects an edit that would duplicate another user username', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    User::factory()->create(['username' => 'abc1d']);
+    $target = User::factory()->create(['username' => 'xyz9z']);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->call('openEdit', $target->id)
+        ->set('form.username', 'abc1d')
+        ->call('save')
+        ->assertHasErrors(['form.username']);
+
+    expect($target->fresh()->username)->toBe('xyz9z');
+});
+
+it('rejects an edit with a non-GUID-shaped username', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $target = User::factory()->create(['username' => 'abc1d']);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->call('openEdit', $target->id)
+        ->set('form.username', '1234567z')
+        ->call('save')
+        ->assertHasErrors(['form.username']);
+
+    expect($target->fresh()->username)->toBe('abc1d');
 });
 
 it('deletes a user with no personal jobs after typed confirmation', function () {
@@ -115,6 +151,62 @@ it('transfers personal jobs to another user on delete', function () {
 
     expect(User::find($target->id))->toBeNull()
         ->and($job->fresh()->user_id)->toBe($recipient->id);
+});
+
+it('creates a new user via the user-form flyout', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->call('openCreate')
+        ->set('form.username', 'kmc2y')
+        ->set('form.forenames', 'Kit')
+        ->set('form.surname', 'McAuthor')
+        ->set('form.email', 'kit@example.test')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $created = User::where('username', 'kmc2y')->first();
+    expect($created)->not->toBeNull()
+        ->and($created->forenames)->toBe('Kit')
+        ->and($created->surname)->toBe('McAuthor')
+        ->and($created->email)->toBe('kit@example.test')
+        ->and($created->is_admin)->toBeFalse()
+        ->and($created->is_staff)->toBeTrue();
+});
+
+it('rejects creating a user with a duplicate username', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    User::factory()->create(['username' => 'abc1d']);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->call('openCreate')
+        ->set('form.username', 'abc1d')
+        ->set('form.forenames', 'Kit')
+        ->set('form.surname', 'McAuthor')
+        ->set('form.email', 'kit@example.test')
+        ->call('save')
+        ->assertHasErrors(['form.username']);
+
+    expect(User::where('username', 'abc1d')->count())->toBe(1)
+        ->and(User::where('email', 'kit@example.test')->count())->toBe(0);
+});
+
+it('rejects creating a user with a non-GUID-shaped username', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->call('openCreate')
+        ->set('form.username', '1234567z')
+        ->set('form.forenames', 'Kit')
+        ->set('form.surname', 'McAuthor')
+        ->set('form.email', 'kit@example.test')
+        ->call('save')
+        ->assertHasErrors(['form.username']);
+
+    expect(User::where('email', 'kit@example.test')->count())->toBe(0);
 });
 
 it('refuses to delete the signed-in admin even via confirmDelete', function () {

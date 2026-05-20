@@ -1,6 +1,11 @@
 <div class="max-w-4xl">
-    <flux:heading size="xl">Users</flux:heading>
-    <flux:text class="mt-2">Promote / demote admins. New users sign in via SSO — there's no manual add.</flux:text>
+    <div class="flex items-start justify-between gap-4">
+        <div>
+            <flux:heading size="xl">Users</flux:heading>
+            <flux:text class="mt-2">Promote / demote admins, or add a new user to the SSO allowlist.</flux:text>
+        </div>
+        <flux:button wire:click="openCreate" icon="plus" variant="primary">New user</flux:button>
+    </div>
 
     <flux:table class="mt-6">
         <flux:table.columns>
@@ -45,15 +50,21 @@
         </flux:table.rows>
     </flux:table>
 
-    <flux:modal name="edit-user" variant="flyout" class="max-w-md">
-        <form wire:submit="saveEdit" class="space-y-6">
-            <flux:heading size="lg">Edit user</flux:heading>
-            <flux:input wire:model="editing.forenames" label="Forenames" required />
-            <flux:input wire:model="editing.surname" label="Surname" required />
-            <flux:input wire:model="editing.email" type="email" label="Email" required />
+    <flux:modal name="user-form" variant="flyout" class="max-w-md">
+        <form wire:submit="save" class="space-y-6">
+            <flux:heading size="lg">{{ $editingUserId ? 'Edit user' : 'New user' }}</flux:heading>
+            <flux:input
+                wire:model="form.username"
+                label="Username"
+                description="SSO username, e.g. kmc2y"
+                required
+            />
+            <flux:input wire:model="form.forenames" label="Forenames" required />
+            <flux:input wire:model="form.surname" label="Surname" required />
+            <flux:input wire:model="form.email" type="email" label="Email" required />
             <flux:text size="sm">Admin status is set via the toggle on the row, not this form.</flux:text>
             <div class="flex justify-end gap-2">
-                <flux:button type="button" x-on:click="$flux.modal('edit-user').close()">Cancel</flux:button>
+                <flux:button type="button" x-on:click="$flux.modal('user-form').close()">Cancel</flux:button>
                 <flux:button type="submit" variant="primary">Save</flux:button>
             </div>
         </form>

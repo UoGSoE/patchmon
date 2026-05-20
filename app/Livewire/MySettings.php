@@ -20,6 +20,17 @@ class MySettings extends Component
 
     public ?string $silenceReason = null;
 
+    public string $tokenName = '';
+
+    /** @var array<int, string> */
+    public array $tokenAbilities = ['jobs:read', 'jobs:write'];
+
+    public ?string $lastCreatedToken = null;
+
+    public ?int $revokingTokenId = null;
+
+    public ?string $revokingTokenName = null;
+
     public function mount(): void
     {
         $user = auth()->user();
@@ -80,10 +91,59 @@ class MySettings extends Component
         auth()->user()->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
     }
 
+    public function openCreateToken(): void
+    {
+        $this->tokenName = '';
+        $this->tokenAbilities = ['jobs:read', 'jobs:write'];
+        $this->lastCreatedToken = null;
+        $this->resetErrorBag();
+
+        Flux::modal('create-api-token')->show();
+    }
+
+    public function createToken(): void
+    {
+        $this->validate([
+            'tokenName' => ['required', 'string', 'max:255'],
+            'tokenAbilities' => ['required', 'array', 'min:1'],
+            'tokenAbilities.*' => ['in:jobs:read,jobs:write'],
+        ]);
+
+        $token = auth()->user()->createToken($this->tokenName, $this->tokenAbilities);
+
+        $this->lastCreatedToken = $token->plainTextToken;
+    }
+
+    public function confirmRevokeToken(int $id): void
+    {
+        $token = auth()->user()->tokens()->findOrFail($id);
+
+        $this->revokingTokenId = $token->id;
+        $this->revokingTokenName = $token->name;
+
+        Flux::modal('revoke-api-token')->show();
+    }
+
+    public function revokeToken(): void
+    {
+        if (! $this->revokingTokenId) {
+            return;
+        }
+
+        auth()->user()->tokens()->where('id', $this->revokingTokenId)->delete();
+
+        Flux::modal('revoke-api-token')->close();
+        Flux::toast("Token '{$this->revokingTokenName}' revoked.", variant: 'success');
+
+        $this->revokingTokenId = null;
+        $this->revokingTokenName = null;
+    }
+
     public function render()
     {
         return view('livewire.my-settings', [
             'user' => auth()->user()->fresh(),
+            'apiTokens' => auth()->user()->tokens()->latest()->get(),
         ]);
     }
 }

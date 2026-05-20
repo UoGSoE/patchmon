@@ -23,11 +23,11 @@ class TeamPolicy
 
     public function update(User $user, Team $team): bool
     {
-        return $this->view($user, $team);
+        return $user->is_admin;
     }
 
     public function delete(User $user, Team $team): bool
     {
-        return $this->view($user, $team);
+        return $user->is_admin;
     }
 }

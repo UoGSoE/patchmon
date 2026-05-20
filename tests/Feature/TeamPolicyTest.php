@@ -25,3 +25,15 @@ it('lets a team member view their team', function () {
 
     expect($alice->can('view', $team))->toBeTrue();
 });
+
+it('only lets admins update or delete a team', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $member = User::factory()->create(['is_admin' => false]);
+    $team = Team::factory()->create();
+    $member->teams()->attach($team);
+
+    expect($admin->can('update', $team))->toBeTrue()
+        ->and($admin->can('delete', $team))->toBeTrue()
+        ->and($member->can('update', $team))->toBeFalse()
+        ->and($member->can('delete', $team))->toBeFalse();
+});
