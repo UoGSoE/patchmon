@@ -7,7 +7,7 @@
         <flux:text size="sm">Leave blank to use your account email ({{ $user->email }}).</flux:text>
 
         <form wire:submit="saveEmails" class="mt-3 space-y-3">
-            <flux:input wire:model="notificationEmail" type="email" label="Alerts come to" placeholder="alerts@example.ac.uk" />
+            <flux:input wire:model="notificationEmail" type="email" label="Alerts go to" placeholder="alerts@example.ac.uk" />
             <flux:input wire:model="senderEmail" type="email" label="Alerts come from" placeholder="cronmon-noreply@example.ac.uk" />
             <flux:button type="submit" variant="primary">Save preferences</flux:button>
         </form>

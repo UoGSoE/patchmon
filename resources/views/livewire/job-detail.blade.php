@@ -1,25 +1,19 @@
-<div class="max-w-3xl">
+<div>
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
                 @if ($job->alerting_since)
                     <flux:icon.exclamation-triangle variant="micro" class="text-red-500" />
                 @endif
-                @if ($job->isCurrentlySilenced())
-                    <flux:icon.speaker-x-mark variant="micro" class="text-zinc-400" />
-                @endif
                 <flux:heading size="xl">{{ $job->name }}</flux:heading>
             </div>
             @if ($job->description)
                 <flux:text class="mt-2">{{ $job->description }}</flux:text>
             @endif
-            @if ($job->alerting_since || $job->isCurrentlySilenced())
+            @if ($job->alerting_since)
                 <flux:text size="sm" class="mt-1">
                     @if ($job->alerting_since)
                         Awol since {{ $job->alerting_since->diffForHumans() }}@if ($job->isCurrentlySilenced()) · @endif
-                    @endif
-                    @if ($job->isCurrentlySilenced())
-                        Silenced until {{ $job->silenced_until->format('D j M, H:i') }}
                     @endif
                 </flux:text>
             @endif
@@ -34,8 +28,8 @@
         </div>
     </div>
 
-    <div class="mt-6 grid gap-6 sm:grid-cols-2">
-        <div>
+    <div class="mt-6 grid gap-6 sm:grid-cols-2 max-w-1/2">
+        <flux:card>
             <flux:heading size="sm">Schedule</flux:heading>
             <flux:text class="mt-1">
                 @if ($job->cron_expression)
@@ -45,9 +39,9 @@
                 @endif
             </flux:text>
             <flux:text size="sm" class="mt-1">{{ $job->grace_value }} {{ strtolower($job->grace_units->label()) }} grace</flux:text>
-        </div>
+        </flux:card>
 
-        <div>
+        <flux:card>
             <flux:heading size="sm">Owner</flux:heading>
             <flux:text class="mt-1">
                 @if ($job->team)
@@ -57,28 +51,26 @@
                 @endif
             </flux:text>
             <flux:text size="sm" class="mt-1">Created by {{ $job->createdBy->full_name ?: $job->createdBy->email }}</flux:text>
-        </div>
+        </flux:card>
     </div>
 
-    <div class="mt-6">
+    <div class="mt-6 max-w-1/2">
         <flux:heading size="sm">Check-in URL</flux:heading>
         <flux:text size="sm">Curl this URL from your job. Treat it like a webhook URL.</flux:text>
         <flux:input class="mt-2 font-mono" readonly :value="$checkInUrl" copyable />
     </div>
 
-    <div class="mt-8">
-        <flux:heading size="sm">Silencing</flux:heading>
-        <flux:text size="sm">When silenced, Cronmon won't email anyone about this job. The check-in URL keeps working.</flux:text>
-        <div class="mt-2 space-y-3">
-            <flux:switch wire:model.live="silenced" label="Silenced" />
-            @if ($silenced)
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <flux:input wire:model.blur="silenceUntil" type="datetime-local" label="Silenced until" />
-                    <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Building works" />
-                </div>
-            @endif
+    <flux:fieldset class="mt-8">
+        <div class="max-w-1/2 space-y-6">
+        <flux:switch wire:model.live="silenced" label="Silenced" description="When silenced, Cronmon won't alert about this job."/>
+        @if ($silenced)
+            <div class="grid gap-3 sm:grid-cols-2">
+                <flux:input wire:model.blur="silenceUntil" type="datetime-local" label="Silenced until" />
+                <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Building works" />
+            </div>
+        @endif
         </div>
-    </div>
+    </flux:fieldset>
 
     <div class="mt-8">
         <flux:heading size="sm">Recent check-ins</flux:heading>

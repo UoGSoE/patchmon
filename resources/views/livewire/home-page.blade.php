@@ -14,23 +14,27 @@
         </flux:tabs>
 
         <flux:tab.panel name="mine">
-            @forelse ($this->myJobs as $job)
-                <x-cronmon.job-row :job="$job" />
-            @empty
-                <flux:text class="mt-6">No personal jobs yet.</flux:text>
-            @endforelse
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @forelse ($this->myJobs as $job)
+                    <x-cronmon.job-row :job="$job" />
+                @empty
+                    <flux:text class="mt-6">No personal jobs yet.</flux:text>
+                @endforelse
+            </div>
         </flux:tab.panel>
 
         <flux:tab.panel name="teams">
-            @forelse ($this->teamJobs as $job)
-                <x-cronmon.job-row :job="$job" />
-            @empty
-                @if ($this->userIsInAnyTeam)
-                    <flux:text class="mt-6">None of your teams have jobs yet.</flux:text>
-                @else
-                    <flux:text class="mt-6">You are not a member of any teams.</flux:text>
-                @endif
-            @endforelse
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @forelse ($this->teamJobs as $job)
+                    <x-cronmon.job-row :job="$job" />
+                @empty
+                    @if ($this->userIsInAnyTeam)
+                        <flux:text class="mt-6">None of your teams have jobs yet.</flux:text>
+                    @else
+                        <flux:text class="mt-6">You are not a member of any teams.</flux:text>
+                    @endif
+                @endforelse
+            </div>
         </flux:tab.panel>
     </flux:tab.group>
 
