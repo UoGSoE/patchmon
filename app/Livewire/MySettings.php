@@ -2,8 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -104,7 +106,14 @@ class MySettings extends Component
     public function createToken(): void
     {
         $this->validate([
-            'tokenName' => ['required', 'string', 'max:255'],
+            'tokenName' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('personal_access_tokens', 'name')->where(fn ($q) => $q
+                    ->where('tokenable_id', auth()->id())
+                    ->where('tokenable_type', User::class)),
+            ],
             'tokenAbilities' => ['required', 'array', 'min:1'],
             'tokenAbilities.*' => ['in:jobs:read,jobs:write'],
         ]);

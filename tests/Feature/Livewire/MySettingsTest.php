@@ -88,6 +88,37 @@ it('refuses to revoke another users token', function () {
     expect($bob->tokens()->count())->toBe(1);
 });
 
+it('rejects creating a token with a name the same user already used', function () {
+    $alice = User::factory()->create();
+    $alice->createToken('laptop dev');
+
+    Livewire::actingAs($alice)
+        ->test(MySettings::class)
+        ->call('openCreateToken')
+        ->set('tokenName', 'laptop dev')
+        ->set('tokenAbilities', ['jobs:read'])
+        ->call('createToken')
+        ->assertHasErrors(['tokenName']);
+
+    expect($alice->tokens()->count())->toBe(1);
+});
+
+it('allows two different users to use the same token name', function () {
+    $alice = User::factory()->create();
+    $bob = User::factory()->create();
+    $alice->createToken('laptop');
+
+    Livewire::actingAs($bob)
+        ->test(MySettings::class)
+        ->call('openCreateToken')
+        ->set('tokenName', 'laptop')
+        ->set('tokenAbilities', ['jobs:read'])
+        ->call('createToken')
+        ->assertHasNoErrors();
+
+    expect($bob->tokens()->pluck('name')->all())->toEqual(['laptop']);
+});
+
 it('rejects creating a token without a name or any abilities', function () {
     $alice = User::factory()->create();
 
