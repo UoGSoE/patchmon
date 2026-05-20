@@ -25,6 +25,9 @@
             @if ($job->team)
                 · Team: {{ $job->team->name }}
             @endif
+            @if ($job->location)
+                · Location: {{ $job->location }}
+            @endif
         </flux:text>
         <flux:text size="sm" class="mt-1">
             @if ($job->last_checked_in_at)

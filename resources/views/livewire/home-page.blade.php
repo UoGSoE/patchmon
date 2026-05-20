@@ -17,7 +17,7 @@
         <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
             <flux:input
                 wire:model.live.debounce.300ms="filter"
-                placeholder="Filter by name or description"
+                placeholder="Filter by name, description, or location"
                 icon="magnifying-glass"
                 clearable
                 class="md:max-w-md"

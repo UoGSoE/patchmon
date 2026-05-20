@@ -51,6 +51,9 @@
                 @endif
             </flux:text>
             <flux:text size="sm" class="mt-1">Created by {{ $job->createdBy->full_name ?: $job->createdBy->email }}</flux:text>
+            @if ($job->location)
+                <flux:text size="sm" class="mt-1">Location: {{ $job->location }}</flux:text>
+            @endif
         </flux:card>
     </div>
 
