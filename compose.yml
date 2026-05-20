@@ -1,0 +1,119 @@
+# Self-hosted "easy mode" deployment for Cronmon.
+#
+# Quick start:
+#   1. cp compose.dotenv.example .env   (then edit — set APP_KEY, APP_URL, DB_PASSWORD, MAIL_*, SSO)
+#   2. docker compose build             (needs Flux Pro credentials; see README)
+#   3. docker compose up -d
+#   4. visit http://localhost:8080 (or whatever APP_PORT you set)
+#
+# Bootstrapping the first user (no SSO entry exists yet on a fresh DB):
+#   docker compose exec app php artisan cronmon:add-user --admin
+#
+# This file targets plain `docker compose`. The Swarm-flavoured
+# prod-stack.yml / qa-stack.yml are unrelated and still authoritative
+# for our own production deployments.
+
+name: cronmon
+
+services:
+  app:
+    image: ${IMAGE_NAME:-cronmon:latest}
+    build:
+      context: .
+      target: prod
+      args:
+        FLUX_USERNAME: ${FLUX_USERNAME}
+        FLUX_LICENSE_KEY: ${FLUX_LICENSE_KEY}
+    restart: unless-stopped
+    environment:
+      CONTAINER_ROLE: app
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    image: ${IMAGE_NAME:-cronmon:latest}
+    restart: unless-stopped
+    environment:
+      CONTAINER_ROLE: scheduler
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+    depends_on:
+      app:
+        condition: service_started
+
+  queue:
+    image: ${IMAGE_NAME:-cronmon:latest}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      CONTAINER_ROLE: queue
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+    depends_on:
+      app:
+        condition: service_started
+
+  # One-shot: waits for the database, runs `artisan migrate --force`, exits.
+  # `app` blocks on this completing successfully on every `up`.
+  migrations:
+    image: ${IMAGE_NAME:-cronmon:latest}
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["until nc -z mariadb 3306; do echo 'waiting for mariadb...'; sleep 2; done && gosu www-data php /var/www/html/artisan migrate --force"]
+    volumes:
+      - ./.env:/var/www/html/.env:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:-cronmon}
+      MARIADB_USER: ${DB_USERNAME:-cronmon}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.2.2
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --------------------------------------------------------------------
+  # Optional: Mailpit, for kicking the tyres without real SMTP.
+  # Uncomment, then in .env set:
+  #     MAIL_MAILER=smtp
+  #     MAIL_HOST=mailpit
+  #     MAIL_PORT=1025
+  # Web UI lands on http://localhost:${MAILPIT_PORT:-8025}.
+  # --------------------------------------------------------------------
+  # mailpit:
+  #   image: axllent/mailpit
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${MAILPIT_PORT:-8025}:8025"
+
+volumes:
+  mariadb:
+  redis:

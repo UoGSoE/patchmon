@@ -73,6 +73,44 @@ lando npm ...         # npm inside the node container
 lando mfs             # drop + migrate + seed
 ```
 
+## Self-hosted deployment with Docker Compose
+
+For anyone who'd like to run Cronmon themselves without our internal
+Docker Swarm setup, there's a `compose.yml` in the repo root that
+brings up the app, scheduler, queue worker, a one-shot migrations
+service, MariaDB and Redis. Reverse-proxy / TLS termination is left
+to you — the app is published on a configurable host port.
+
+```bash
+cp compose.dotenv.example .env       # then edit — see notes inside
+docker compose build                 # needs Flux Pro credentials
+docker compose up -d
+docker compose exec app php artisan cronmon:add-user --admin
+```
+
+A few things to know:
+
+- **Flux Pro licence required to build the image.** Cronmon's UI is
+  built on [Flux Pro](https://fluxui.dev/), Caleb Porzio's paid
+  component library that helps fund Livewire and Flux. Set
+  `FLUX_USERNAME` and `FLUX_LICENSE_KEY` in `.env` before
+  `docker compose build`. There's no canonical prebuilt image — if
+  you're using this app, please chuck a few quid Caleb's way.
+- **`APP_KEY` needs generating once.** Run
+  `docker compose run --rm app php artisan key:generate --show`
+  and paste the result into `.env`, then `up -d`.
+- **Mail in demo mode.** If you just want to see the app work without
+  wiring up real SMTP, the `mailpit` service in `compose.yml` is
+  commented out — uncomment it, set `MAIL_HOST=mailpit` /
+  `MAIL_PORT=1025` in `.env`, and alert emails will land in
+  Mailpit's web UI on port 8025.
+- **SSO is the only sign-in path.** Cronmon is built around Keycloak
+  via Socialite. The `KEYCLOAK_*` variables in
+  `compose.dotenv.example` need to point at your own realm.
+- **Persistence.** MariaDB and Redis use named Docker volumes
+  (`cronmon_mariadb`, `cronmon_redis`); back those up if the data
+  matters to you.
+
 ## Bootstrapping a fresh deploy
 
 On a brand-new install nobody can sign in via SSO yet — there are
