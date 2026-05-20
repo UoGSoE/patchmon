@@ -73,6 +73,24 @@ lando npm ...         # npm inside the node container
 lando mfs             # drop + migrate + seed
 ```
 
+## Bootstrapping a fresh deploy
+
+On a brand-new install nobody can sign in via SSO yet — there are
+no users in the database for the allowlist to match against. Create
+the first admin from the command line:
+
+```bash
+php artisan cronmon:add-user                    # interactive walkthrough
+php artisan cronmon:add-user kmc2y kit.mcauthor@example.ac.uk McAuthor Kit --admin
+```
+
+Positional arguments are `<username> <email> <surname> <forenames>`.
+The interactive mode asks for the email first and prefills surname
+and forenames from it when the address follows the
+`forename.surname[.N]@...` pattern, so most of the time you just
+confirm the defaults. After that the user can sign in via SSO and
+the rest of the admin UI takes over.
+
 ## Running tests
 
 The test suite uses Pest and runs against an in-memory SQLite
