@@ -89,3 +89,124 @@ it('shows the right empty state when the user has no personal jobs and no teams'
 it('redirects unauthenticated visitors away from the home page', function () {
     $this->get('/')->assertRedirect();
 });
+
+it('shows alerting jobs from the users own and team jobs on the Alerting tab', function () {
+    $alice = User::factory()->create();
+    $bob = User::factory()->create();
+    $aliceTeam = Team::factory()->create();
+    $otherTeam = Team::factory()->create();
+    $alice->teams()->attach($aliceTeam);
+
+    Job::factory()->forUser($alice)->alerting()->create(['name' => 'Alice alerting personal']);
+    Job::factory()->forUser($alice)->create(['name' => 'Alice healthy personal']);
+    Job::factory()->forTeam($aliceTeam)->alerting()->create(['name' => 'Alice team alerting']);
+    Job::factory()->forUser($bob)->alerting()->create(['name' => 'Bob alerting']);
+    Job::factory()->forTeam($otherTeam)->alerting()->create(['name' => 'Other team alerting']);
+
+    $component = Livewire::actingAs($alice)->test(HomePage::class);
+    $alertingNames = $component->instance()->alertingJobs->pluck('name')->all();
+
+    expect($alertingNames)->toContain('Alice alerting personal')
+        ->toContain('Alice team alerting')
+        ->not->toContain('Alice healthy personal')
+        ->not->toContain('Bob alerting')
+        ->not->toContain('Other team alerting');
+});
+
+it('shows every alerting job across the system to admins on the Alerting tab', function () {
+    $admin = User::factory()->admin()->create();
+    $someoneElse = User::factory()->create();
+    $unrelatedTeam = Team::factory()->create();
+
+    Job::factory()->forUser($someoneElse)->alerting()->create(['name' => 'Stranger alerting personal']);
+    Job::factory()->forTeam($unrelatedTeam)->alerting()->create(['name' => 'Stranger team alerting']);
+    Job::factory()->forUser($someoneElse)->create(['name' => 'Stranger healthy']);
+
+    $component = Livewire::actingAs($admin)->test(HomePage::class);
+    $alertingNames = $component->instance()->alertingJobs->pluck('name')->all();
+
+    expect($alertingNames)->toContain('Stranger alerting personal')
+        ->toContain('Stranger team alerting')
+        ->not->toContain('Stranger healthy');
+});
+
+it('filters jobs by a fragment of the name on every tab', function () {
+    $alice = User::factory()->admin()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+
+    Job::factory()->forUser($alice)->alerting()->create(['name' => 'Personal linux alerting']);
+    Job::factory()->forUser($alice)->create(['name' => 'Personal linux healthy']);
+    Job::factory()->forUser($alice)->create(['name' => 'Personal windows healthy']);
+    Job::factory()->forTeam($team)->create(['name' => 'Team linux mirror']);
+    Job::factory()->forTeam($team)->create(['name' => 'Team windows mirror']);
+
+    $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'linux');
+
+    expect($component->instance()->myJobs->pluck('name')->all())
+        ->toContain('Personal linux alerting')
+        ->toContain('Personal linux healthy')
+        ->not->toContain('Personal windows healthy');
+    expect($component->instance()->teamJobs->pluck('name')->all())
+        ->toContain('Team linux mirror')
+        ->not->toContain('Team windows mirror');
+    expect($component->instance()->alertingJobs->pluck('name')->all())
+        ->toContain('Personal linux alerting');
+});
+
+it('also matches the filter against the description', function () {
+    $alice = User::factory()->create();
+
+    Job::factory()->forUser($alice)->create([
+        'name' => 'Nightly job',
+        'description' => 'rsnapshot of the linux fleet',
+    ]);
+    Job::factory()->forUser($alice)->create([
+        'name' => 'Other job',
+        'description' => 'curl against the order API',
+    ]);
+
+    $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'linux');
+
+    expect($component->instance()->myJobs->pluck('name')->all())
+        ->toContain('Nightly job')
+        ->not->toContain('Other job');
+});
+
+it('ignores filter strings that are blank or only one character', function () {
+    $alice = User::factory()->create();
+
+    Job::factory()->forUser($alice)->create(['name' => 'Alpha job']);
+    Job::factory()->forUser($alice)->create(['name' => 'Beta job']);
+
+    $blank = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', '   ');
+    expect($blank->instance()->myJobs->pluck('name')->all())
+        ->toContain('Alpha job')
+        ->toContain('Beta job');
+
+    $singleChar = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'a');
+    expect($singleChar->instance()->myJobs->pluck('name')->all())
+        ->toContain('Alpha job')
+        ->toContain('Beta job');
+});
+
+it('inverts the filter when the exclude checkbox is ticked', function () {
+    $alice = User::factory()->create();
+
+    Job::factory()->forUser($alice)->create(['name' => 'Personal linux backup', 'description' => null]);
+    Job::factory()->forUser($alice)->create(['name' => 'Personal windows backup', 'description' => null]);
+    Job::factory()->forUser($alice)->create([
+        'name' => 'Nightly probe',
+        'description' => 'targets the linux fleet',
+    ]);
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('filter', 'linux')
+        ->set('excludeFilter', true);
+
+    expect($component->instance()->myJobs->pluck('name')->all())
+        ->toContain('Personal windows backup')
+        ->not->toContain('Personal linux backup')
+        ->not->toContain('Nightly probe');
+});

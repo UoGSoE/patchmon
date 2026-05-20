@@ -7,6 +7,7 @@ use App\Enums\ScheduleInterval;
 use App\Livewire\Forms\JobForm;
 use App\Models\Job;
 use Flux\Flux;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
@@ -16,6 +17,12 @@ class HomePage extends Component
 {
     #[Url(as: 'tab')]
     public $tab = 'mine';
+
+    #[Url(as: 'q')]
+    public $filter = '';
+
+    #[Url(as: 'invert')]
+    public $excludeFilter = false;
 
     public JobForm $form;
 
@@ -51,10 +58,11 @@ class HomePage extends Component
     public function myJobs(): Collection
     {
         return $this->sortForListing(
-            Job::query()
-                ->where('user_id', auth()->id())
-                ->with(['team', 'user'])
-                ->get()
+            $this->applyFilter(
+                Job::query()
+                    ->where('user_id', auth()->id())
+                    ->with(['team', 'user'])
+            )->get()
         );
     }
 
@@ -64,11 +72,33 @@ class HomePage extends Component
         $teamIds = auth()->user()->teams()->pluck('teams.id');
 
         return $this->sortForListing(
-            Job::query()
-                ->whereIn('team_id', $teamIds)
-                ->with(['team', 'user'])
-                ->get()
+            $this->applyFilter(
+                Job::query()
+                    ->whereIn('team_id', $teamIds)
+                    ->with(['team', 'user'])
+            )->get()
         );
+    }
+
+    #[Computed]
+    public function alertingJobs(): Collection
+    {
+        $user = auth()->user();
+
+        $query = Job::query()
+            ->whereNotNull('alerting_since')
+            ->with(['team', 'user']);
+
+        if (! $user->is_admin) {
+            $teamIds = $user->teams()->pluck('teams.id');
+
+            $query->where(function ($builder) use ($user, $teamIds) {
+                $builder->where('user_id', $user->id)
+                    ->orWhereIn('team_id', $teamIds);
+            });
+        }
+
+        return $this->sortForListing($this->applyFilter($query)->get());
     }
 
     #[Computed]
@@ -84,6 +114,26 @@ class HomePage extends Component
             'intervalOptions' => ScheduleInterval::cases(),
             'graceUnitOptions' => GraceUnit::cases(),
         ]);
+    }
+
+    private function applyFilter(Builder $query): Builder
+    {
+        $needle = trim((string) $this->filter);
+
+        if (strlen($needle) < 2) {
+            return $query;
+        }
+
+        $pattern = '%'.$needle.'%';
+
+        return $query->when(
+            $this->excludeFilter,
+            fn ($builder) => $builder
+                ->whereNotLike('name', $pattern)
+                ->where(fn ($inner) => $inner->whereNull('description')->orWhereNotLike('description', $pattern)),
+            fn ($builder) => $builder
+                ->where(fn ($inner) => $inner->whereLike('name', $pattern)->orWhereLike('description', $pattern)),
+        );
     }
 
     private function sortForListing(Collection $jobs): Collection

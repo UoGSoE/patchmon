@@ -11,7 +11,19 @@
         <flux:tabs wire:model.live="tab">
             <flux:tab name="mine">My jobs</flux:tab>
             <flux:tab name="teams">Team jobs</flux:tab>
+            <flux:tab name="alerting">Alerting jobs</flux:tab>
         </flux:tabs>
+
+        <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+            <flux:input
+                wire:model.live.debounce.300ms="filter"
+                placeholder="Filter by name or description"
+                icon="magnifying-glass"
+                clearable
+                class="md:max-w-md"
+            />
+            <flux:checkbox wire:model.live="excludeFilter" label="Exclude matches" />
+        </div>
 
         <flux:tab.panel name="mine">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -33,6 +45,16 @@
                     @else
                         <flux:text class="mt-6">You are not a member of any teams.</flux:text>
                     @endif
+                @endforelse
+            </div>
+        </flux:tab.panel>
+
+        <flux:tab.panel name="alerting">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @forelse ($this->alertingJobs as $job)
+                    <x-cronmon.job-row :job="$job" />
+                @empty
+                    <flux:text class="mt-6">Nothing is currently alerting.</flux:text>
                 @endforelse
             </div>
         </flux:tab.panel>
