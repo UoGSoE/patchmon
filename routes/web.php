@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CheckInController;
+use App\Livewire\Admin\ApiTokens as AdminApiTokens;
 use App\Livewire\Admin\TeamDetail as AdminTeamDetail;
 use App\Livewire\Admin\Teams as AdminTeams;
 use App\Livewire\Admin\Users as AdminUsers;
@@ -26,5 +27,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/teams', AdminTeams::class)->name('teams.index');
         Route::get('/teams/{team}', AdminTeamDetail::class)->name('teams.show');
         Route::get('/users', AdminUsers::class)->name('users.index');
+        Route::get('/api-tokens', AdminApiTokens::class)->name('api-tokens.index');
     });
 });

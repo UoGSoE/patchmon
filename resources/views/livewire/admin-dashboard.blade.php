@@ -17,5 +17,12 @@
                 <flux:text size="sm" class="mt-1">Edit, promote and remove user accounts.</flux:text>
             </flux:card>
         </a>
+
+        <a href="{{ route('admin.api-tokens.index') }}" wire:navigate>
+            <flux:card>
+                <flux:heading size="sm">API tokens</flux:heading>
+                <flux:text size="sm" class="mt-1">Audit and revoke API tokens across every user.</flux:text>
+            </flux:card>
+        </a>
     </div>
 </div>
