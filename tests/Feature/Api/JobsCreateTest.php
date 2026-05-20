@@ -77,3 +77,21 @@ it('creates a personal interval job for the authenticated user', function () {
         ->and($job->created_by_user_id)->toBe($alice->id)
         ->and($job->grace_value)->toBe(30);
 });
+
+it('persists the location field on the API create endpoint', function () {
+    $alice = User::factory()->create();
+    Sanctum::actingAs($alice, ['jobs:write']);
+
+    $this->postJson('/api/v1/jobs', [
+        'name' => 'Located backup',
+        'location' => 'Rankine',
+        'schedule_interval' => 'daily',
+        'schedule_frequency' => 1,
+        'grace_value' => 5,
+        'grace_units' => 'minutes',
+    ])->assertCreated()
+        ->assertJsonPath('data.location', 'Rankine');
+
+    $job = Job::firstWhere('name', 'Located backup');
+    expect($job->location)->toBe('Rankine');
+});

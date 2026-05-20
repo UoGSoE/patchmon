@@ -35,3 +35,19 @@ it('patches a job the user owns', function () {
         ->and($fresh->description)->toBe('Old desc')
         ->and($fresh->grace_value)->toBe(30);
 });
+
+it('updates a job location and can clear it via the API', function () {
+    $alice = User::factory()->create();
+    $job = Job::factory()->forUser($alice)->create(['location' => 'Rankine']);
+    Sanctum::actingAs($alice, ['jobs:write']);
+
+    $this->patchJson("/api/v1/jobs/{$job->id}", ['location' => 'Joseph Black'])
+        ->assertOk()
+        ->assertJsonPath('data.location', 'Joseph Black');
+    expect($job->fresh()->location)->toBe('Joseph Black');
+
+    $this->patchJson("/api/v1/jobs/{$job->id}", ['location' => null])
+        ->assertOk()
+        ->assertJsonPath('data.location', null);
+    expect($job->fresh()->location)->toBeNull();
+});

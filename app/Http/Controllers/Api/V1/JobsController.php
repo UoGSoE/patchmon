@@ -125,6 +125,7 @@ class JobsController extends Controller
         $job = Job::create([
             'name' => $request->input('name'),
             'description' => $request->input('description'),
+            'location' => $request->input('location'),
             'cron_expression' => $isCron ? $request->input('cron_expression') : null,
             'schedule_interval' => $isCron ? null : $request->input('schedule_interval'),
             'schedule_frequency' => $isCron ? 1 : ($request->input('schedule_frequency') ?? 1),
@@ -145,6 +146,7 @@ class JobsController extends Controller
      */
     #[QueryParameter('scope', description: 'Which slice of jobs to return. One of: mine (personal only), teams (team-owned only), all (default).', type: 'string', example: 'mine')]
     #[QueryParameter('filter[name]', description: 'Case-insensitive partial match on the job name.', type: 'string', example: 'backup')]
+    #[QueryParameter('filter[location]', description: 'Case-insensitive partial match on the job location.', type: 'string', example: 'rankine')]
     #[QueryParameter('filter[team_id]', description: 'Restrict to a specific team id.', type: 'integer', example: 1)]
     #[QueryParameter('filter[user_id]', description: 'Restrict to a specific personal owner id.', type: 'integer', example: 1)]
     #[QueryParameter('sort', description: 'Sort field. Prefix with - for descending. Allowed: name, created_at, last_checked_in_at.', type: 'string', example: '-last_checked_in_at')]
@@ -166,6 +168,7 @@ class JobsController extends Controller
         $jobs = QueryBuilder::for($base)
             ->allowedFilters(
                 AllowedFilter::partial('name'),
+                AllowedFilter::partial('location'),
                 AllowedFilter::exact('team_id'),
                 AllowedFilter::exact('user_id'),
             )

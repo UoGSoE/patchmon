@@ -22,6 +22,7 @@ class StoreJobRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'location' => ['nullable', 'string', 'max:255'],
             'cron_expression' => ['nullable', 'string', 'max:255', 'required_without:schedule_interval'],
             'schedule_interval' => ['nullable', Rule::enum(ScheduleInterval::class), 'required_without:cron_expression'],
             'schedule_frequency' => ['nullable', 'integer', 'min:1', 'required_with:schedule_interval'],

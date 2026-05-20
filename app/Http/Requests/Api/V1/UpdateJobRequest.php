@@ -22,6 +22,7 @@ class UpdateJobRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
+            'location' => ['sometimes', 'nullable', 'string', 'max:255'],
             'cron_expression' => ['sometimes', 'nullable', 'string', 'max:255'],
             'schedule_interval' => ['sometimes', 'nullable', Rule::enum(ScheduleInterval::class)],
             'schedule_frequency' => ['sometimes', 'nullable', 'integer', 'min:1'],

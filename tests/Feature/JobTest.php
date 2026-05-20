@@ -61,3 +61,9 @@ it('casts enums and exposes team / createdBy relationships', function () {
         ->and($job->schedule_interval)->toBe(ScheduleInterval::Daily)
         ->and($job->grace_units)->toBe(GraceUnit::Hours);
 });
+
+it('persists an optional location string on a job', function () {
+    $job = Job::factory()->create(['location' => 'Rankine']);
+
+    expect($job->fresh()->location)->toBe('Rankine');
+});

@@ -13,6 +13,20 @@ use Illuminate\Database\Seeder;
 
 class TestDataSeeder extends Seeder
 {
+    private const LOCATIONS = [
+        'JWS',
+        'JWN',
+        'Rankine',
+        'Joseph Black',
+        'Maths',
+        'Boyd Orr',
+        'MDR',
+        'DataVita',
+        'Saughfield',
+    ];
+
+    private const DATA_CENTRE_LOCATIONS = ['MDR', 'DataVita'];
+
     public function run(): void
     {
         [$admin, $standardUser, $extraUser] = $this->createNamedTestAccounts();
@@ -218,6 +232,7 @@ class TestDataSeeder extends Seeder
             ->create([
                 'name' => 'Conference Portal — payment reconciliation',
                 'description' => 'Failing since the Stripe key rotation; team are investigating.',
+                'location' => 'DataVita',
                 'grace_value' => 30,
                 'grace_units' => GraceUnit::Minutes,
                 'last_checked_in_at' => now()->subDays(2),
@@ -230,6 +245,7 @@ class TestDataSeeder extends Seeder
             ->create([
                 'name' => 'Print Quota — weekly Active Directory sync',
                 'silence_reason' => 'AD upgrade window — alerts off until Tuesday',
+                'location' => 'MDR',
                 'grace_value' => 1,
                 'grace_units' => GraceUnit::Hours,
                 'last_checked_in_at' => now()->subDays(5),
@@ -247,6 +263,7 @@ class TestDataSeeder extends Seeder
                 ->create([
                     'name' => sprintf('linux-srv-%03d nightly backup', $i),
                     'description' => 'rsnapshot to the central backup pool.',
+                    'location' => self::LOCATIONS[$i % count(self::LOCATIONS)],
                     'grace_value' => 1,
                     'grace_units' => GraceUnit::Hours,
                     'last_checked_in_at' => now()->subMinutes(30 + ($i % 20)),
@@ -260,6 +277,7 @@ class TestDataSeeder extends Seeder
                 ->create([
                     'name' => sprintf('win-srv-%03d VSS backup', $i),
                     'description' => 'Volume Shadow Copy and offsite replication.',
+                    'location' => self::LOCATIONS[($i + 3) % count(self::LOCATIONS)],
                     'grace_value' => 2,
                     'grace_units' => GraceUnit::Hours,
                     'last_checked_in_at' => now()->subMinutes(30 + ($i % 25)),
@@ -273,6 +291,7 @@ class TestDataSeeder extends Seeder
                 ->create([
                     'name' => sprintf('ad-dc-%02d system state backup', $i),
                     'description' => 'NTDS plus system state to the backup vault.',
+                    'location' => self::DATA_CENTRE_LOCATIONS[$i % count(self::DATA_CENTRE_LOCATIONS)],
                     'grace_value' => 1,
                     'grace_units' => GraceUnit::Hours,
                     'last_checked_in_at' => now()->subMinutes(30 + ($i % 15)),
@@ -286,6 +305,7 @@ class TestDataSeeder extends Seeder
                 ->create([
                     'name' => sprintf('netdev-%02d config export', $i),
                     'description' => 'Pulls the running config to git for diffing.',
+                    'location' => self::LOCATIONS[($i * 2) % count(self::LOCATIONS)],
                     'grace_value' => 30,
                     'grace_units' => GraceUnit::Minutes,
                     'last_checked_in_at' => now()->subMinutes(25),
@@ -299,6 +319,7 @@ class TestDataSeeder extends Seeder
             ->create([
                 'name' => 'fileserver-prod-02 VSS backup',
                 'description' => 'Down since the SAN fabric switch flapped on Friday.',
+                'location' => 'MDR',
                 'grace_value' => 2,
                 'grace_units' => GraceUnit::Hours,
                 'last_checked_in_at' => now()->subDays(3),
@@ -310,6 +331,7 @@ class TestDataSeeder extends Seeder
             ->create([
                 'name' => 'ad-dc-replica-02 system state backup',
                 'description' => 'Service account password expired; ticket in flight.',
+                'location' => 'DataVita',
                 'grace_value' => 1,
                 'grace_units' => GraceUnit::Hours,
                 'last_checked_in_at' => now()->subDays(2),
@@ -322,6 +344,7 @@ class TestDataSeeder extends Seeder
             ->create([
                 'name' => 'linux-srv-legacy-mailrelay nightly backup',
                 'silence_reason' => 'Being decommissioned next month — alerts off.',
+                'location' => 'Boyd Orr',
                 'grace_value' => 1,
                 'grace_units' => GraceUnit::Hours,
             ]);
@@ -339,6 +362,7 @@ class TestDataSeeder extends Seeder
                 ->withCron('*/15 * * * *')
                 ->create([
                     'name' => "{$cluster} — Slurm scheduler health",
+                    'location' => 'MDR',
                     'grace_value' => 5,
                     'grace_units' => GraceUnit::Minutes,
                     'last_checked_in_at' => now()->subMinutes(4),
@@ -348,6 +372,7 @@ class TestDataSeeder extends Seeder
                 ->withCron('0 * * * *')
                 ->create([
                     'name' => "{$cluster} — GPFS health check",
+                    'location' => 'MDR',
                     'grace_value' => 10,
                     'grace_units' => GraceUnit::Minutes,
                     'last_checked_in_at' => now()->subMinutes(25),
@@ -357,6 +382,7 @@ class TestDataSeeder extends Seeder
                 ->withCron('0 4 * * *')
                 ->create([
                     'name' => "{$cluster} — nightly metadata backup",
+                    'location' => 'MDR',
                     'grace_value' => 1,
                     'grace_units' => GraceUnit::Hours,
                     'last_checked_in_at' => now()->subMinutes(45),
@@ -366,6 +392,7 @@ class TestDataSeeder extends Seeder
                 ->withCron('0 6 * * MON')
                 ->create([
                     'name' => "{$cluster} — weekly usage report",
+                    'location' => 'MDR',
                     'grace_value' => 2,
                     'grace_units' => GraceUnit::Hours,
                     'last_checked_in_at' => now()->subMinutes(45),
@@ -557,6 +584,7 @@ class TestDataSeeder extends Seeder
     {
         Job::factory()->forUser($admin)->create([
             'name' => 'Personal home NAS backup',
+            'location' => 'Home',
             'schedule_interval' => ScheduleInterval::Daily,
             'grace_value' => 6,
             'grace_units' => GraceUnit::Hours,

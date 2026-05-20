@@ -88,3 +88,23 @@ it('rejects a team_id the user is not a member of', function () {
 
     expect(Job::count())->toBe(0);
 });
+
+it('persists the location field when set on the new-job form', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(HomePage::class)
+        ->call('openCreate')
+        ->set('form.name', 'Located backup')
+        ->set('form.location', 'Rankine')
+        ->set('form.schedule_interval', ScheduleInterval::Daily->value)
+        ->set('form.schedule_frequency', 1)
+        ->set('form.grace_value', 15)
+        ->set('form.grace_units', GraceUnit::Minutes->value)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $job = Job::firstWhere('name', 'Located backup');
+    expect($job)->not->toBeNull()
+        ->and($job->location)->toBe('Rankine');
+});

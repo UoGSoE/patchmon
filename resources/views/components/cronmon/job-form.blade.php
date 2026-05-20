@@ -3,6 +3,7 @@
     'teams',
     'intervalOptions',
     'graceUnitOptions',
+    'existingLocations' => [],
     'submitLabel' => 'Save',
     'cancelAction' => null,
 ])
@@ -11,6 +12,20 @@
     <flux:input wire:model="form.name" label="Name" required />
 
     <flux:textarea wire:model="form.description" label="Description" rows="2" />
+
+    <flux:select
+        wire:model="form.location"
+        variant="combobox"
+        label="Location (optional)"
+        description="Where does this job live? Pick from existing locations or type a new one."
+        placeholder="No location set"
+        clearable
+    >
+        @foreach ($existingLocations as $location)
+            <flux:select.option value="{{ $location }}">{{ $location }}</flux:select.option>
+        @endforeach
+        <flux:select.option.create>Use as new location</flux:select.option.create>
+    </flux:select>
 
     <div>
         <flux:heading size="sm">Schedule</flux:heading>

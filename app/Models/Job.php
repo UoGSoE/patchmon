@@ -26,6 +26,7 @@ class Job extends Model
         'created_by_user_id',
         'name',
         'description',
+        'location',
         'cron_expression',
         'schedule_interval',
         'schedule_frequency',

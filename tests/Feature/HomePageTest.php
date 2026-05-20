@@ -210,3 +210,57 @@ it('inverts the filter when the exclude checkbox is ticked', function () {
         ->not->toContain('Personal linux backup')
         ->not->toContain('Nightly probe');
 });
+
+it('matches the filter against the location column', function () {
+    $alice = User::factory()->create();
+
+    Job::factory()->forUser($alice)->create(['name' => 'Site job', 'location' => 'Rankine']);
+    Job::factory()->forUser($alice)->create(['name' => 'Other site job', 'location' => 'JWS']);
+    Job::factory()->forUser($alice)->create(['name' => 'No location job', 'location' => null]);
+
+    $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'rankine');
+
+    expect($component->instance()->myJobs->pluck('name')->all())
+        ->toContain('Site job')
+        ->not->toContain('Other site job')
+        ->not->toContain('No location job');
+});
+
+it('requires every whitespace-separated token to match in include mode', function () {
+    $alice = User::factory()->create();
+
+    Job::factory()->forUser($alice)->create(['name' => 'linux backup', 'location' => 'Rankine']);
+    Job::factory()->forUser($alice)->create(['name' => 'linux mirror', 'location' => 'JWS']);
+    Job::factory()->forUser($alice)->create(['name' => 'windows backup', 'location' => 'Rankine']);
+    Job::factory()->forUser($alice)->create(['name' => 'unrelated', 'location' => 'MDR']);
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('filter', 'linux rankine');
+
+    expect($component->instance()->myJobs->pluck('name')->all())
+        ->toContain('linux backup')
+        ->not->toContain('linux mirror')
+        ->not->toContain('windows backup')
+        ->not->toContain('unrelated');
+});
+
+it('hides rows matching any token in exclude mode', function () {
+    $alice = User::factory()->create();
+
+    Job::factory()->forUser($alice)->create(['name' => 'linux only', 'location' => null]);
+    Job::factory()->forUser($alice)->create(['name' => 'backup only', 'location' => null]);
+    Job::factory()->forUser($alice)->create(['name' => 'rankine only', 'location' => 'Rankine']);
+    Job::factory()->forUser($alice)->create(['name' => 'clean job', 'location' => 'JWS']);
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('filter', 'linux rankine')
+        ->set('excludeFilter', true);
+
+    expect($component->instance()->myJobs->pluck('name')->all())
+        ->toContain('backup only')
+        ->toContain('clean job')
+        ->not->toContain('linux only')
+        ->not->toContain('rankine only');
+});

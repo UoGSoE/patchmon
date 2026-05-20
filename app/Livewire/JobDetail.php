@@ -64,6 +64,7 @@ class JobDetail extends Component
             $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
             $this->job->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
             Flux::toast('Job silenced.', variant: 'success');
+
             return;
         }
         $this->job->unsilence();
@@ -114,6 +115,11 @@ class JobDetail extends Component
             'teams' => auth()->user()->teams()->orderBy('name')->get(),
             'intervalOptions' => ScheduleInterval::cases(),
             'graceUnitOptions' => GraceUnit::cases(),
+            'existingLocations' => Job::query()
+                ->whereNotNull('location')
+                ->distinct()
+                ->orderBy('location')
+                ->pluck('location'),
         ]);
     }
 }

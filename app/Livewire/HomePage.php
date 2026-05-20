@@ -113,6 +113,11 @@ class HomePage extends Component
             'teams' => auth()->user()->teams()->orderBy('name')->get(),
             'intervalOptions' => ScheduleInterval::cases(),
             'graceUnitOptions' => GraceUnit::cases(),
+            'existingLocations' => Job::query()
+                ->whereNotNull('location')
+                ->distinct()
+                ->orderBy('location')
+                ->pluck('location'),
         ]);
     }
 
@@ -124,16 +129,34 @@ class HomePage extends Component
             return $query;
         }
 
-        $pattern = '%'.$needle.'%';
+        $tokens = preg_split('/\s+/', $needle, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $columns = ['name', 'description', 'location'];
 
-        return $query->when(
-            $this->excludeFilter,
-            fn ($builder) => $builder
-                ->whereNotLike('name', $pattern)
-                ->where(fn ($inner) => $inner->whereNull('description')->orWhereNotLike('description', $pattern)),
-            fn ($builder) => $builder
-                ->where(fn ($inner) => $inner->whereLike('name', $pattern)->orWhereLike('description', $pattern)),
-        );
+        if ($this->excludeFilter) {
+            foreach ($tokens as $token) {
+                $pattern = '%'.$token.'%';
+                $query->where(function ($outer) use ($pattern, $columns) {
+                    foreach ($columns as $column) {
+                        $outer->where(fn ($inner) => $inner->whereNull($column)->orWhereNotLike($column, $pattern));
+                    }
+                });
+            }
+
+            return $query;
+        }
+
+        foreach ($tokens as $token) {
+            $pattern = '%'.$token.'%';
+            $query->where(function ($outer) use ($pattern, $columns) {
+                foreach ($columns as $i => $column) {
+                    $i === 0
+                        ? $outer->whereLike($column, $pattern)
+                        : $outer->orWhereLike($column, $pattern);
+                }
+            });
+        }
+
+        return $query;
     }
 
     private function sortForListing(Collection $jobs): Collection

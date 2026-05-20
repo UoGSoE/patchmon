@@ -20,6 +20,7 @@ class JobResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
+            'location' => $this->location,
             'schedule' => [
                 'cron_expression' => $this->cron_expression,
                 'interval' => $this->schedule_interval?->value,

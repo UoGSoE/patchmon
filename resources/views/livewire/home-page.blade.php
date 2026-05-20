@@ -68,6 +68,7 @@
                 :teams="$teams"
                 :interval-options="$intervalOptions"
                 :grace-unit-options="$graceUnitOptions"
+                :existing-locations="$existingLocations"
                 submit-label="Create job"
                 cancel-action="$flux.modal('job-form').close()"
             />

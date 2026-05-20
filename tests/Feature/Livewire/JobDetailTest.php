@@ -96,6 +96,20 @@ it('edits the job via the openEdit flyout flow', function () {
     expect($job->fresh()->name)->toBe('New name');
 });
 
+it('clears the location when the edit form sets it to null', function () {
+    $owner = User::factory()->create();
+    $job = Job::factory()->forUser($owner)->create(['location' => 'Rankine']);
+
+    Livewire::actingAs($owner)
+        ->test(JobDetail::class, ['job' => $job])
+        ->call('openEdit')
+        ->set('form.location', null)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($job->fresh()->location)->toBeNull();
+});
+
 it('shows the job name, schedule and check-in URL to the owning user', function () {
     $owner = User::factory()->create();
     $job = Job::factory()->forUser($owner)->withCron('0 2 * * *')->create([

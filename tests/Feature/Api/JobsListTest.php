@@ -85,3 +85,18 @@ it('lists only the users personal jobs when scope=mine', function () {
     expect($names)->toEqual(['Mine'])
         ->and($response->json('scope'))->toBe('mine');
 });
+
+it('filters the list by location', function () {
+    $alice = User::factory()->create();
+    Job::factory()->forUser($alice)->create(['name' => 'rankine job', 'location' => 'Rankine']);
+    Job::factory()->forUser($alice)->create(['name' => 'jws job', 'location' => 'JWS']);
+    Job::factory()->forUser($alice)->create(['name' => 'no-location job', 'location' => null]);
+    Sanctum::actingAs($alice, ['jobs:read']);
+
+    $response = $this->getJson('/api/v1/jobs?filter[location]=rankine')->assertOk();
+    $names = collect($response->json('jobs.data'))->pluck('name')->all();
+
+    expect($names)->toContain('rankine job')
+        ->not->toContain('jws job')
+        ->not->toContain('no-location job');
+});

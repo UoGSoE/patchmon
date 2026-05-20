@@ -16,6 +16,8 @@ class JobForm extends Form
 
     public ?string $description = null;
 
+    public ?string $location = null;
+
     public ?string $cron_expression = null;
 
     public ?string $schedule_interval = null;
@@ -37,6 +39,7 @@ class JobForm extends Form
         $this->job = $job;
         $this->name = $job->name;
         $this->description = $job->description;
+        $this->location = $job->location;
         $this->cron_expression = $job->cron_expression;
         $this->schedule_interval = $job->schedule_interval?->value;
         $this->schedule_frequency = $job->schedule_frequency;
@@ -52,6 +55,7 @@ class JobForm extends Form
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'location' => ['nullable', 'string', 'max:255'],
             'cron_expression' => ['nullable', 'string', 'max:255', 'required_without:schedule_interval'],
             'schedule_interval' => ['nullable', Rule::enum(ScheduleInterval::class), 'required_without:cron_expression'],
             'schedule_frequency' => ['nullable', 'integer', 'min:1', 'required_with:schedule_interval'],
@@ -77,6 +81,7 @@ class JobForm extends Form
         $job->fill([
             'name' => $this->name,
             'description' => $this->description,
+            'location' => $this->location,
             'cron_expression' => $isCron ? $this->cron_expression : null,
             'schedule_interval' => $isCron ? null : $this->schedule_interval,
             'schedule_frequency' => $isCron ? 1 : ($this->schedule_frequency ?? 1),
