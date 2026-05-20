@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 
 class TeamsController extends Controller
 {
+    /**
+     * List the teams the authenticated user can see (their own, or all if admin).
+     */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();

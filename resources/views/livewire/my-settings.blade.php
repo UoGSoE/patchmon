@@ -38,6 +38,9 @@
                 <flux:text size="sm">
                     Mint a token to script against Cronmon from a terminal. Tokens act as you, scoped to read / write on jobs.
                 </flux:text>
+                <flux:link :href="route('api.help')" wire:navigate class="mt-1 inline-block text-sm">
+                    API examples &amp; docs →
+                </flux:link>
             </div>
             <flux:button wire:click="openCreateToken" icon="plus" variant="primary">New token</flux:button>
         </div>

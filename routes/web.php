@@ -6,6 +6,7 @@ use App\Livewire\Admin\TeamDetail as AdminTeamDetail;
 use App\Livewire\Admin\Teams as AdminTeams;
 use App\Livewire\Admin\Users as AdminUsers;
 use App\Livewire\AdminDashboard;
+use App\Livewire\ApiHelp;
 use App\Livewire\HomePage;
 use App\Livewire\JobDetail;
 use App\Livewire\MySettings;
@@ -21,6 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/jobs/{job}', JobDetail::class)->name('jobs.show');
 
     Route::get('/settings', MySettings::class)->name('settings');
+    Route::get('/api/help', ApiHelp::class)->name('api.help');
 
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', AdminDashboard::class)->name('dashboard');

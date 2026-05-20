@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\UpdateJobRequest;
 use App\Http\Resources\Api\V1\CheckInResource;
 use App\Http\Resources\Api\V1\JobResource;
 use App\Models\Job;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,6 +18,9 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class JobsController extends Controller
 {
+    /**
+     * Show a single monitored job. 404 if the caller cannot see it.
+     */
     public function show(Request $request, Job $job): JobResource
     {
         if ($request->user()->cannot('view', $job)) {
@@ -26,6 +30,10 @@ class JobsController extends Controller
         return new JobResource($job);
     }
 
+    /**
+     * Paginated check-in history for a job, newest first.
+     */
+    #[QueryParameter('per_page', description: 'Items per page (max 200, default 50).', type: 'integer', example: 50)]
     public function checkIns(Request $request, Job $job): JsonResponse
     {
         if ($request->user()->cannot('view', $job)) {
@@ -42,6 +50,9 @@ class JobsController extends Controller
         ]);
     }
 
+    /**
+     * Silence a job until a future moment. Body: silenced_until (ISO datetime), silence_reason (optional string). Idempotent.
+     */
     public function silence(Request $request, Job $job): JobResource
     {
         if ($request->user()->cannot('update', $job)) {
@@ -58,6 +69,9 @@ class JobsController extends Controller
         return new JobResource($job->fresh());
     }
 
+    /**
+     * Clear a job's silence so alerts can resume.
+     */
     public function unsilence(Request $request, Job $job): JobResource
     {
         if ($request->user()->cannot('update', $job)) {
@@ -69,6 +83,9 @@ class JobsController extends Controller
         return new JobResource($job->fresh());
     }
 
+    /**
+     * Delete a monitored job. 404 if the caller cannot see it.
+     */
     public function destroy(Request $request, Job $job): JsonResponse
     {
         if ($request->user()->cannot('delete', $job)) {
@@ -80,6 +97,9 @@ class JobsController extends Controller
         return response()->json(null, 204);
     }
 
+    /**
+     * Partially update a monitored job. Only the fields you include are changed.
+     */
     public function update(UpdateJobRequest $request, Job $job): JobResource
     {
         if ($request->user()->cannot('update', $job)) {
@@ -91,6 +111,9 @@ class JobsController extends Controller
         return new JobResource($job->fresh());
     }
 
+    /**
+     * Create a monitored job. Personal by default; pass team_id (a team you belong to) to make it team-owned. One of cron_expression or schedule_interval+schedule_frequency is required.
+     */
     public function store(StoreJobRequest $request): JsonResponse
     {
         Gate::authorize('create', Job::class);
@@ -117,6 +140,15 @@ class JobsController extends Controller
         return (new JobResource($job))->response()->setStatusCode(201);
     }
 
+    /**
+     * List monitored jobs visible to the authenticated user.
+     */
+    #[QueryParameter('scope', description: 'Which slice of jobs to return. One of: mine (personal only), teams (team-owned only), all (default).', type: 'string', example: 'mine')]
+    #[QueryParameter('filter[name]', description: 'Case-insensitive partial match on the job name.', type: 'string', example: 'backup')]
+    #[QueryParameter('filter[team_id]', description: 'Restrict to a specific team id.', type: 'integer', example: 1)]
+    #[QueryParameter('filter[user_id]', description: 'Restrict to a specific personal owner id.', type: 'integer', example: 1)]
+    #[QueryParameter('sort', description: 'Sort field. Prefix with - for descending. Allowed: name, created_at, last_checked_in_at.', type: 'string', example: '-last_checked_in_at')]
+    #[QueryParameter('per_page', description: 'Items per page (max 100, default 25).', type: 'integer', example: 25)]
     public function index(Request $request): JsonResponse
     {
         $scope = $request->input('scope', 'all');
