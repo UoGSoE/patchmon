@@ -27,11 +27,13 @@ it('updates a team via PATCH', function () {
 it('deletes a team', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();
+    $bystander = Team::factory()->create();
     Sanctum::actingAs($admin, ['admin:write']);
 
     $this->deleteJson("/api/v1/admin/teams/{$team->id}")->assertNoContent();
 
-    expect(Team::find($team->id))->toBeNull();
+    expect(Team::find($team->id))->toBeNull()
+        ->and(Team::find($bystander->id))->not->toBeNull();
 });
 
 it('creates a team', function () {

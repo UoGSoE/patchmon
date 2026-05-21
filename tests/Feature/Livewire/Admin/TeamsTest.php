@@ -23,13 +23,15 @@ it('updates an existing team when opened for edit', function () {
 it('deletes a team that owns no servers', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();
+    $bystander = Team::factory()->create();
 
     Livewire::actingAs($admin)
         ->test(Teams::class)
         ->set('deletingId', $team->id)
         ->call('deleteEmpty');
 
-    expect(Team::find($team->id))->toBeNull();
+    expect(Team::find($team->id))->toBeNull()
+        ->and(Team::find($bystander->id))->not->toBeNull();
 });
 
 it('transfers a team\'s servers to another team and deletes the original', function () {
@@ -60,6 +62,8 @@ it('deletes a team and its servers when the typed confirmation matches the team 
     $admin = User::factory()->create(['is_admin' => true]);
     $doomed = Team::factory()->create(['name' => 'Doomed']);
     $servers = Server::factory()->count(2)->forTeam($doomed)->create();
+    $bystanderTeam = Team::factory()->create(['name' => 'Bystander']);
+    $bystanderServer = Server::factory()->forTeam($bystanderTeam)->create();
 
     Livewire::actingAs($admin)
         ->test(Teams::class)
@@ -71,6 +75,8 @@ it('deletes a team and its servers when the typed confirmation matches the team 
     foreach ($servers as $server) {
         expect(Server::find($server->id))->toBeNull();
     }
+    expect(Team::find($bystanderTeam->id))->not->toBeNull()
+        ->and(Server::find($bystanderServer->id))->not->toBeNull();
 });
 
 it('does not delete a team when the typed confirmation does not match', function () {

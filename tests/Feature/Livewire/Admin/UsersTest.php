@@ -126,6 +126,7 @@ it('rejects an edit with a non-GUID-shaped username', function () {
 it('deletes a user after typed confirmation', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $target = User::factory()->create(['forenames' => 'Quiet', 'surname' => 'Leaver']);
+    $bystander = User::factory()->create();
 
     Livewire::actingAs($admin)
         ->test(Users::class)
@@ -134,7 +135,9 @@ it('deletes a user after typed confirmation', function () {
         ->call('delete')
         ->assertHasNoErrors();
 
-    expect(User::find($target->id))->toBeNull();
+    expect(User::find($target->id))->toBeNull()
+        ->and(User::find($admin->id))->not->toBeNull()
+        ->and(User::find($bystander->id))->not->toBeNull();
 });
 
 it('reassigns server authorship to the deleting admin when the creator is removed', function () {

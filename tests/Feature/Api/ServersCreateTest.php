@@ -38,7 +38,8 @@ it('refuses to create a server for a team the user is not in', function () {
         'interval_months' => 1,
         'grace_value' => 7,
         'grace_units' => 'days',
-    ])->assertStatus(422);
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['team_id']);
 
     expect(Server::where('name', 'Sneaky')->count())->toBe(0);
 });

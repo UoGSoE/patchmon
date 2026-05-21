@@ -29,7 +29,8 @@ it('rejects a non-GUID username via the admin API', function () {
         'forenames' => 'Kit',
         'surname' => 'McAuthor',
         'email' => 'kit@example.test',
-    ])->assertStatus(422);
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['username']);
 
     expect(User::where('email', 'kit@example.test')->count())->toBe(0);
 });

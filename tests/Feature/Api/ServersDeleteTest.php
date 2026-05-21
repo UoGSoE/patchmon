@@ -21,9 +21,11 @@ it('deletes a server the user can see', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
     $server = Server::factory()->forTeam($team)->create();
+    $bystander = Server::factory()->forTeam($team)->create();
     Sanctum::actingAs($alice, ['servers:write']);
 
     $this->deleteJson("/api/v1/servers/{$server->id}")->assertNoContent();
 
-    expect(Server::find($server->id))->toBeNull();
+    expect(Server::find($server->id))->toBeNull()
+        ->and(Server::find($bystander->id))->not->toBeNull();
 });

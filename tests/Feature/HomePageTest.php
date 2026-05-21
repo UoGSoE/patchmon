@@ -111,7 +111,7 @@ it('shows the right empty state when the user has no teams', function () {
 });
 
 it('redirects unauthenticated visitors away from the home page', function () {
-    $this->get('/')->assertRedirect();
+    $this->get('/')->assertRedirect(route('login'));
 });
 
 it('shows alerting servers from the users teams on the Alerting tab', function () {

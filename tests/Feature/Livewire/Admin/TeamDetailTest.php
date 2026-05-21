@@ -8,14 +8,19 @@ use Livewire\Livewire;
 it('removes a user from the team', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();
+    $otherTeam = Team::factory()->create();
     $member = User::factory()->create();
-    $team->users()->attach($member);
+    $otherMember = User::factory()->create();
+    $team->users()->attach([$member->id, $otherMember->id]);
+    $otherTeam->users()->attach($member);
 
     Livewire::actingAs($admin)
         ->test(TeamDetail::class, ['team' => $team])
         ->call('removeUser', $member->id);
 
-    expect($team->users()->whereKey($member->id)->exists())->toBeFalse();
+    expect($team->users()->whereKey($member->id)->exists())->toBeFalse()
+        ->and($team->users()->whereKey($otherMember->id)->exists())->toBeTrue()
+        ->and($otherTeam->users()->whereKey($member->id)->exists())->toBeTrue();
 });
 
 it('stages a member for removal via the confirm modal', function () {

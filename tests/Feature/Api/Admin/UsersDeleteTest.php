@@ -8,11 +8,14 @@ use Laravel\Sanctum\Sanctum;
 it('deletes a user', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $target = User::factory()->create();
+    $bystander = User::factory()->create();
     Sanctum::actingAs($admin, ['admin:write']);
 
     $this->deleteJson("/api/v1/admin/users/{$target->id}")->assertNoContent();
 
-    expect(User::find($target->id))->toBeNull();
+    expect(User::find($target->id))->toBeNull()
+        ->and(User::find($admin->id))->not->toBeNull()
+        ->and(User::find($bystander->id))->not->toBeNull();
 });
 
 it('refuses to delete the signed-in admin via the API', function () {
@@ -20,7 +23,8 @@ it('refuses to delete the signed-in admin via the API', function () {
     Sanctum::actingAs($admin, ['admin:write']);
 
     $this->deleteJson("/api/v1/admin/users/{$admin->id}")
-        ->assertStatus(422);
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'You cannot delete yourself.');
 
     expect(User::find($admin->id))->not->toBeNull();
 });

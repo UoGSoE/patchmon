@@ -20,6 +20,25 @@ it('unsilences a previously silenced server', function () {
         ->and($fresh->silence_reason)->toBeNull();
 });
 
+it('unsilencing an already-unsilenced server is harmless', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    $server = Server::factory()->forTeam($team)->create([
+        'silenced_from' => null,
+        'silenced_until' => null,
+        'silence_reason' => null,
+    ]);
+    Sanctum::actingAs($alice, ['servers:write']);
+
+    $this->deleteJson("/api/v1/servers/{$server->id}/silence")->assertOk();
+
+    $fresh = $server->fresh();
+    expect($fresh->silenced_from)->toBeNull()
+        ->and($fresh->silenced_until)->toBeNull()
+        ->and($fresh->silence_reason)->toBeNull();
+});
+
 it('silencing twice is idempotent and overwrites with the latest values', function () {
     $alice = User::factory()->create();
     $team = Team::factory()->create();

@@ -107,13 +107,15 @@ it('deletes the server when a team member confirms and redirects to home', funct
     $team = Team::factory()->create();
     $team->users()->attach($owner);
     $server = Server::factory()->forTeam($team, $owner)->create();
+    $bystander = Server::factory()->forTeam($team)->create();
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
         ->call('delete')
         ->assertRedirect(route('home'));
 
-    expect(Server::find($server->id))->toBeNull();
+    expect(Server::find($server->id))->toBeNull()
+        ->and(Server::find($bystander->id))->not->toBeNull();
 });
 
 it('forbids a stranger from viewing a server in a team they are not in', function () {

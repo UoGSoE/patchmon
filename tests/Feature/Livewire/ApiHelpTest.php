@@ -3,7 +3,7 @@
 use App\Models\User;
 
 it('redirects guests away from /api/help', function () {
-    $this->get(route('api.help'))->assertRedirect();
+    $this->get(route('api.help'))->assertRedirect(route('login'));
 });
 
 it('renders /api/help for an authenticated user', function () {
