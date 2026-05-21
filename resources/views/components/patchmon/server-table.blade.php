@@ -39,15 +39,23 @@
                         @endif
                     </flux:table.cell>
                     <flux:table.cell>
-                        @if ($server->alerting_since)
-                            <flux:badge size="sm" color="red" icon="exclamation-triangle">Due {{ $server->alerting_since->diffForHumans() }}</flux:badge>
-                        @elseif ($server->isCurrentlySilenced())
-                            <flux:badge size="sm" color="zinc" icon="speaker-x-mark">Silenced until {{ $server->silenced_until->format('D j M') }}</flux:badge>
-                        @elseif ($server->silenced_from && $server->silenced_from->isFuture())
-                            <flux:badge size="sm" color="zinc" icon="clock">Silence scheduled {{ $server->silenced_from->format('D j M') }}</flux:badge>
-                        @else
-                            <flux:badge size="sm" color="green">OK</flux:badge>
-                        @endif
+                        <div class="flex items-center gap-1">
+                            @if ($server->isCurrentlySilenced())
+                                <flux:tooltip content="Silenced until {{ $server->silenced_until->format('D j M') }}">
+                                    <flux:badge size="sm" color="amber" icon="speaker-x-mark" />
+                                </flux:tooltip>
+                            @elseif ($server->silenced_from && $server->silenced_from->isFuture())
+                                <flux:tooltip content="Silence scheduled {{ $server->silenced_from->format('D j M') }} – {{ $server->silenced_until->format('D j M') }}">
+                                    <flux:badge size="sm" color="amber" icon="clock" />
+                                </flux:tooltip>
+                            @endif
+
+                            @if ($server->alerting_since)
+                                <flux:badge size="sm" color="red" icon="exclamation-triangle">Due {{ $server->alerting_since->diffForHumans() }}</flux:badge>
+                            @else
+                                <flux:badge size="sm" color="green">OK</flux:badge>
+                            @endif
+                        </div>
                     </flux:table.cell>
                 </flux:table.row>
             @endforeach
