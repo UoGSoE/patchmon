@@ -7,7 +7,43 @@ use App\Models\Team;
 use App\Models\User;
 use Livewire\Livewire;
 
-it('shows servers from teams the user belongs to and excludes other teams', function () {
+it('shows every server on the All servers tab regardless of team membership', function () {
+    $alice = User::factory()->create();
+    $myTeam = Team::factory()->create();
+    $strangerTeam = Team::factory()->create();
+    $alice->teams()->attach($myTeam);
+
+    Server::factory()->forTeam($myTeam)->create(['name' => 'My team server']);
+    Server::factory()->forTeam($strangerTeam)->create(['name' => 'Other team server']);
+
+    $component = Livewire::actingAs($alice)->test(HomePage::class);
+
+    expect($component->instance()->allServers->pluck('name')->all())
+        ->toContain('My team server')
+        ->toContain('Other team server');
+});
+
+it('applies OS, team and silenced filters to the All servers tab', function () {
+    $alice = User::factory()->create();
+    $myTeam = Team::factory()->create();
+    $strangerTeam = Team::factory()->create();
+    $alice->teams()->attach($myTeam);
+
+    Server::factory()->forTeam($myTeam)->create(['name' => 'My linux box', 'os_type' => OsType::Linux]);
+    Server::factory()->forTeam($strangerTeam)->create(['name' => 'Other windows box', 'os_type' => OsType::Windows]);
+    Server::factory()->forTeam($strangerTeam)->create(['name' => 'Other linux box', 'os_type' => OsType::Linux]);
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('osFilter', 'linux');
+
+    expect($component->instance()->allServers->pluck('name')->all())
+        ->toContain('My linux box')
+        ->toContain('Other linux box')
+        ->not->toContain('Other windows box');
+});
+
+it('keeps the Team servers listing scoped to teams the user belongs to', function () {
     $alice = User::factory()->create();
     $netservices = Team::factory()->create();
     $storage = Team::factory()->create();
@@ -16,10 +52,11 @@ it('shows servers from teams the user belongs to and excludes other teams', func
     Server::factory()->forTeam($netservices)->create(['name' => 'Network DNS export']);
     Server::factory()->forTeam($storage)->create(['name' => 'Storage tape rotation']);
 
-    Livewire::actingAs($alice)
-        ->test(HomePage::class)
-        ->assertSee('Network DNS export')
-        ->assertDontSee('Storage tape rotation');
+    $component = Livewire::actingAs($alice)->test(HomePage::class);
+
+    expect($component->instance()->teamServers->pluck('name')->all())
+        ->toContain('Network DNS export')
+        ->not->toContain('Storage tape rotation');
 });
 
 it('surfaces alerting servers above healthy ones, then sorts the healthy lot alphabetically', function () {
@@ -49,7 +86,7 @@ it('surfaces alerting servers above healthy ones, then sorts the healthy lot alp
     ]);
 });
 
-it('shows servers from every team the user is a member of', function () {
+it('lists servers from every team the user is a member of on the Team servers tab', function () {
     $alice = User::factory()->create();
     $netservices = Team::factory()->create();
     $storage = Team::factory()->create();
@@ -58,10 +95,11 @@ it('shows servers from every team the user is a member of', function () {
     Server::factory()->forTeam($netservices)->create(['name' => 'Network DNS export']);
     Server::factory()->forTeam($storage)->create(['name' => 'Storage tape rotation']);
 
-    Livewire::actingAs($alice)
-        ->test(HomePage::class)
-        ->assertSee('Network DNS export')
-        ->assertSee('Storage tape rotation');
+    $component = Livewire::actingAs($alice)->test(HomePage::class);
+
+    expect($component->instance()->teamServers->pluck('name')->all())
+        ->toContain('Network DNS export')
+        ->toContain('Storage tape rotation');
 });
 
 it('shows the right empty state when the user has no teams', function () {

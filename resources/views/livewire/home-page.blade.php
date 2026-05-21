@@ -10,6 +10,7 @@
     <flux:tab.group class="mt-6">
         <flux:tabs wire:model.live="tab">
             <flux:tab name="teams">Team servers</flux:tab>
+            <flux:tab name="all">All servers</flux:tab>
             <flux:tab name="alerting">Alerting servers</flux:tab>
         </flux:tabs>
 
@@ -28,7 +29,7 @@
             </flux:select>
             <flux:select wire:model.live="teamFilter" placeholder="Any team">
                 <flux:select.option value="">Any team</flux:select.option>
-                @foreach ($teams as $team)
+                @foreach ($allTeams as $team)
                     <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
                 @endforeach
             </flux:select>
@@ -52,6 +53,14 @@
             </x-patchmon.server-table>
         </flux:tab.panel>
 
+        <flux:tab.panel name="all">
+            <x-patchmon.server-table :servers="$this->allServers">
+                <x-slot:empty>
+                    <flux:text>No servers match your filters.</flux:text>
+                </x-slot:empty>
+            </x-patchmon.server-table>
+        </flux:tab.panel>
+
         <flux:tab.panel name="alerting">
             <x-patchmon.server-table :servers="$this->alertingServers">
                 <x-slot:empty>
@@ -66,7 +75,7 @@
             <flux:heading size="lg">New server</flux:heading>
             <x-patchmon.server-form
                 :form="$form"
-                :teams="$teams"
+                :teams="$userTeams"
                 :os-type-options="$osTypeOptions"
                 :grace-unit-options="$graceUnitOptions"
                 :existing-locations="$existingLocations"

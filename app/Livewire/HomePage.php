@@ -6,6 +6,7 @@ use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
+use App\Models\Team;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -79,6 +80,16 @@ class HomePage extends Component
     }
 
     #[Computed]
+    public function allServers(): Collection
+    {
+        return $this->sortForListing(
+            $this->applyFilter(
+                Server::query()->with(['team'])
+            )->get()
+        );
+    }
+
+    #[Computed]
     public function alertingServers(): Collection
     {
         $user = auth()->user();
@@ -104,7 +115,8 @@ class HomePage extends Component
     public function render()
     {
         return view('livewire.home-page', [
-            'teams' => auth()->user()->teams()->orderBy('name')->get(),
+            'userTeams' => auth()->user()->teams()->orderBy('name')->get(),
+            'allTeams' => Team::query()->orderBy('name')->get(),
             'osTypeOptions' => OsType::cases(),
             'graceUnitOptions' => GraceUnit::cases(),
             'existingLocations' => Server::query()
