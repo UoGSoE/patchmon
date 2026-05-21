@@ -77,7 +77,7 @@
                     label="Silenced from / until end of"
                     presets="tomorrow next7Days nextMonth next3Months"
                 />
-                <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Change freeze until term-end" />
+                <flux:input wire:model.live.debounce.500ms="silenceReason" label="Reason (optional)" placeholder="Change freeze until term-end" />
             </div>
         @endif
         </div>
