@@ -1,7 +1,7 @@
 <x-mail::message>
 # {{ $server->name }} hasn't been patched
 
-Patchmon expected **{{ $server->name }}** to be patched by now and hasn't heard from it.
+Patchmon expected **{{ $server->name }}** to be patched by now, but no recent patch event has been recorded.
 
 **Schedule:** {{ $server->intervalLabel() }}
 

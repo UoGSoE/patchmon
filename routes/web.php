@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/sso-auth.php';
 
-Route::get('/record-patch/{token}', PatchEventController::class)
+Route::match(['get', 'post'], '/record-patch/{token}', PatchEventController::class)
     ->name('record-patch');
 
 Route::middleware('auth')->group(function () {

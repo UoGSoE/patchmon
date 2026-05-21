@@ -2,6 +2,7 @@
 
 use App\Jobs\RecordPatchEvent;
 use App\Models\Server;
+use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 
 it('returns 404 and queues nothing when the token does not match any job', function () {
@@ -49,4 +50,55 @@ it('queues a check-in job when a job receives a ping at its token URL', function
 
     $response->assertOk();
     Queue::assertPushed(RecordPatchEvent::class, fn (RecordPatchEvent $queued) => $queued->serverId === $server->id);
+});
+
+it('attributes the patch to the bearer-token owner and passes notes through to the queued job', function () {
+    Queue::fake();
+
+    $alice = User::factory()->create();
+    $accessToken = $alice->createToken('test')->plainTextToken;
+    $server = Server::factory()->create();
+
+    $response = $this->withHeader('Authorization', 'Bearer '.$accessToken)
+        ->postJson('/record-patch/'.$server->patch_token, ['notes' => 'Rebooted twice']);
+
+    $response->assertOk();
+    Queue::assertPushed(
+        RecordPatchEvent::class,
+        fn (RecordPatchEvent $queued) => $queued->serverId === $server->id
+            && $queued->patchedBy === $alice->id
+            && $queued->notes === 'Rebooted twice',
+    );
+});
+
+it('records anonymously and prepends a marker to the notes when the bearer token is invalid', function () {
+    Queue::fake();
+
+    $server = Server::factory()->create();
+
+    $response = $this->withHeader('Authorization', 'Bearer not-a-real-token')
+        ->postJson('/record-patch/'.$server->patch_token, ['notes' => 'Rebooted twice']);
+
+    $response->assertOk();
+    Queue::assertPushed(
+        RecordPatchEvent::class,
+        fn (RecordPatchEvent $queued) => $queued->serverId === $server->id
+            && $queued->patchedBy === null
+            && str_contains($queued->notes, 'invalid')
+            && str_contains($queued->notes, 'Rebooted twice'),
+    );
+});
+
+it('records anonymously with no notes marker when no bearer token is supplied', function () {
+    Queue::fake();
+
+    $server = Server::factory()->create();
+
+    $response = $this->postJson('/record-patch/'.$server->patch_token, ['notes' => 'From SCCM']);
+
+    $response->assertOk();
+    Queue::assertPushed(
+        RecordPatchEvent::class,
+        fn (RecordPatchEvent $queued) => $queued->patchedBy === null && $queued->notes === 'From SCCM',
+    );
 });

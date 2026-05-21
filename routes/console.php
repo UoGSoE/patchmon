@@ -8,4 +8,4 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('patchmon:evaluate')->everyMinute()->withoutOverlapping();
+Schedule::command('patchmon:evaluate')->dailyAt('08:40')->withoutOverlapping();

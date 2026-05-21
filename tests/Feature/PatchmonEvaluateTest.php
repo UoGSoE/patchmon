@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\GraceUnit;
-use App\Mail\ServerAwolNotification;
+use App\Mail\ServerOverdueNotification;
 use App\Models\Server;
 use Illuminate\Support\Facades\Mail;
 
@@ -24,7 +24,7 @@ it('does not alert silenced servers even when they are overdue', function () {
         ->and($server->last_alerted_at)->toBeNull();
 });
 
-it('renders the awol email with key details about the server', function () {
+it('renders the overdue email with key details about the server', function () {
     $server = Server::factory()->create([
         'name' => 'fileserver-prod-02',
         'interval_months' => 1,
@@ -35,7 +35,7 @@ it('renders the awol email with key details about the server', function () {
         'last_alerted_at' => now()->subDays(3),
     ]);
 
-    $body = (new ServerAwolNotification($server))->render();
+    $body = (new ServerOverdueNotification($server))->render();
 
     expect($body)->toContain('fileserver-prod-02')
         ->and($body)->toContain('7 days');
@@ -92,7 +92,7 @@ it('re-alerts an already-alerting server once a week has passed since the last a
 
     $this->artisan('patchmon:evaluate')->assertSuccessful();
 
-    Mail::assertQueued(ServerAwolNotification::class, fn ($mail) => $mail->server->is($server));
+    Mail::assertQueued(ServerOverdueNotification::class, fn ($mail) => $mail->server->is($server));
     expect($server->refresh()->last_alerted_at->diffInMinutes(now()))->toBeLessThan(1);
 });
 
@@ -106,14 +106,14 @@ it('sends the alert to the resolved notification email', function () {
         'last_patched_at' => now()->subMonths(2),
         'alerting_since' => null,
         'last_alerted_at' => null,
-        'notification_email' => 'awol-alerts@example.test',
+        'notification_email' => 'overdue-alerts@example.test',
     ]);
 
     $this->artisan('patchmon:evaluate')->assertSuccessful();
 
     Mail::assertQueued(
-        ServerAwolNotification::class,
-        fn ($mail) => $mail->hasTo('awol-alerts@example.test')
+        ServerOverdueNotification::class,
+        fn ($mail) => $mail->hasTo('overdue-alerts@example.test')
     );
 });
 
@@ -131,7 +131,7 @@ it('starts alerting and sends the first email when an overdue server has no aler
 
     $this->artisan('patchmon:evaluate')->assertSuccessful();
 
-    Mail::assertQueued(ServerAwolNotification::class, fn ($mail) => $mail->server->is($server));
+    Mail::assertQueued(ServerOverdueNotification::class, fn ($mail) => $mail->server->is($server));
     expect($server->refresh()->alerting_since)->not->toBeNull()
         ->and($server->last_alerted_at)->not->toBeNull();
 });

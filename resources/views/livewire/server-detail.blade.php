@@ -62,6 +62,16 @@
         </div>
     </flux:fieldset>
 
+    <div class="mt-8 max-w-1/2">
+        <flux:heading size="sm">Record a patch</flux:heading>
+        <flux:text size="sm">Logs against your account. Defaults to right now.</flux:text>
+        <form wire:submit="recordPatch" class="mt-2 space-y-3">
+            <flux:textarea wire:model="patchNotes" label="Notes (optional)" rows="2" placeholder="Anything you'd want a future colleague to know" />
+            <flux:input wire:model="patchedAt" type="datetime-local" label="When" />
+            <flux:button type="submit" variant="primary" icon="check">Record patch</flux:button>
+        </form>
+    </div>
+
     <div class="mt-8">
         <flux:heading size="sm">Recent patches</flux:heading>
         @if ($recentPatchEvents->isEmpty())

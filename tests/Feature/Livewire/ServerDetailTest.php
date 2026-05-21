@@ -126,6 +126,45 @@ it('clears the location when the edit form sets it to null', function () {
     expect($server->fresh()->location)->toBeNull();
 });
 
+it('rejects a record-patch attempt with a future date or over-long notes and records nothing', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->alerting()->create();
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->set('patchNotes', str_repeat('x', 1001))
+        ->set('patchedAt', now()->addHour()->format('Y-m-d\TH:i'))
+        ->call('recordPatch')
+        ->assertHasErrors(['patchNotes', 'patchedAt']);
+
+    $server->refresh();
+    expect($server->patchEvents)->toHaveCount(0)
+        ->and($server->alerting_since)->not->toBeNull();
+});
+
+it('records a patch with notes via the Livewire form, attributed to the acting user, and clears the alerting state', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->alerting()->create();
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->set('patchNotes', 'Had to reboot twice')
+        ->call('recordPatch')
+        ->assertHasNoErrors();
+
+    $server->refresh();
+    expect($server->patchEvents)->toHaveCount(1)
+        ->and($server->patchEvents->first()->notes)->toBe('Had to reboot twice')
+        ->and($server->patchEvents->first()->patched_by)->toBe($owner->id)
+        ->and($server->alerting_since)->toBeNull()
+        ->and($server->last_alerted_at)->toBeNull()
+        ->and($server->last_patched_at)->not->toBeNull();
+});
+
 it('shows the server name, interval and record-patch URL to the team member', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create();

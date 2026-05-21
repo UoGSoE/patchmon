@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'abilities' => CheckAbilities::class,
             'ability' => CheckForAnyAbility::class,
         ]);
+
+        $middleware->preventRequestForgery(except: [
+            'record-patch/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

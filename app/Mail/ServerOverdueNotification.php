@@ -11,7 +11,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ServerAwolNotification extends Mailable implements ShouldQueue
+class ServerOverdueNotification extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -30,7 +30,7 @@ class ServerAwolNotification extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.server-awol',
+            markdown: 'emails.server-overdue',
             with: [
                 'server' => $this->server,
             ],

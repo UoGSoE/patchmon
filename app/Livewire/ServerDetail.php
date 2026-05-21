@@ -24,6 +24,10 @@ class ServerDetail extends Component
 
     public ?string $silenceReason = null;
 
+    public ?string $patchNotes = null;
+
+    public string $patchedAt = '';
+
     public function mount(Server $server): void
     {
         $this->authorize('view', $server);
@@ -33,6 +37,30 @@ class ServerDetail extends Component
             ? $server->silenced_until->format('Y-m-d\TH:i')
             : now()->addDay()->format('Y-m-d\TH:i');
         $this->silenceReason = $server->silence_reason;
+        $this->patchedAt = now()->format('Y-m-d\TH:i');
+    }
+
+    public function recordPatch(): void
+    {
+        $this->authorize('update', $this->server);
+
+        $this->validate([
+            'patchNotes' => ['nullable', 'string', 'max:1000'],
+            'patchedAt' => ['required', 'date', 'before_or_equal:now'],
+        ]);
+
+        $this->server->recordPatch(
+            auth()->user(),
+            $this->patchNotes,
+            null,
+            Carbon::parse($this->patchedAt),
+        );
+
+        $this->patchNotes = null;
+        $this->patchedAt = now()->format('Y-m-d\TH:i');
+        $this->server = $this->server->fresh();
+
+        Flux::toast('Patch recorded.', variant: 'success');
     }
 
     public function openEdit(): void

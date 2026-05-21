@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\ServerAwolNotification;
+use App\Mail\ServerOverdueNotification;
 use App\Models\Server;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -42,7 +42,7 @@ class PatchmonEvaluate extends Command
 
     private function dispatchAlert(Server $server): void
     {
-        Mail::to($server->resolveNotificationEmail())->queue(new ServerAwolNotification($server));
+        Mail::to($server->resolveNotificationEmail())->queue(new ServerOverdueNotification($server));
 
         $server->last_alerted_at = now();
         $server->save();
