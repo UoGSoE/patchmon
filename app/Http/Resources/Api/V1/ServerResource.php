@@ -35,7 +35,6 @@ class ServerResource extends JsonResource
             'created_by_user_id' => $this->created_by_user_id,
             'notification_email' => $this->notification_email,
             'sender_email' => $this->sender_email,
-            'patch_token' => $this->patch_token,
             'last_patched_at' => $this->last_patched_at?->toIso8601String(),
             'alerting_since' => $this->alerting_since?->toIso8601String(),
             'silenced_from' => $this->silenced_from?->toIso8601String(),

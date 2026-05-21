@@ -10,9 +10,18 @@ it('returns 404 and queues nothing when the token does not match any job', funct
 
     Server::factory()->create();
 
-    $response = $this->get('/record-patch/00000000-0000-0000-0000-000000000000');
+    $response = $this->post('/record-patch/00000000-0000-0000-0000-000000000000');
 
     $response->assertNotFound();
+    Queue::assertNothingPushed();
+});
+
+it('rejects GET requests so link previewers and prefetchers cannot record patches', function () {
+    Queue::fake();
+
+    $server = Server::factory()->create();
+
+    $this->get('/record-patch/'.$server->patch_token)->assertStatus(405);
     Queue::assertNothingPushed();
 });
 
@@ -21,7 +30,7 @@ it('still queues a check-in for a silenced job so forensic history stays complet
 
     $server = Server::factory()->silenced()->create();
 
-    $response = $this->get('/record-patch/'.$server->patch_token);
+    $response = $this->post('/record-patch/'.$server->patch_token);
 
     $response->assertOk();
     Queue::assertPushed(RecordPatchEvent::class, fn (RecordPatchEvent $queued) => $queued->serverId === $server->id);
@@ -46,7 +55,7 @@ it('queues a check-in job when a job receives a ping at its token URL', function
 
     $server = Server::factory()->create();
 
-    $response = $this->get('/record-patch/'.$server->patch_token);
+    $response = $this->post('/record-patch/'.$server->patch_token);
 
     $response->assertOk();
     Queue::assertPushed(RecordPatchEvent::class, fn (RecordPatchEvent $queued) => $queued->serverId === $server->id);

@@ -174,9 +174,7 @@ r.raise_for_status()</pre>
     "grace_value": 7,
     "grace_units": "days",
 })
-r.raise_for_status()
-server = r.json()["data"]
-print("Record-patch URL:", f"{ROOT}/record-patch/{server['patch_token']}")</pre>
+r.raise_for_status()</pre>
                 </div>
 
                 <div>

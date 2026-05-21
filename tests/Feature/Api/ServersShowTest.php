@@ -26,3 +26,15 @@ it('shows a server in a team the user belongs to', function () {
         ->assertJsonPath('data.name', 'Mine')
         ->assertJsonPath('data.id', $server->id);
 });
+
+it('does not expose patch_token in the API response', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    $server = Server::factory()->forTeam($team)->create();
+    Sanctum::actingAs($alice, ['servers:read']);
+
+    $this->getJson("/api/v1/servers/{$server->id}")
+        ->assertOk()
+        ->assertJsonMissingPath('data.patch_token');
+});
