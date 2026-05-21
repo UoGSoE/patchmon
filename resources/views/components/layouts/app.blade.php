@@ -24,7 +24,7 @@
                 </flux:sidebar.header>
                 <flux:sidebar.nav>
                     <flux:sidebar.item icon="home" :href="route('home')" wire:navigate>Home</flux:sidebar.item>
-                    <flux:sidebar.item icon="plus-circle" :href="route('home', ['new' => 1])" wire:navigate>New job</flux:sidebar.item>
+                    <flux:sidebar.item icon="plus-circle" :href="route('home', ['new' => 1])" wire:navigate>New server</flux:sidebar.item>
                     @if (auth()->user()->is_admin)
                         <flux:separator class="my-2" />
                         <flux:sidebar.item icon="shield-check" :href="route('admin.dashboard')" wire:navigate>Admin</flux:sidebar.item>
