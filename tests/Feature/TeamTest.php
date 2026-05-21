@@ -2,40 +2,19 @@
 
 use App\Models\Team;
 use App\Models\User;
-use Carbon\CarbonInterface;
 
-it('persists and casts a team', function () {
+it('persists a team with its email defaults', function () {
     $team = Team::factory()->create([
         'name' => 'Network Services',
         'notification_email' => 'netservices@example.ac.uk',
         'sender_email' => 'noreply-net@example.ac.uk',
-        'silenced_until' => now()->addDay(),
-        'silence_reason' => 'Building works',
     ]);
 
     $team->refresh();
 
     expect($team->name)->toBe('Network Services')
         ->and($team->notification_email)->toBe('netservices@example.ac.uk')
-        ->and($team->sender_email)->toBe('noreply-net@example.ac.uk')
-        ->and($team->silenced_until)->toBeInstanceOf(CarbonInterface::class)
-        ->and($team->silence_reason)->toBe('Building works');
-});
-
-it('silenceUntil and unsilence round-trip on a team', function () {
-    $team = Team::factory()->create();
-    $until = now()->addDay()->startOfSecond();
-
-    $team->silenceUntil($until, 'Building works');
-
-    $team->refresh();
-    expect($team->silenced_until->equalTo($until))->toBeTrue()
-        ->and($team->silence_reason)->toBe('Building works');
-
-    $team->unsilence();
-    $team->refresh();
-    expect($team->silenced_until)->toBeNull()
-        ->and($team->silence_reason)->toBeNull();
+        ->and($team->sender_email)->toBe('noreply-net@example.ac.uk');
 });
 
 it('can have users as members and a user can be in multiple teams', function () {

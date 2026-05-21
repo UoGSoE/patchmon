@@ -11,20 +11,15 @@
                 <flux:icon.speaker-x-mark variant="micro" class="text-zinc-400" />
             @endif
             <flux:heading size="lg">{{ $server->name }}</flux:heading>
+            <flux:badge size="sm" color="{{ $server->os_type->colour() }}">{{ $server->os_type->label() }}</flux:badge>
         </div>
         @if ($server->description)
             <flux:text class="mt-1">{{ $server->description }}</flux:text>
         @endif
         <flux:text size="sm" class="mt-2">
-            @if ($server->cron_expression)
-                Cron: <code>{{ $server->cron_expression }}</code>
-            @else
-                {{ $server->schedule_frequency }} × {{ $server->schedule_interval?->label() }}
-            @endif
+            Every {{ $server->interval_months }} {{ \Illuminate\Support\Str::plural('month', $server->interval_months) }}
             · {{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }} grace
-            @if ($server->team)
-                · Team: {{ $server->team->name }}
-            @endif
+            · Team: {{ $server->team->name }}
             @if ($server->location)
                 · Location: {{ $server->location }}
             @endif

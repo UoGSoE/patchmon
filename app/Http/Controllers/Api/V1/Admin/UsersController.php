@@ -50,40 +50,11 @@ class UsersController extends Controller
             return response()->json(['message' => 'You cannot delete yourself.'], 422);
         }
 
-        $personalServerCount = Server::where('user_id', $user->id)->count();
-        $transferTo = $request->input('transfer_servers_to');
-        $cascade = $request->boolean('delete_personal_servers');
-
-        if ($personalServerCount > 0 && ! $transferTo && ! $cascade) {
-            return response()->json([
-                'message' => 'User owns personal servers. Specify either transfer_servers_to (a user id) or delete_personal_servers: true.',
-            ], 422);
-        }
-
-        if ($transferTo) {
-            $request->validate([
-                'transfer_servers_to' => ['integer', 'exists:users,id', 'different:user'],
-            ]);
-
-            Server::where('user_id', $user->id)->update(['user_id' => $transferTo]);
-            $this->reassignAuthorshipAndDelete($user, $transferTo);
-
-            return response()->json(null, 204);
-        }
-
-        $this->reassignAuthorshipAndDelete($user, $request->user()->id);
-
-        return response()->json(null, 204);
-    }
-
-    private function reassignAuthorshipAndDelete(User $user, int $authorshipFallbackUserId): void
-    {
         Server::where('created_by_user_id', $user->id)
-            ->where(function ($q) use ($user) {
-                $q->whereNotNull('team_id')->orWhere('user_id', '!=', $user->id);
-            })
-            ->update(['created_by_user_id' => $authorshipFallbackUserId]);
+            ->update(['created_by_user_id' => $request->user()->id]);
 
         $user->delete();
+
+        return response()->json(null, 204);
     }
 }

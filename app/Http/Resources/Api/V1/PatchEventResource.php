@@ -19,7 +19,9 @@ class PatchEventResource extends JsonResource
         return [
             'id' => $this->id,
             'patched_at' => $this->patched_at?->toIso8601String(),
+            'patched_by' => $this->patched_by,
             'source_ip' => $this->source_ip,
+            'notes' => $this->notes,
         ];
     }
 }

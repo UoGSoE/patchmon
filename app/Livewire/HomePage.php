@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Enums\GraceUnit;
-use App\Enums\ScheduleInterval;
+use App\Enums\OsType;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
 use Flux\Flux;
@@ -16,7 +16,7 @@ use Livewire\Component;
 class HomePage extends Component
 {
     #[Url(as: 'tab')]
-    public $tab = 'mine';
+    public $tab = 'teams';
 
     #[Url(as: 'q')]
     public $filter = '';
@@ -37,9 +37,10 @@ class HomePage extends Component
     {
         $this->form->reset();
         $this->form->resetErrorBag();
-        $this->form->grace_units = GraceUnit::Minutes->value;
-        $this->form->schedule_frequency = 1;
-        $this->form->grace_value = 1;
+        $this->form->os_type = OsType::Linux->value;
+        $this->form->grace_units = GraceUnit::Days->value;
+        $this->form->interval_months = 1;
+        $this->form->grace_value = 7;
 
         Flux::modal('server-form')->show();
     }
@@ -51,19 +52,7 @@ class HomePage extends Component
         Flux::modal('server-form')->close();
         Flux::toast('Server created.', variant: 'success');
 
-        unset($this->myServers, $this->teamServers);
-    }
-
-    #[Computed]
-    public function myServers(): Collection
-    {
-        return $this->sortForListing(
-            $this->applyFilter(
-                Server::query()
-                    ->where('user_id', auth()->id())
-                    ->with(['team', 'user'])
-            )->get()
-        );
+        unset($this->teamServers, $this->alertingServers);
     }
 
     #[Computed]
@@ -75,7 +64,7 @@ class HomePage extends Component
             $this->applyFilter(
                 Server::query()
                     ->whereIn('team_id', $teamIds)
-                    ->with(['team', 'user'])
+                    ->with(['team'])
             )->get()
         );
     }
@@ -87,15 +76,11 @@ class HomePage extends Component
 
         $query = Server::query()
             ->whereNotNull('alerting_since')
-            ->with(['team', 'user']);
+            ->with(['team']);
 
         if (! $user->is_admin) {
             $teamIds = $user->teams()->pluck('teams.id');
-
-            $query->where(function ($builder) use ($user, $teamIds) {
-                $builder->where('user_id', $user->id)
-                    ->orWhereIn('team_id', $teamIds);
-            });
+            $query->whereIn('team_id', $teamIds);
         }
 
         return $this->sortForListing($this->applyFilter($query)->get());
@@ -111,7 +96,7 @@ class HomePage extends Component
     {
         return view('livewire.home-page', [
             'teams' => auth()->user()->teams()->orderBy('name')->get(),
-            'intervalOptions' => ScheduleInterval::cases(),
+            'osTypeOptions' => OsType::cases(),
             'graceUnitOptions' => GraceUnit::cases(),
             'existingLocations' => Server::query()
                 ->whereNotNull('location')

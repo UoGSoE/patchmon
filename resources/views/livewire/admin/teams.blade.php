@@ -22,12 +22,7 @@
                 @foreach ($teams as $team)
                     <flux:table.row wire:key="team-row-{{ $team->id }}">
                         <flux:table.cell>
-                            <div class="flex items-center gap-2">
-                                @if ($team->isCurrentlySilenced())
-                                    <flux:icon.speaker-x-mark variant="micro" class="text-zinc-400" />
-                                @endif
-                                <flux:link :href="route('admin.teams.show', $team)" wire:navigate>{{ $team->name }}</flux:link>
-                            </div>
+                            <flux:link :href="route('admin.teams.show', $team)" wire:navigate>{{ $team->name }}</flux:link>
                         </flux:table.cell>
                         <flux:table.cell>{{ $team->notification_email }}</flux:table.cell>
                         <flux:table.cell>{{ $team->users()->count() }}</flux:table.cell>
@@ -85,24 +80,11 @@
                         <flux:button wire:click="deleteEmpty" variant="danger">Delete team</flux:button>
                     </div>
                 @else
-                    <form wire:submit="transferToTeamAndDelete" class="space-y-3">
+                    <form wire:submit="transferAndDelete" class="space-y-3">
                         <flux:heading size="md">Transfer servers to another team</flux:heading>
                         <flux:select wire:model="transferTargetTeamId" variant="listbox" searchable placeholder="Choose a team…">
                             @foreach ($otherTeams as $candidate)
                                 <flux:select.option :value="$candidate->id">{{ $candidate->name }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <div class="flex">
-                            <flux:spacer />
-                            <flux:button type="submit">Transfer and delete</flux:button>
-                        </div>
-                    </form>
-
-                    <form wire:submit="transferToUserAndDelete" class="space-y-3">
-                        <flux:heading size="md">Transfer servers to a user</flux:heading>
-                        <flux:select wire:model="transferTargetUserId" variant="listbox" searchable placeholder="Choose a user…">
-                            @foreach ($allUsers as $candidate)
-                                <flux:select.option :value="$candidate->id">{{ $candidate->full_name }} ({{ $candidate->email }})</flux:select.option>
                             @endforeach
                         </flux:select>
                         <div class="flex">

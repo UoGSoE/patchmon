@@ -6,15 +6,14 @@
                     <flux:icon.exclamation-triangle variant="micro" class="text-red-500" />
                 @endif
                 <flux:heading size="xl">{{ $server->name }}</flux:heading>
+                <flux:badge size="sm" color="{{ $server->os_type->colour() }}">{{ $server->os_type->label() }}</flux:badge>
             </div>
             @if ($server->description)
                 <flux:text class="mt-2">{{ $server->description }}</flux:text>
             @endif
             @if ($server->alerting_since)
                 <flux:text size="sm" class="mt-1">
-                    @if ($server->alerting_since)
-                        Awol since {{ $server->alerting_since->diffForHumans() }}@if ($server->isCurrentlySilenced()) · @endif
-                    @endif
+                    Awol since {{ $server->alerting_since->diffForHumans() }}
                 </flux:text>
             @endif
         </div>
@@ -32,24 +31,14 @@
         <flux:card>
             <flux:heading size="sm">Schedule</flux:heading>
             <flux:text class="mt-1">
-                @if ($server->cron_expression)
-                    Cron: <code>{{ $server->cron_expression }}</code>
-                @else
-                    {{ $server->schedule_frequency }} × {{ strtolower($server->schedule_interval->label()) }}
-                @endif
+                Every {{ $server->interval_months }} {{ \Illuminate\Support\Str::plural('month', $server->interval_months) }}
             </flux:text>
             <flux:text size="sm" class="mt-1">{{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }} grace</flux:text>
         </flux:card>
 
         <flux:card>
-            <flux:heading size="sm">Owner</flux:heading>
-            <flux:text class="mt-1">
-                @if ($server->team)
-                    Team: {{ $server->team->name }}
-                @else
-                    Personal — {{ $server->user->full_name ?: $server->user->email }}
-                @endif
-            </flux:text>
+            <flux:heading size="sm">Team</flux:heading>
+            <flux:text class="mt-1">{{ $server->team->name }}</flux:text>
             <flux:text size="sm" class="mt-1">Created by {{ $server->createdBy->full_name ?: $server->createdBy->email }}</flux:text>
             @if ($server->location)
                 <flux:text size="sm" class="mt-1">Location: {{ $server->location }}</flux:text>
@@ -83,13 +72,21 @@
             <flux:table class="mt-2">
                 <flux:table.columns>
                     <flux:table.column>When</flux:table.column>
-                    <flux:table.column>Source IP</flux:table.column>
+                    <flux:table.column>By</flux:table.column>
+                    <flux:table.column>Notes</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($recentPatchEvents as $patchEvent)
                         <flux:table.row wire:key="patch-event-row-{{ $patchEvent->id }}">
                             <flux:table.cell>{{ $patchEvent->patched_at->toDayDateTimeString() }} ({{ $patchEvent->patched_at->diffForHumans() }})</flux:table.cell>
-                            <flux:table.cell>{{ $patchEvent->source_ip ?? '—' }}</flux:table.cell>
+                            <flux:table.cell>
+                                @if ($patchEvent->patchedBy)
+                                    {{ $patchEvent->patchedBy->full_name ?: $patchEvent->patchedBy->email }}
+                                @else
+                                    <span class="text-zinc-400">Automated</span>
+                                @endif
+                            </flux:table.cell>
+                            <flux:table.cell>{{ $patchEvent->notes ?? '—' }}</flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
@@ -103,7 +100,7 @@
             <x-patchmon.server-form
                 :form="$form"
                 :teams="$teams"
-                :interval-options="$intervalOptions"
+                :os-type-options="$osTypeOptions"
                 :grace-unit-options="$graceUnitOptions"
                 :existing-locations="$existingLocations"
                 submit-label="Save changes"

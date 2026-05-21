@@ -12,14 +12,9 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
     /**
-     * Define the model's default state.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
@@ -37,32 +32,24 @@ class UserFactory extends Factory
         ];
     }
 
-    public function admin()
+    public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
             'is_admin' => true,
         ]);
     }
 
-    public function staff()
+    public function staff(): static
     {
         return $this->state(fn (array $attributes) => [
             'is_staff' => true,
         ]);
     }
 
-    public function student()
+    public function student(): static
     {
         return $this->state(fn (array $attributes) => [
             'is_staff' => false,
-        ]);
-    }
-
-    public function silenced()
-    {
-        return $this->state(fn (array $attributes) => [
-            'silenced_until' => now()->addDay(),
-            'silence_reason' => fake()->sentence(),
         ]);
     }
 }

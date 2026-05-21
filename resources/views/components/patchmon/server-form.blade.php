@@ -1,7 +1,7 @@
 @props([
     'form',
     'teams',
-    'intervalOptions',
+    'osTypeOptions',
     'graceUnitOptions',
     'existingLocations' => [],
     'submitLabel' => 'Save',
@@ -27,25 +27,18 @@
         <flux:select.option.create>Use as new location</flux:select.option.create>
     </flux:select>
 
-    <div>
-        <flux:heading size="sm">Schedule</flux:heading>
-        <flux:text size="sm">Use either an interval or a cron expression — whichever fits the server.</flux:text>
-        <div class="mt-2 grid gap-3 sm:grid-cols-3">
-            <flux:input wire:model="form.schedule_frequency" type="number" min="1" label="How many" />
-            <flux:select wire:model="form.schedule_interval" label="Per" class="sm:col-span-2">
-                <flux:select.option value="">—</flux:select.option>
-                @foreach ($intervalOptions as $interval)
-                    <flux:select.option value="{{ $interval->value }}">{{ $interval->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
-        <flux:input
-            wire:model="form.cron_expression"
-            label="Or cron expression"
-            placeholder="0 2 * * *"
-            class="mt-3 font-mono"
-        />
-    </div>
+    <flux:select wire:model="form.os_type" label="OS type">
+        @foreach ($osTypeOptions as $os)
+            <flux:select.option value="{{ $os->value }}">{{ $os->label() }}</flux:select.option>
+        @endforeach
+    </flux:select>
+
+    <flux:select wire:model="form.interval_months" label="Patch every">
+        <flux:select.option value="1">Month (monthly)</flux:select.option>
+        <flux:select.option value="3">3 months (quarterly)</flux:select.option>
+        <flux:select.option value="6">6 months (twice yearly)</flux:select.option>
+        <flux:select.option value="12">12 months (yearly)</flux:select.option>
+    </flux:select>
 
     <div>
         <flux:heading size="sm">Grace period</flux:heading>
@@ -60,8 +53,8 @@
         </div>
     </div>
 
-    <flux:select wire:model="form.team_id" label="Team (optional)" description="Leave blank to make this a personal server.">
-        <flux:select.option value="">Personal — just me</flux:select.option>
+    <flux:select wire:model="form.team_id" label="Team">
+        <flux:select.option value="">Choose a team…</flux:select.option>
         @foreach ($teams as $team)
             <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
         @endforeach
@@ -69,7 +62,7 @@
 
     <div>
         <flux:heading size="sm">Email overrides</flux:heading>
-        <flux:text size="sm">Leave blank to use the owner's defaults.</flux:text>
+        <flux:text size="sm">Leave blank to use the team's defaults.</flux:text>
         <div class="mt-2 space-y-3">
             <flux:input wire:model="form.notification_email" type="email" label="Alerts go to" placeholder="alerts@example.ac.uk" />
             <flux:input wire:model="form.sender_email" type="email" label="Alerts come from" placeholder="patchmon-noreply@example.ac.uk" />

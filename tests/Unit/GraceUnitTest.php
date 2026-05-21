@@ -1,20 +1,28 @@
 <?php
 
 use App\Enums\GraceUnit;
+use Illuminate\Support\Carbon;
 
 it('returns the expected label', function (GraceUnit $unit, string $label) {
     expect($unit->label())->toBe($label);
 })->with([
-    [GraceUnit::Minutes, 'Minutes'],
-    [GraceUnit::Hours, 'Hours'],
     [GraceUnit::Days, 'Days'],
+    [GraceUnit::Weeks, 'Weeks'],
+    [GraceUnit::Months, 'Months'],
 ]);
 
-it('converts a value to minutes', function (GraceUnit $unit, int $value, int $expectedMinutes) {
-    expect($unit->toMinutes($value))->toBe($expectedMinutes);
+it('adds the right amount of time to a Carbon instance', function (GraceUnit $unit, int $value, Carbon $start, Carbon $expected) {
+    expect($unit->addTo($start, $value)->equalTo($expected))->toBeTrue();
 })->with([
-    'minutes pass through' => [GraceUnit::Minutes, 30, 30],
-    '2 hours is 120 minutes' => [GraceUnit::Hours, 2, 120],
-    '1 day is 1440 minutes' => [GraceUnit::Days, 1, 1440],
-    'zero is zero' => [GraceUnit::Hours, 0, 0],
+    '7 days adds a week' => [GraceUnit::Days, 7, Carbon::parse('2026-05-01'), Carbon::parse('2026-05-08')],
+    '2 weeks adds 14 days' => [GraceUnit::Weeks, 2, Carbon::parse('2026-05-01'), Carbon::parse('2026-05-15')],
+    '1 month adds a calendar month' => [GraceUnit::Months, 1, Carbon::parse('2026-05-15'), Carbon::parse('2026-06-15')],
+    'month-end rolls sensibly' => [GraceUnit::Months, 1, Carbon::parse('2026-01-31'), Carbon::parse('2026-02-28')],
 ]);
+
+it('does not mutate the source Carbon instance', function () {
+    $start = Carbon::parse('2026-05-15');
+    GraceUnit::Days->addTo($start, 10);
+
+    expect($start->equalTo(Carbon::parse('2026-05-15')))->toBeTrue();
+});

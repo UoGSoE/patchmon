@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Enums\GraceUnit;
-use App\Enums\ScheduleInterval;
+use App\Enums\OsType;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
 use Flux\Flux;
@@ -108,12 +108,13 @@ class ServerDetail extends Component
     {
         return view('livewire.server-detail', [
             'recentPatchEvents' => $this->server->patchEvents()
+                ->with('patchedBy')
                 ->latest('patched_at')
                 ->limit(20)
                 ->get(),
             'recordPatchUrl' => route('record-patch', $this->server->patch_token),
             'teams' => auth()->user()->teams()->orderBy('name')->get(),
-            'intervalOptions' => ScheduleInterval::cases(),
+            'osTypeOptions' => OsType::cases(),
             'graceUnitOptions' => GraceUnit::cases(),
             'existingLocations' => Server::query()
                 ->whereNotNull('location')

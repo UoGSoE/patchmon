@@ -3,7 +3,7 @@
 namespace App\Livewire\Forms;
 
 use App\Enums\GraceUnit;
-use App\Enums\ScheduleInterval;
+use App\Enums\OsType;
 use App\Models\Server;
 use Illuminate\Validation\Rule;
 use Livewire\Form;
@@ -18,13 +18,11 @@ class ServerForm extends Form
 
     public ?string $location = null;
 
-    public ?string $cron_expression = null;
+    public ?string $os_type = null;
 
-    public ?string $schedule_interval = null;
+    public ?int $interval_months = 1;
 
-    public ?int $schedule_frequency = 1;
-
-    public int $grace_value = 1;
+    public int $grace_value = 7;
 
     public string $grace_units = '';
 
@@ -40,9 +38,8 @@ class ServerForm extends Form
         $this->name = $server->name;
         $this->description = $server->description;
         $this->location = $server->location;
-        $this->cron_expression = $server->cron_expression;
-        $this->schedule_interval = $server->schedule_interval?->value;
-        $this->schedule_frequency = $server->schedule_frequency;
+        $this->os_type = $server->os_type->value;
+        $this->interval_months = $server->interval_months;
         $this->grace_value = $server->grace_value;
         $this->grace_units = $server->grace_units->value;
         $this->team_id = $server->team_id;
@@ -56,13 +53,12 @@ class ServerForm extends Form
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
-            'cron_expression' => ['nullable', 'string', 'max:255', 'required_without:schedule_interval'],
-            'schedule_interval' => ['nullable', Rule::enum(ScheduleInterval::class), 'required_without:cron_expression'],
-            'schedule_frequency' => ['nullable', 'integer', 'min:1', 'required_with:schedule_interval'],
+            'os_type' => ['required', Rule::enum(OsType::class)],
+            'interval_months' => ['required', 'integer', 'min:1'],
             'grace_value' => ['required', 'integer', 'min:1'],
             'grace_units' => ['required', Rule::enum(GraceUnit::class)],
             'team_id' => [
-                'nullable',
+                'required',
                 Rule::exists('teams', 'id')->where(fn ($q) => $q->whereIn('id', auth()->user()->teams()->pluck('teams.id'))),
             ],
             'notification_email' => ['nullable', 'email'],
@@ -74,21 +70,16 @@ class ServerForm extends Form
     {
         $this->validate();
 
-        $isCron = ! empty($this->cron_expression);
-        $isTeamOwned = ! is_null($this->team_id);
-
         $server = $this->server ?? new Server;
         $server->fill([
             'name' => $this->name,
             'description' => $this->description,
             'location' => $this->location,
-            'cron_expression' => $isCron ? $this->cron_expression : null,
-            'schedule_interval' => $isCron ? null : $this->schedule_interval,
-            'schedule_frequency' => $isCron ? 1 : ($this->schedule_frequency ?? 1),
+            'os_type' => $this->os_type,
+            'interval_months' => $this->interval_months,
             'grace_value' => $this->grace_value,
             'grace_units' => $this->grace_units,
-            'team_id' => $isTeamOwned ? $this->team_id : null,
-            'user_id' => $isTeamOwned ? null : auth()->id(),
+            'team_id' => $this->team_id,
             'notification_email' => $this->notification_email,
             'sender_email' => $this->sender_email,
         ]);

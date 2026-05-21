@@ -11,8 +11,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class TeamFactory extends Factory
 {
     /**
-     * Define the model's default state.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
@@ -21,16 +19,6 @@ class TeamFactory extends Factory
             'name' => fake()->unique()->company(),
             'notification_email' => fake()->unique()->safeEmail(),
             'sender_email' => null,
-            'silenced_until' => null,
-            'silence_reason' => null,
         ];
-    }
-
-    public function silenced()
-    {
-        return $this->state(fn (array $attributes) => [
-            'silenced_until' => now()->addDay(),
-            'silence_reason' => fake()->sentence(),
-        ]);
     }
 }

@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\GraceUnit;
-use App\Enums\ScheduleInterval;
+use App\Enums\OsType;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
@@ -16,31 +16,20 @@ class ServerFactory extends Factory
 {
     public function definition(): array
     {
-        $owner = User::factory();
+        $creator = User::factory();
 
         return [
-            'team_id' => null,
-            'user_id' => $owner,
-            'created_by_user_id' => $owner,
+            'team_id' => Team::factory(),
+            'created_by_user_id' => $creator,
             'name' => fake()->unique()->words(2, true),
             'description' => null,
-            'cron_expression' => null,
-            'schedule_interval' => ScheduleInterval::Daily,
-            'schedule_frequency' => 1,
-            'grace_value' => 1,
-            'grace_units' => GraceUnit::Hours,
+            'os_type' => OsType::Linux,
+            'interval_months' => 1,
+            'grace_value' => 7,
+            'grace_units' => GraceUnit::Days,
             'notification_email' => null,
             'sender_email' => null,
         ];
-    }
-
-    public function forUser(User $user): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'team_id' => null,
-            'user_id' => $user->id,
-            'created_by_user_id' => $user->id,
-        ]);
     }
 
     public function forTeam(Team $team, ?User $creator = null): static
@@ -49,17 +38,22 @@ class ServerFactory extends Factory
 
         return $this->state(fn (array $attributes) => [
             'team_id' => $team->id,
-            'user_id' => null,
             'created_by_user_id' => $creator->id,
         ]);
     }
 
-    public function withCron(string $expression): static
+    public function withInterval(int $months): static
     {
         return $this->state(fn (array $attributes) => [
-            'cron_expression' => $expression,
-            'schedule_interval' => null,
-            'schedule_frequency' => 1,
+            'interval_months' => $months,
+        ]);
+    }
+
+    public function withGrace(int $value, GraceUnit $units): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'grace_value' => $value,
+            'grace_units' => $units,
         ]);
     }
 
@@ -74,8 +68,18 @@ class ServerFactory extends Factory
     public function alerting(): static
     {
         return $this->state(fn (array $attributes) => [
-            'alerting_since' => now()->subHours(2),
-            'last_alerted_at' => now()->subHours(2),
+            'alerting_since' => now()->subDays(3),
+            'last_alerted_at' => now()->subDays(3),
+        ]);
+    }
+
+    public function overdue(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'interval_months' => 1,
+            'grace_value' => 7,
+            'grace_units' => GraceUnit::Days,
+            'last_patched_at' => now()->subMonths(2),
         ]);
     }
 }

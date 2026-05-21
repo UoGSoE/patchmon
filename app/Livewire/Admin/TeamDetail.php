@@ -5,7 +5,6 @@ namespace App\Livewire\Admin;
 use App\Models\Team;
 use App\Models\User;
 use Flux\Flux;
-use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -20,20 +19,9 @@ class TeamDetail extends Component
 
     public ?string $removingMemberName = null;
 
-    public bool $silenced = false;
-
-    public string $silenceUntil = '';
-
-    public ?string $silenceReason = null;
-
     public function mount(Team $team): void
     {
         $this->team = $team;
-        $this->silenced = $team->isCurrentlySilenced();
-        $this->silenceUntil = $team->silenced_until
-            ? $team->silenced_until->format('Y-m-d\TH:i')
-            : now()->addDay()->format('Y-m-d\TH:i');
-        $this->silenceReason = $team->silence_reason;
     }
 
     public function addUser(): void
@@ -67,38 +55,6 @@ class TeamDetail extends Component
 
         Flux::modal('remove-member')->close();
         Flux::toast('User removed from team.', variant: 'success');
-    }
-
-    public function updatedSilenced(bool $value): void
-    {
-        if ($value) {
-            $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
-            $this->team->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
-            Flux::toast('Team silenced.', variant: 'success');
-        } else {
-            $this->team->unsilence();
-            $this->silenceReason = null;
-            $this->silenceUntil = now()->addDay()->format('Y-m-d\TH:i');
-            Flux::toast('Team unsilenced.', variant: 'success');
-        }
-    }
-
-    public function updatedSilenceUntil(): void
-    {
-        if (! $this->silenced) {
-            return;
-        }
-        $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
-        $this->team->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
-    }
-
-    public function updatedSilenceReason(): void
-    {
-        if (! $this->silenced) {
-            return;
-        }
-        $this->validate(['silenceReason' => ['nullable', 'string', 'max:255']]);
-        $this->team->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
     }
 
     public function render()

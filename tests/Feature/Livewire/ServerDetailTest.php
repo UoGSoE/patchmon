@@ -2,12 +2,15 @@
 
 use App\Livewire\ServerDetail;
 use App\Models\Server;
+use App\Models\Team;
 use App\Models\User;
 use Livewire\Livewire;
 
-it('unsilences the job when the owner flips the toggle off', function () {
+it('unsilences the server when a team member flips the toggle off', function () {
     $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->silenced()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->silenced()->create();
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
@@ -18,9 +21,11 @@ it('unsilences the job when the owner flips the toggle off', function () {
         ->and($server->silence_reason)->toBeNull();
 });
 
-it('silences the job when the owner flips the toggle on', function () {
+it('silences the server when a team member flips the toggle on', function () {
     $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create();
     $until = now()->addDay()->startOfSecond();
 
     Livewire::actingAs($owner)
@@ -36,7 +41,9 @@ it('silences the job when the owner flips the toggle on', function () {
 
 it('saves changes to until and reason while already silenced', function () {
     $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->silenced()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->silenced()->create();
     $newUntil = now()->addDays(3)->startOfSecond();
 
     Livewire::actingAs($owner)
@@ -49,9 +56,11 @@ it('saves changes to until and reason while already silenced', function () {
         ->and($server->silence_reason)->toBe('Extended works');
 });
 
-it('deletes the job when the owner confirms and redirects to home', function () {
+it('deletes the server when a team member confirms and redirects to home', function () {
     $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create();
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
@@ -61,30 +70,35 @@ it('deletes the job when the owner confirms and redirects to home', function () 
     expect(Server::find($server->id))->toBeNull();
 });
 
-it('forbids a stranger from viewing someone elses personal job', function () {
-    $owner = User::factory()->create();
+it('forbids a stranger from viewing a server in a team they are not in', function () {
     $stranger = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->create();
+    $team = Team::factory()->create();
+    $server = Server::factory()->forTeam($team)->create();
 
     $this->actingAs($stranger)
         ->get(route('servers.show', $server))
         ->assertForbidden();
 });
 
-it('shows recent check-ins on the detail page', function () {
-    $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->create();
-    $server->recordPatchEvent('203.0.113.42');
+it('shows recent patches on the detail page', function () {
+    $owner = User::factory()->create(['forenames' => 'Pat', 'surname' => 'Cher']);
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create();
+    $server->recordPatch($owner, 'Reboot needed after libssl upgrade');
 
     $this->actingAs($owner)
         ->get(route('servers.show', $server))
         ->assertOk()
-        ->assertSee('203.0.113.42');
+        ->assertSee('Pat Cher')
+        ->assertSee('Reboot needed after libssl upgrade');
 });
 
-it('edits the job via the openEdit flyout flow', function () {
+it('edits the server via the openEdit flyout flow', function () {
     $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->create(['name' => 'Old name']);
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create(['name' => 'Old name']);
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
@@ -98,7 +112,9 @@ it('edits the job via the openEdit flyout flow', function () {
 
 it('clears the location when the edit form sets it to null', function () {
     $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->create(['location' => 'Rankine']);
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create(['location' => 'Rankine']);
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
@@ -110,16 +126,18 @@ it('clears the location when the edit form sets it to null', function () {
     expect($server->fresh()->location)->toBeNull();
 });
 
-it('shows the job name, schedule and check-in URL to the owning user', function () {
+it('shows the server name, interval and record-patch URL to the team member', function () {
     $owner = User::factory()->create();
-    $server = Server::factory()->forUser($owner)->withCron('0 2 * * *')->create([
-        'name' => 'Nightly backup',
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->withInterval(3)->create([
+        'name' => 'fileserver-prod-02',
     ]);
 
     $this->actingAs($owner)
         ->get(route('servers.show', $server))
         ->assertOk()
-        ->assertSee('Nightly backup')
-        ->assertSee('0 2 * * *')
+        ->assertSee('fileserver-prod-02')
+        ->assertSee('Every 3 months')
         ->assertSee($server->patch_token);
 });

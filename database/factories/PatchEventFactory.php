@@ -15,8 +15,10 @@ class PatchEventFactory extends Factory
     {
         return [
             'server_id' => Server::factory(),
+            'patched_by' => null,
             'patched_at' => now(),
             'source_ip' => fake()->ipv4(),
+            'notes' => null,
         ];
     }
 }

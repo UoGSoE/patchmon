@@ -1,30 +1,7 @@
 <div class="max-w-3xl">
-    <div class="flex items-center gap-2">
-        @if ($team->isCurrentlySilenced())
-            <flux:icon.speaker-x-mark variant="micro" class="text-zinc-400" />
-        @endif
-        <flux:heading size="xl">{{ $team->name }}</flux:heading>
-    </div>
+    <flux:heading size="xl">{{ $team->name }}</flux:heading>
 
     <flux:text class="mt-1">{{ $team->notification_email }}</flux:text>
-
-    @if ($team->isCurrentlySilenced())
-        <flux:text size="sm" class="mt-1">Silenced until {{ $team->silenced_until->format('D j M, H:i') }}</flux:text>
-    @endif
-
-    <div class="mt-6">
-        <flux:heading size="sm">Silencing</flux:heading>
-        <flux:text size="sm">Silencing the team silences every job it owns.</flux:text>
-        <div class="mt-2 space-y-3">
-            <flux:switch wire:model.live="silenced" label="Silenced" />
-            @if ($silenced)
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <flux:input wire:model.blur="silenceUntil" type="datetime-local" label="Silenced until" />
-                    <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Building works" />
-                </div>
-            @endif
-        </div>
-    </div>
 
     <div class="mt-8">
         <flux:heading size="sm">Members</flux:heading>

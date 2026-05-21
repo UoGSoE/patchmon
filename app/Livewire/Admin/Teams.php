@@ -3,7 +3,6 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Team;
-use App\Models\User;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -21,8 +20,6 @@ class Teams extends Component
     public ?int $deletingId = null;
 
     public ?int $transferTargetTeamId = null;
-
-    public ?int $transferTargetUserId = null;
 
     public string $typedConfirmation = '';
 
@@ -67,7 +64,6 @@ class Teams extends Component
     {
         $this->deletingId = $id;
         $this->transferTargetTeamId = null;
-        $this->transferTargetUserId = null;
         $this->typedConfirmation = '';
         Flux::modal('delete-team')->show();
     }
@@ -81,7 +77,7 @@ class Teams extends Component
         Flux::toast('Team deleted.', variant: 'success');
     }
 
-    public function transferToTeamAndDelete(): void
+    public function transferAndDelete(): void
     {
         $this->validate([
             'deletingId' => ['required', 'exists:teams,id'],
@@ -89,28 +85,7 @@ class Teams extends Component
         ]);
 
         $team = Team::findOrFail($this->deletingId);
-        $team->servers()->update([
-            'team_id' => $this->transferTargetTeamId,
-            'user_id' => null,
-        ]);
-        $team->delete();
-
-        Flux::modal('delete-team')->close();
-        Flux::toast('Team deleted; servers transferred.', variant: 'success');
-    }
-
-    public function transferToUserAndDelete(): void
-    {
-        $this->validate([
-            'deletingId' => ['required', 'exists:teams,id'],
-            'transferTargetUserId' => ['required', 'exists:users,id'],
-        ]);
-
-        $team = Team::findOrFail($this->deletingId);
-        $team->servers()->update([
-            'team_id' => null,
-            'user_id' => $this->transferTargetUserId,
-        ]);
+        $team->servers()->update(['team_id' => $this->transferTargetTeamId]);
         $team->delete();
 
         Flux::modal('delete-team')->close();
@@ -142,9 +117,6 @@ class Teams extends Component
             'deletingTeam' => $deletingTeam,
             'otherTeams' => $deletingTeam
                 ? Team::where('id', '!=', $deletingTeam->id)->orderBy('name')->get()
-                : collect(),
-            'allUsers' => $deletingTeam
-                ? User::orderBy('surname')->orderBy('forenames')->get()
                 : collect(),
         ]);
     }

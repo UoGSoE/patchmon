@@ -1,7 +1,7 @@
 <div>
     <div class="flex items-start justify-between gap-4">
         <div>
-            <flux:heading size="xl">Your servers</flux:heading>
+            <flux:heading size="xl">Servers</flux:heading>
             <flux:text class="mt-2">Servers that are awol come to the top so you can see them at a glance.</flux:text>
         </div>
         <flux:button wire:click="openCreate" icon="plus">New server</flux:button>
@@ -9,7 +9,6 @@
 
     <flux:tab.group class="mt-6">
         <flux:tabs wire:model.live="tab">
-            <flux:tab name="mine">My servers</flux:tab>
             <flux:tab name="teams">Team servers</flux:tab>
             <flux:tab name="alerting">Alerting servers</flux:tab>
         </flux:tabs>
@@ -24,16 +23,6 @@
             />
             <flux:checkbox wire:model.live="excludeFilter" label="Exclude matches" />
         </div>
-
-        <flux:tab.panel name="mine">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @forelse ($this->myServers as $server)
-                    <x-patchmon.server-row :server="$server" />
-                @empty
-                    <flux:text class="mt-6">No personal servers yet.</flux:text>
-                @endforelse
-            </div>
-        </flux:tab.panel>
 
         <flux:tab.panel name="teams">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -66,7 +55,7 @@
             <x-patchmon.server-form
                 :form="$form"
                 :teams="$teams"
-                :interval-options="$intervalOptions"
+                :os-type-options="$osTypeOptions"
                 :grace-unit-options="$graceUnitOptions"
                 :existing-locations="$existingLocations"
                 submit-label="Create server"

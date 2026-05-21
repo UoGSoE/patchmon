@@ -3,11 +3,7 @@
 
 Patchmon expected **{{ $server->name }}** to be patched by now and hasn't heard from it.
 
-@if ($server->cron_expression)
-**Schedule:** `{{ $server->cron_expression }}` (cron)
-@else
-**Schedule:** {{ $server->schedule_frequency }} × {{ strtolower($server->schedule_interval->label()) }}
-@endif
+**Schedule:** every {{ $server->interval_months }} {{ \Illuminate\Support\Str::plural('month', $server->interval_months) }}
 
 **Grace period:** {{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }}
 
@@ -25,11 +21,7 @@ Patchmon expected **{{ $server->name }}** to be patched by now and hasn't heard 
 View in Patchmon
 </x-mail::button>
 
-@if ($server->team)
-If this isn't your problem, the **{{ $server->team->name }}** team owns this server.
-@else
-This server belongs to {{ $server->user->full_name ?: $server->user->email }}.
-@endif
+The **{{ $server->team->name }}** team owns this server.
 
 Thanks,<br>
 {{ config('app.name') }}

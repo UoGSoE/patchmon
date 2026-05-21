@@ -1,12 +1,15 @@
 <?php
 
 use App\Models\Server;
+use App\Models\Team;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
-it('unsilences a previously silenced job', function () {
+it('unsilences a previously silenced server', function () {
     $alice = User::factory()->create();
-    $server = Server::factory()->forUser($alice)->silenced()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    $server = Server::factory()->forTeam($team)->silenced()->create();
     Sanctum::actingAs($alice, ['servers:write']);
 
     $this->deleteJson("/api/v1/servers/{$server->id}/silence")->assertOk();
@@ -18,7 +21,9 @@ it('unsilences a previously silenced job', function () {
 
 it('silencing twice is idempotent and overwrites with the latest values', function () {
     $alice = User::factory()->create();
-    $server = Server::factory()->forUser($alice)->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    $server = Server::factory()->forTeam($team)->create();
     Sanctum::actingAs($alice, ['servers:write']);
 
     $first = now()->addDay()->startOfSecond();
@@ -39,9 +44,11 @@ it('silencing twice is idempotent and overwrites with the latest values', functi
         ->and($fresh->silence_reason)->toBe('longer');
 });
 
-it('silences a job until a future moment', function () {
+it('silences a server until a future moment', function () {
     $alice = User::factory()->create();
-    $server = Server::factory()->forUser($alice)->create([
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    $server = Server::factory()->forTeam($team)->create([
         'silenced_until' => null,
         'silence_reason' => null,
     ]);
@@ -51,10 +58,10 @@ it('silences a job until a future moment', function () {
 
     $this->postJson("/api/v1/servers/{$server->id}/silence", [
         'silenced_until' => $until->toIso8601String(),
-        'silence_reason' => 'On leave',
+        'silence_reason' => 'Building works',
     ])->assertOk();
 
     $fresh = $server->fresh();
     expect($fresh->silenced_until->equalTo($until))->toBeTrue()
-        ->and($fresh->silence_reason)->toBe('On leave');
+        ->and($fresh->silence_reason)->toBe('Building works');
 });

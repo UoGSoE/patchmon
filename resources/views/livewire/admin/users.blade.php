@@ -72,49 +72,18 @@
 
     <flux:modal name="delete-user" variant="flyout" class="max-w-lg">
         @if ($deletingUserId)
-            <div class="space-y-6">
-                <div>
-                    <flux:heading size="lg">Delete {{ $deletingUserName }}</flux:heading>
-                    @if ($deletingUserPersonalServerCount === 0)
-                        <flux:text class="mt-2">This user owns no personal servers. Their team memberships will be removed.</flux:text>
-                    @else
-                        <flux:text class="mt-2">
-                            This user owns {{ $deletingUserPersonalServerCount }} personal {{ \Illuminate\Support\Str::plural('server', $deletingUserPersonalServerCount) }}.
-                            Choose what happens to them before the user can be deleted.
-                        </flux:text>
-                    @endif
+            <form wire:submit="delete" class="space-y-6">
+                <flux:heading size="lg">Delete {{ $deletingUserName }}</flux:heading>
+                <flux:text>
+                    Their team memberships are removed. Servers they created stay; authorship is reassigned.
+                </flux:text>
+                <flux:text>Type <strong>{{ $deletingUserName }}</strong> to confirm.</flux:text>
+                <flux:input wire:model="typedConfirmation" placeholder="{{ $deletingUserName }}" />
+                <div class="flex justify-end gap-2">
+                    <flux:button type="button" x-on:click="$flux.modal('delete-user').close()">Cancel</flux:button>
+                    <flux:button type="submit" variant="danger">Delete</flux:button>
                 </div>
-
-                @if ($deletingUserPersonalServerCount > 0)
-                    <form wire:submit="transferAndDelete" class="space-y-3">
-                        <flux:heading size="md">Transfer personal servers to another user</flux:heading>
-                        <flux:select wire:model="transferTargetUserId" variant="listbox" searchable placeholder="Choose a user…">
-                            @foreach ($transferCandidates as $candidate)
-                                <flux:select.option :value="$candidate->id">{{ $candidate->full_name ?: $candidate->email }} ({{ $candidate->email }})</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <div class="flex justify-end">
-                            <flux:button type="submit">Transfer and delete</flux:button>
-                        </div>
-                    </form>
-                @endif
-
-                <form wire:submit="deleteWithServers" class="space-y-3">
-                    <flux:heading size="md">
-                        @if ($deletingUserPersonalServerCount > 0)
-                            Or delete the user and all their personal servers
-                        @else
-                            Confirm delete
-                        @endif
-                    </flux:heading>
-                    <flux:text>Type <strong>{{ $deletingUserName }}</strong> to confirm.</flux:text>
-                    <flux:input wire:model="typedConfirmation" placeholder="{{ $deletingUserName }}" />
-                    <div class="flex justify-end gap-2">
-                        <flux:button type="button" x-on:click="$flux.modal('delete-user').close()">Cancel</flux:button>
-                        <flux:button type="submit" variant="danger">Delete</flux:button>
-                    </div>
-                </form>
-            </div>
+            </form>
         @endif
     </flux:modal>
 </div>

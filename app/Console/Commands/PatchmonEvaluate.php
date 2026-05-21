@@ -31,9 +31,8 @@ class PatchmonEvaluate extends Command
                 return;
             }
 
-            $nextDue = $server->nextScheduledAfter($server->last_alerted_at)->addMinutes($server->graceMinutes());
-
-            if (now()->greaterThanOrEqualTo($nextDue)) {
+            if ($server->last_alerted_at === null
+                || $server->last_alerted_at->lessThanOrEqualTo(now()->subWeek())) {
                 $this->dispatchAlert($server);
             }
         });

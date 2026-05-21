@@ -26,10 +26,6 @@ class Users extends Component
 
     public ?string $deletingUserName = null;
 
-    public int $deletingUserPersonalServerCount = 0;
-
-    public ?int $transferTargetUserId = null;
-
     public string $typedConfirmation = '';
 
     public function toggleAdmin(int $id): void
@@ -121,36 +117,13 @@ class Users extends Component
 
         $this->deletingUserId = $user->id;
         $this->deletingUserName = $user->full_name ?: $user->email;
-        $this->deletingUserPersonalServerCount = Server::where('user_id', $user->id)->count();
-        $this->transferTargetUserId = null;
         $this->typedConfirmation = '';
         $this->resetErrorBag();
 
         Flux::modal('delete-user')->show();
     }
 
-    public function transferAndDelete(): void
-    {
-        $this->validate([
-            'transferTargetUserId' => [
-                'required',
-                'integer',
-                Rule::exists('users', 'id'),
-                Rule::notIn([$this->deletingUserId]),
-            ],
-        ]);
-
-        $user = User::findOrFail($this->deletingUserId);
-
-        Server::where('user_id', $user->id)->update(['user_id' => $this->transferTargetUserId]);
-        $this->reassignAuthorshipAndDelete($user, $this->transferTargetUserId);
-
-        Flux::modal('delete-user')->close();
-        Flux::toast('User deleted; personal servers transferred.', variant: 'success');
-        $this->resetDeleteState();
-    }
-
-    public function deleteWithServers(): void
+    public function delete(): void
     {
         $user = User::findOrFail($this->deletingUserId);
 
@@ -158,10 +131,10 @@ class Users extends Component
             'typedConfirmation' => ['required', Rule::in([$user->full_name ?: $user->email])],
         ]);
 
-        $this->reassignAuthorshipAndDelete($user, auth()->id());
+        $this->reassignAuthorshipAndDelete($user);
 
         Flux::modal('delete-user')->close();
-        Flux::toast('User and their personal servers deleted.', variant: 'success');
+        Flux::toast('User deleted.', variant: 'success');
         $this->resetDeleteState();
     }
 
@@ -169,21 +142,13 @@ class Users extends Component
     {
         return view('livewire.admin.users', [
             'users' => User::orderBy('surname')->orderBy('forenames')->get(),
-            'transferCandidates' => User::query()
-                ->when($this->deletingUserId, fn ($q) => $q->where('id', '!=', $this->deletingUserId))
-                ->orderBy('surname')
-                ->orderBy('forenames')
-                ->get(),
         ]);
     }
 
-    private function reassignAuthorshipAndDelete(User $user, int $authorshipFallbackUserId): void
+    private function reassignAuthorshipAndDelete(User $user): void
     {
         Server::where('created_by_user_id', $user->id)
-            ->where(function ($q) use ($user) {
-                $q->whereNotNull('team_id')->orWhere('user_id', '!=', $user->id);
-            })
-            ->update(['created_by_user_id' => $authorshipFallbackUserId]);
+            ->update(['created_by_user_id' => auth()->id()]);
 
         $user->delete();
     }
@@ -192,8 +157,6 @@ class Users extends Component
     {
         $this->deletingUserId = null;
         $this->deletingUserName = null;
-        $this->deletingUserPersonalServerCount = 0;
-        $this->transferTargetUserId = null;
         $this->typedConfirmation = '';
     }
 }

@@ -13,8 +13,6 @@ it('returns the authenticated user via /api/v1/me', function () {
         'forenames' => 'Kit',
         'surname' => 'McAuthor',
         'email' => 'kit@example.test',
-        'notification_email' => 'alerts@example.test',
-        'sender_email' => 'noreply@example.test',
         'is_admin' => false,
     ]);
 
@@ -28,8 +26,6 @@ it('returns the authenticated user via /api/v1/me', function () {
                 'username' => 'kmc2y',
                 'full_name' => 'Kit McAuthor',
                 'email' => 'kit@example.test',
-                'notification_email' => 'alerts@example.test',
-                'sender_email' => 'noreply@example.test',
                 'is_admin' => false,
                 'is_staff' => true,
             ],

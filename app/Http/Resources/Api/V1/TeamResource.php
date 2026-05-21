@@ -21,7 +21,6 @@ class TeamResource extends JsonResource
             'name' => $this->name,
             'notification_email' => $this->notification_email,
             'sender_email' => $this->sender_email,
-            'silenced_until' => $this->silenced_until?->toIso8601String(),
         ];
     }
 }

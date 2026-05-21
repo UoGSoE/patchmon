@@ -33,14 +33,6 @@ class ServerPolicy
             return true;
         }
 
-        if ($server->user_id && $server->user_id === $user->id) {
-            return true;
-        }
-
-        if ($server->team_id && $user->teams()->whereKey($server->team_id)->exists()) {
-            return true;
-        }
-
-        return false;
+        return $user->teams()->whereKey($server->team_id)->exists();
     }
 }

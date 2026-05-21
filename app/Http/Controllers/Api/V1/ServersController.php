@@ -112,30 +112,15 @@ class ServersController extends Controller
     }
 
     /**
-     * Create a server. Personal by default; pass team_id (a team you belong to) to make it team-owned. One of cron_expression or schedule_interval+schedule_frequency is required.
+     * Create a server. Belongs to a team the caller is a member of.
      */
     public function store(StoreServerRequest $request): JsonResponse
     {
         Gate::authorize('create', Server::class);
 
-        $user = $request->user();
-        $isCron = filled($request->input('cron_expression'));
-        $isTeamOwned = $request->filled('team_id');
-
         $server = Server::create([
-            'name' => $request->input('name'),
-            'description' => $request->input('description'),
-            'location' => $request->input('location'),
-            'cron_expression' => $isCron ? $request->input('cron_expression') : null,
-            'schedule_interval' => $isCron ? null : $request->input('schedule_interval'),
-            'schedule_frequency' => $isCron ? 1 : ($request->input('schedule_frequency') ?? 1),
-            'grace_value' => $request->input('grace_value'),
-            'grace_units' => $request->input('grace_units'),
-            'team_id' => $isTeamOwned ? $request->input('team_id') : null,
-            'user_id' => $isTeamOwned ? null : $user->id,
-            'created_by_user_id' => $user->id,
-            'notification_email' => $request->input('notification_email'),
-            'sender_email' => $request->input('sender_email'),
+            ...$request->validated(),
+            'created_by_user_id' => $request->user()->id,
         ]);
 
         return (new ServerResource($server))->response()->setStatusCode(201);
@@ -144,33 +129,28 @@ class ServersController extends Controller
     /**
      * List servers visible to the authenticated user.
      */
-    #[QueryParameter('scope', description: 'Which slice of servers to return. One of: mine (personal only), teams (team-owned only), all (default).', type: 'string', example: 'mine')]
     #[QueryParameter('filter[name]', description: 'Case-insensitive partial match on the server name.', type: 'string', example: 'backup')]
     #[QueryParameter('filter[location]', description: 'Case-insensitive partial match on the server location.', type: 'string', example: 'rankine')]
     #[QueryParameter('filter[team_id]', description: 'Restrict to a specific team id.', type: 'integer', example: 1)]
-    #[QueryParameter('filter[user_id]', description: 'Restrict to a specific personal owner id.', type: 'integer', example: 1)]
+    #[QueryParameter('filter[os_type]', description: 'Restrict to one OS type (linux, windows, other).', type: 'string', example: 'linux')]
     #[QueryParameter('sort', description: 'Sort field. Prefix with - for descending. Allowed: name, created_at, last_patched_at.', type: 'string', example: '-last_patched_at')]
     #[QueryParameter('per_page', description: 'Items per page (max 100, default 25).', type: 'integer', example: 25)]
     public function index(Request $request): JsonResponse
     {
-        $scope = $request->input('scope', 'all');
-        abort_unless(in_array($scope, ['mine', 'teams', 'all'], true), 400, 'scope must be one of: mine, teams, all.');
-
         $user = $request->user();
 
         $base = Server::query();
         if (! $user->is_admin) {
-            $base = $this->restrictToVisibleServers($base, $user);
+            $teamIds = $user->teams()->pluck('teams.id');
+            $base->whereIn('team_id', $teamIds);
         }
-
-        $base = $this->applyScope($base, $scope, $user);
 
         $servers = QueryBuilder::for($base)
             ->allowedFilters(
                 AllowedFilter::partial('name'),
                 AllowedFilter::partial('location'),
                 AllowedFilter::exact('team_id'),
-                AllowedFilter::exact('user_id'),
+                AllowedFilter::exact('os_type'),
             )
             ->allowedSorts('name', 'created_at', 'last_patched_at')
             ->defaultSort('name')
@@ -179,32 +159,6 @@ class ServersController extends Controller
 
         return response()->json([
             'servers' => ServerResource::collection($servers)->response()->getData(true),
-            'scope' => $scope,
         ]);
-    }
-
-    private function restrictToVisibleServers($query, $user)
-    {
-        $teamIds = $user->teams()->pluck('teams.id');
-
-        return $query->where(function ($q) use ($user, $teamIds) {
-            $q->where('user_id', $user->id)
-                ->orWhereIn('team_id', $teamIds);
-        });
-    }
-
-    private function applyScope($query, string $scope, $user)
-    {
-        if ($scope === 'mine') {
-            return $query->where('user_id', $user->id)->whereNull('team_id');
-        }
-
-        if ($scope === 'teams') {
-            $teamIds = $user->teams()->pluck('teams.id');
-
-            return $query->whereIn('team_id', $teamIds);
-        }
-
-        return $query;
     }
 }

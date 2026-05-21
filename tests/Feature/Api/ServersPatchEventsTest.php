@@ -1,24 +1,27 @@
 <?php
 
 use App\Models\Server;
+use App\Models\Team;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
-it('returns 404 listing check-ins for a job the user cannot see', function () {
+it('returns 404 listing patch events for a server the user cannot see', function () {
     $alice = User::factory()->create(['is_admin' => false]);
-    $bob = User::factory()->create();
-    $bobsJob = Server::factory()->forUser($bob)->create();
+    $team = Team::factory()->create();
+    $server = Server::factory()->forTeam($team)->create();
     Sanctum::actingAs($alice, ['servers:read']);
 
-    $this->getJson("/api/v1/servers/{$bobsJob->id}/patch-events")->assertStatus(404);
+    $this->getJson("/api/v1/servers/{$server->id}/patch-events")->assertStatus(404);
 });
 
-it('lists check-ins newest first for a job the user can see', function () {
+it('lists patch events newest first for a server the user can see', function () {
     $alice = User::factory()->create();
-    $server = Server::factory()->forUser($alice)->create();
-    $oldest = $server->patchEvents()->create(['patched_at' => now()->subHours(3)]);
-    $middle = $server->patchEvents()->create(['patched_at' => now()->subHours(2)]);
-    $newest = $server->patchEvents()->create(['patched_at' => now()->subHour()]);
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    $server = Server::factory()->forTeam($team)->create();
+    $oldest = $server->patchEvents()->create(['patched_at' => now()->subDays(20)]);
+    $middle = $server->patchEvents()->create(['patched_at' => now()->subDays(10)]);
+    $newest = $server->patchEvents()->create(['patched_at' => now()->subDay()]);
     Sanctum::actingAs($alice, ['servers:read']);
 
     $response = $this->getJson("/api/v1/servers/{$server->id}/patch-events")->assertOk();

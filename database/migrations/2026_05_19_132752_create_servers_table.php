@@ -10,15 +10,13 @@ return new class extends Migration
     {
         Schema::create('servers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->foreignId('created_by_user_id')->constrained('users')->cascadeOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('location')->nullable();
-            $table->string('cron_expression')->nullable();
-            $table->string('schedule_interval')->nullable();
-            $table->unsignedInteger('schedule_frequency')->default(1);
+            $table->string('os_type');
+            $table->unsignedInteger('interval_months');
             $table->unsignedInteger('grace_value');
             $table->string('grace_units');
             $table->uuid('patch_token')->unique();

@@ -2,13 +2,14 @@
 
 use App\Models\PatchEvent;
 use App\Models\Server;
+use App\Models\User;
 use Carbon\CarbonInterface;
 
-it('recordPatchEvent stamps the check-in with an explicit timestamp when one is provided', function () {
+it('recordPatch stamps the patch event with an explicit timestamp when one is provided', function () {
     $server = Server::factory()->create();
     $requestedAt = now()->subSeconds(30)->startOfSecond();
 
-    $patchEvent = $server->recordPatchEvent('203.0.113.5', $requestedAt);
+    $patchEvent = $server->recordPatch(null, null, '203.0.113.5', $requestedAt);
 
     $server->refresh();
 
@@ -16,12 +17,12 @@ it('recordPatchEvent stamps the check-in with an explicit timestamp when one is 
         ->and($server->last_patched_at->equalTo($requestedAt))->toBeTrue();
 });
 
-it('recordPatchEvent logs the ping and clears any alerting state on the job', function () {
+it('recordPatch logs the patch and clears any alerting state on the server', function () {
     $server = Server::factory()->alerting()->create([
         'last_patched_at' => now()->subDay(),
     ]);
 
-    $server->recordPatchEvent('203.0.113.5');
+    $server->recordPatch(null, null, '203.0.113.5');
 
     $server->refresh();
 
@@ -32,7 +33,27 @@ it('recordPatchEvent logs the ping and clears any alerting state on the job', fu
         ->and($server->last_alerted_at)->toBeNull();
 });
 
-it('records a check-in against a job and exposes it via the relation', function () {
+it('attributes recordPatch to a user when one is supplied', function () {
+    $server = Server::factory()->create();
+    $sysadmin = User::factory()->create();
+
+    $patchEvent = $server->recordPatch($sysadmin, 'Reboot required after libssl upgrade.');
+
+    expect($patchEvent->patched_by)->toBe($sysadmin->id)
+        ->and($patchEvent->patchedBy->is($sysadmin))->toBeTrue()
+        ->and($patchEvent->notes)->toBe('Reboot required after libssl upgrade.');
+});
+
+it('leaves patched_by null and notes null when recordPatch is called anonymously', function () {
+    $server = Server::factory()->create();
+
+    $patchEvent = $server->recordPatch();
+
+    expect($patchEvent->patched_by)->toBeNull()
+        ->and($patchEvent->notes)->toBeNull();
+});
+
+it('exposes patch events via the server relation', function () {
     $server = Server::factory()->create();
 
     $patchEvent = PatchEvent::factory()->for($server)->create([

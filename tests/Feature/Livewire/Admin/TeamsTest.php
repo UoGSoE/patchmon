@@ -20,7 +20,7 @@ it('updates an existing team when opened for edit', function () {
     expect($team->fresh()->name)->toBe('Storage');
 });
 
-it('deletes a team that owns no jobs', function () {
+it('deletes a team that owns no servers', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();
 
@@ -32,58 +32,34 @@ it('deletes a team that owns no jobs', function () {
     expect(Team::find($team->id))->toBeNull();
 });
 
-it('transfers a team\'s jobs to another team and deletes the original', function () {
+it('transfers a team\'s servers to another team and deletes the original', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $doomed = Team::factory()->create(['name' => 'Doomed']);
     $target = Team::factory()->create(['name' => 'Target']);
     $bystander = Team::factory()->create(['name' => 'Bystander']);
 
-    $doomedJobs = Server::factory()->count(2)->forTeam($doomed)->create();
-    $bystanderJob = Server::factory()->forTeam($bystander)->create();
+    $doomedServers = Server::factory()->count(2)->forTeam($doomed)->create();
+    $bystanderServer = Server::factory()->forTeam($bystander)->create();
 
     Livewire::actingAs($admin)
         ->test(Teams::class)
         ->set('deletingId', $doomed->id)
         ->set('transferTargetTeamId', $target->id)
-        ->call('transferToTeamAndDelete');
+        ->call('transferAndDelete');
 
     expect(Team::find($doomed->id))->toBeNull();
 
-    foreach ($doomedJobs as $server) {
-        $fresh = $server->fresh();
-        expect($fresh->team_id)->toBe($target->id)
-            ->and($fresh->user_id)->toBeNull();
+    foreach ($doomedServers as $server) {
+        expect($server->fresh()->team_id)->toBe($target->id);
     }
 
-    expect($bystanderJob->fresh()->team_id)->toBe($bystander->id);
+    expect($bystanderServer->fresh()->team_id)->toBe($bystander->id);
 });
 
-it('transfers a team\'s jobs to a user and deletes the original', function () {
+it('deletes a team and its servers when the typed confirmation matches the team name', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $doomed = Team::factory()->create(['name' => 'Doomed']);
-    $newOwner = User::factory()->create();
-
-    $doomedJobs = Server::factory()->count(2)->forTeam($doomed)->create();
-
-    Livewire::actingAs($admin)
-        ->test(Teams::class)
-        ->set('deletingId', $doomed->id)
-        ->set('transferTargetUserId', $newOwner->id)
-        ->call('transferToUserAndDelete');
-
-    expect(Team::find($doomed->id))->toBeNull();
-
-    foreach ($doomedJobs as $server) {
-        $fresh = $server->fresh();
-        expect($fresh->user_id)->toBe($newOwner->id)
-            ->and($fresh->team_id)->toBeNull();
-    }
-});
-
-it('deletes a team and its jobs when the typed confirmation matches the team name', function () {
-    $admin = User::factory()->create(['is_admin' => true]);
-    $doomed = Team::factory()->create(['name' => 'Doomed']);
-    $jobs = Server::factory()->count(2)->forTeam($doomed)->create();
+    $servers = Server::factory()->count(2)->forTeam($doomed)->create();
 
     Livewire::actingAs($admin)
         ->test(Teams::class)
@@ -92,7 +68,7 @@ it('deletes a team and its jobs when the typed confirmation matches the team nam
         ->call('deleteWithServers');
 
     expect(Team::find($doomed->id))->toBeNull();
-    foreach ($jobs as $server) {
+    foreach ($servers as $server) {
         expect(Server::find($server->id))->toBeNull();
     }
 });

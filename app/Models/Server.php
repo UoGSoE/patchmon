@@ -3,8 +3,7 @@
 namespace App\Models;
 
 use App\Enums\GraceUnit;
-use App\Enums\ScheduleInterval;
-use Cron\CronExpression;
+use App\Enums\OsType;
 use Database\Factories\ServerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,14 +19,12 @@ class Server extends Model
 
     protected $fillable = [
         'team_id',
-        'user_id',
         'created_by_user_id',
         'name',
         'description',
         'location',
-        'cron_expression',
-        'schedule_interval',
-        'schedule_frequency',
+        'os_type',
+        'interval_months',
         'grace_value',
         'grace_units',
         'patch_token',
@@ -52,7 +49,7 @@ class Server extends Model
     protected function casts(): array
     {
         return [
-            'schedule_interval' => ScheduleInterval::class,
+            'os_type' => OsType::class,
             'grace_units' => GraceUnit::class,
             'last_patched_at' => 'datetime',
             'alerting_since' => 'datetime',
@@ -64,11 +61,6 @@ class Server extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     public function createdBy(): BelongsTo
@@ -83,79 +75,40 @@ class Server extends Model
 
     public function resolveNotificationEmail(): string
     {
-        if ($this->notification_email) {
-            return $this->notification_email;
-        }
-
-        if ($this->team_id) {
-            return $this->team->notification_email;
-        }
-
-        return $this->user->notification_email ?? $this->user->email;
+        return $this->notification_email ?? $this->team->notification_email;
     }
 
     public function resolveSenderEmail(): ?string
     {
-        if ($this->sender_email) {
-            return $this->sender_email;
-        }
-
-        if ($this->team_id) {
-            return $this->team->sender_email;
-        }
-
-        return $this->user->sender_email;
+        return $this->sender_email ?? $this->team->sender_email;
     }
 
     public function isOverdue(): bool
     {
-        if ($this->cron_expression) {
-            $previousFiring = Carbon::instance(
-                (new CronExpression($this->cron_expression))->getPreviousRunDate(now()->toDateTimeString())
-            );
+        return now()->greaterThanOrEqualTo($this->deadline());
+    }
 
-            if (now()->lessThan($previousFiring->copy()->addMinutes($this->graceMinutes()))) {
-                return false;
-            }
-
-            return $this->last_patched_at === null
-                || $this->last_patched_at->lessThan($previousFiring);
-        }
-
+    public function deadline(): Carbon
+    {
         $reference = $this->last_patched_at ?? $this->created_at;
-        $deadline = $reference->copy()->addMinutes($this->periodMinutes() + $this->graceMinutes());
+        $base = $reference->copy()->addMonthsNoOverflow($this->interval_months);
 
-        return now()->greaterThanOrEqualTo($deadline);
+        return $this->grace_units->addTo($base, $this->grace_value);
     }
 
-    public function nextScheduledAfter(Carbon $after): Carbon
-    {
-        if ($this->cron_expression) {
-            return Carbon::instance(
-                (new CronExpression($this->cron_expression))->getNextRunDate($after->toDateTimeString())
-            );
-        }
-
-        return $after->copy()->addMinutes($this->periodMinutes());
-    }
-
-    public function periodMinutes(): int
-    {
-        return intdiv($this->schedule_interval->toMinutes(), max($this->schedule_frequency, 1));
-    }
-
-    public function graceMinutes(): int
-    {
-        return $this->grace_units->toMinutes($this->grace_value);
-    }
-
-    public function recordPatchEvent(?string $sourceIp = null, ?Carbon $at = null): PatchEvent
-    {
+    public function recordPatch(
+        ?User $patchedBy = null,
+        ?string $notes = null,
+        ?string $sourceIp = null,
+        ?Carbon $at = null,
+    ): PatchEvent {
         $at ??= now();
 
         $patchEvent = $this->patchEvents()->create([
+            'patched_by' => $patchedBy?->id,
             'patched_at' => $at,
             'source_ip' => $sourceIp,
+            'notes' => $notes,
         ]);
 
         $this->last_patched_at = $at;
@@ -184,12 +137,6 @@ class Server extends Model
 
     public function isCurrentlySilenced(): bool
     {
-        if ($this->silenced_until?->isFuture()) {
-            return true;
-        }
-
-        $owner = $this->team_id ? $this->team : $this->user;
-
-        return (bool) $owner?->silenced_until?->isFuture();
+        return (bool) $this->silenced_until?->isFuture();
     }
 }

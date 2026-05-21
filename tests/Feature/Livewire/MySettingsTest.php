@@ -5,44 +5,6 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 
-it('silences and unsilences the signed-in user via the toggle', function () {
-    $alice = User::factory()->create();
-    $until = now()->addDay()->startOfSecond();
-
-    Livewire::actingAs($alice)
-        ->test(MySettings::class)
-        ->set('silenceUntil', $until->toDateTimeLocalString())
-        ->set('silenceReason', 'On leave')
-        ->set('silenced', true);
-
-    expect($alice->fresh()->silenced_until)->not->toBeNull()
-        ->and($alice->fresh()->silence_reason)->toBe('On leave');
-
-    Livewire::actingAs($alice->fresh())
-        ->test(MySettings::class)
-        ->set('silenced', false);
-
-    expect($alice->fresh()->silenced_until)->toBeNull();
-});
-
-it('saves email preferences for the signed-in user', function () {
-    $alice = User::factory()->create([
-        'notification_email' => null,
-        'sender_email' => null,
-    ]);
-
-    Livewire::actingAs($alice)
-        ->test(MySettings::class)
-        ->set('notificationEmail', 'alice-alerts@example.ac.uk')
-        ->set('senderEmail', 'patchmon-noreply@example.ac.uk')
-        ->call('saveEmails')
-        ->assertHasNoErrors();
-
-    $alice->refresh();
-    expect($alice->notification_email)->toBe('alice-alerts@example.ac.uk')
-        ->and($alice->sender_email)->toBe('patchmon-noreply@example.ac.uk');
-});
-
 it('mints an API token with the selected abilities', function () {
     $alice = User::factory()->create();
 

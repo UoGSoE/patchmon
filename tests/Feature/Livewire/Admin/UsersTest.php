@@ -2,6 +2,7 @@
 
 use App\Livewire\Admin\Users;
 use App\Models\Server;
+use App\Models\Team;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -122,7 +123,7 @@ it('rejects an edit with a non-GUID-shaped username', function () {
     expect($target->fresh()->username)->toBe('abc1d');
 });
 
-it('deletes a user with no personal jobs after typed confirmation', function () {
+it('deletes a user after typed confirmation', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $target = User::factory()->create(['forenames' => 'Quiet', 'surname' => 'Leaver']);
 
@@ -130,27 +131,25 @@ it('deletes a user with no personal jobs after typed confirmation', function () 
         ->test(Users::class)
         ->call('confirmDelete', $target->id)
         ->set('typedConfirmation', 'Quiet Leaver')
-        ->call('deleteWithServers')
+        ->call('delete')
         ->assertHasNoErrors();
 
     expect(User::find($target->id))->toBeNull();
 });
 
-it('transfers personal jobs to another user on delete', function () {
+it('reassigns server authorship to the deleting admin when the creator is removed', function () {
     $admin = User::factory()->create(['is_admin' => true]);
-    $target = User::factory()->create();
-    $recipient = User::factory()->create();
-    $server = Server::factory()->forUser($target)->create();
+    $target = User::factory()->create(['forenames' => 'Quiet', 'surname' => 'Leaver']);
+    $team = Team::factory()->create();
+    $server = Server::factory()->forTeam($team, $target)->create();
 
     Livewire::actingAs($admin)
         ->test(Users::class)
         ->call('confirmDelete', $target->id)
-        ->set('transferTargetUserId', $recipient->id)
-        ->call('transferAndDelete')
-        ->assertHasNoErrors();
+        ->set('typedConfirmation', 'Quiet Leaver')
+        ->call('delete');
 
-    expect(User::find($target->id))->toBeNull()
-        ->and($server->fresh()->user_id)->toBe($recipient->id);
+    expect($server->fresh()->created_by_user_id)->toBe($admin->id);
 });
 
 it('creates a new user via the user-form flyout', function () {
