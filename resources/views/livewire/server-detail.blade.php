@@ -43,31 +43,49 @@
         </flux:callout>
     @endif
 
-    <div class="mt-6 grid gap-6 sm:grid-cols-2 max-w-1/2">
-        <flux:card>
-            <flux:heading size="sm">Schedule</flux:heading>
-            <flux:text class="mt-1">{{ $server->intervalLabel() }}</flux:text>
-            <flux:text size="sm" class="mt-1">{{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }} grace</flux:text>
-        </flux:card>
+    <div class="mt-6 grid gap-6 sm:grid-cols-2">
+        <div>
+            <div class="mt-6 grid gap-6 sm:grid-cols-2">
+                <flux:card>
+                    <flux:heading size="sm">Schedule</flux:heading>
+                    <flux:text class="mt-1">{{ $server->intervalLabel() }}</flux:text>
+                    <flux:text size="sm" class="mt-1">{{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }} grace</flux:text>
+                </flux:card>
 
-        <flux:card>
-            <flux:heading size="sm">Team</flux:heading>
-            <flux:text class="mt-1">{{ $server->team->name }}</flux:text>
-            <flux:text size="sm" class="mt-1">Created by {{ $server->createdBy->full_name ?: $server->createdBy->email }}</flux:text>
-            @if ($server->location)
-                <flux:text size="sm" class="mt-1">Location: {{ $server->location }}</flux:text>
-            @endif
-        </flux:card>
+                <flux:card>
+                    <flux:heading size="sm">Team</flux:heading>
+                    <flux:text class="mt-1">{{ $server->team->name }}</flux:text>
+                    <flux:text size="sm" class="mt-1">Created by {{ $server->createdBy->full_name ?: $server->createdBy->email }}</flux:text>
+                    @if ($server->location)
+                        <flux:text size="sm" class="mt-1">Location: {{ $server->location }}</flux:text>
+                    @endif
+                </flux:card>
+            </div>
+
+            <div class="mt-6">
+                <flux:heading size="sm">Record-patch URL</flux:heading>
+                <flux:text size="sm">Curl this URL when you patch the server. Treat it like a webhook URL.</flux:text>
+                <flux:input class="mt-2 font-mono" readonly :value="$recordPatchUrl" copyable />
+            </div>
+        </div>
     </div>
 
-    <div class="mt-6 max-w-1/2">
-        <flux:heading size="sm">Record-patch URL</flux:heading>
-        <flux:text size="sm">Curl this URL when you patch the server. Treat it like a webhook URL.</flux:text>
-        <flux:input class="mt-2 font-mono" readonly :value="$recordPatchUrl" copyable />
+    <flux:separator class="mt-6" />
+
+    <div class="mt-6 sm:max-w-1/2">
+        <flux:heading size="sm">Record a patch</flux:heading>
+        <flux:text size="sm">Logs against your account. Defaults to right now.</flux:text>
+        <form wire:submit="recordPatch" class="mt-2 space-y-3">
+            <flux:textarea wire:model="patchNotes" label="Notes (optional)" rows="2" placeholder="Anything you'd want a future colleague to know" />
+            <flux:input wire:model="patchedAt" type="datetime-local" label="When" />
+            <flux:button type="submit" variant="primary" icon="check">Record patch</flux:button>
+        </form>
     </div>
 
-    <flux:fieldset class="mt-8">
-        <div class="max-w-1/2 space-y-6">
+    <flux:separator class="mt-6" />
+
+    <flux:fieldset class="mt-6">
+        <div class="sm:max-w-1/2 space-y-6">
         <flux:switch wire:model.live="silenced" label="Silenced" description="When silenced, Patchmon won't alert about this server."/>
         @if ($silenced)
             <div class="grid gap-3 sm:grid-cols-2">
@@ -83,15 +101,8 @@
         </div>
     </flux:fieldset>
 
-    <div class="mt-8 max-w-1/2">
-        <flux:heading size="sm">Record a patch</flux:heading>
-        <flux:text size="sm">Logs against your account. Defaults to right now.</flux:text>
-        <form wire:submit="recordPatch" class="mt-2 space-y-3">
-            <flux:textarea wire:model="patchNotes" label="Notes (optional)" rows="2" placeholder="Anything you'd want a future colleague to know" />
-            <flux:input wire:model="patchedAt" type="datetime-local" label="When" />
-            <flux:button type="submit" variant="primary" icon="check">Record patch</flux:button>
-        </form>
-    </div>
+
+    <flux:separator class="mt-6" />
 
     <div class="mt-8">
         <flux:heading size="sm">Recent patches</flux:heading>
