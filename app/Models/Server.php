@@ -96,6 +96,17 @@ class Server extends Model
         return $this->grace_units->addTo($base, $this->grace_value);
     }
 
+    public function intervalLabel(): string
+    {
+        return match ($this->interval_months) {
+            1 => 'Monthly',
+            3 => 'Quarterly',
+            6 => 'Twice-yearly',
+            12 => 'Yearly',
+            default => "Every {$this->interval_months} months",
+        };
+    }
+
     public function recordPatch(
         ?User $patchedBy = null,
         ?string $notes = null,

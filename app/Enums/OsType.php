@@ -16,7 +16,7 @@ enum OsType: string
     public function colour(): string
     {
         return match ($this) {
-            self::Linux => 'amber',
+            self::Linux => 'indigo',
             self::Windows => 'sky',
             self::Other => 'zinc',
         };

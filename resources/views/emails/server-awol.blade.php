@@ -3,7 +3,7 @@
 
 Patchmon expected **{{ $server->name }}** to be patched by now and hasn't heard from it.
 
-**Schedule:** every {{ $server->interval_months }} {{ \Illuminate\Support\Str::plural('month', $server->interval_months) }}
+**Schedule:** {{ $server->intervalLabel() }}
 
 **Grace period:** {{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }}
 
@@ -14,7 +14,7 @@ Patchmon expected **{{ $server->name }}** to be patched by now and hasn't heard 
 @endif
 
 @if ($server->alerting_since)
-**Awol since:** {{ $server->alerting_since->toDayDateTimeString() }} ({{ $server->alerting_since->diffForHumans() }})
+**Overdue since:** {{ $server->alerting_since->toDayDateTimeString() }} ({{ $server->alerting_since->diffForHumans() }})
 @endif
 
 <x-mail::button :url="route('home')">

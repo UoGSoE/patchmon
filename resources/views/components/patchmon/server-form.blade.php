@@ -34,10 +34,10 @@
     </flux:select>
 
     <flux:select wire:model="form.interval_months" label="Patch every">
-        <flux:select.option value="1">Month (monthly)</flux:select.option>
-        <flux:select.option value="3">3 months (quarterly)</flux:select.option>
-        <flux:select.option value="6">6 months (twice yearly)</flux:select.option>
-        <flux:select.option value="12">12 months (yearly)</flux:select.option>
+        <flux:select.option value="1">Monthly</flux:select.option>
+        <flux:select.option value="3">Quarterly</flux:select.option>
+        <flux:select.option value="6">Twice-yearly</flux:select.option>
+        <flux:select.option value="12">Yearly</flux:select.option>
     </flux:select>
 
     <div>

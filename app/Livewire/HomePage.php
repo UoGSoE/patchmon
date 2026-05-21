@@ -24,6 +24,15 @@ class HomePage extends Component
     #[Url(as: 'invert')]
     public $excludeFilter = false;
 
+    #[Url(as: 'os')]
+    public $osFilter = '';
+
+    #[Url(as: 'team')]
+    public $teamFilter = '';
+
+    #[Url(as: 'silenced')]
+    public $silencedFilter = '';
+
     public ServerForm $form;
 
     public function mount(): void
@@ -108,6 +117,22 @@ class HomePage extends Component
 
     private function applyFilter(Builder $query): Builder
     {
+        if ($this->osFilter !== '') {
+            $query->where('os_type', $this->osFilter);
+        }
+
+        if ($this->teamFilter !== '') {
+            $query->where('team_id', $this->teamFilter);
+        }
+
+        if ($this->silencedFilter === 'silenced') {
+            $query->where('silenced_until', '>', now());
+        }
+
+        if ($this->silencedFilter === 'active') {
+            $query->where(fn ($q) => $q->whereNull('silenced_until')->orWhere('silenced_until', '<=', now()));
+        }
+
         $needle = trim((string) $this->filter);
 
         if (strlen($needle) < 2) {

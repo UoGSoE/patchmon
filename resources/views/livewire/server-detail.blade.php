@@ -13,7 +13,7 @@
             @endif
             @if ($server->alerting_since)
                 <flux:text size="sm" class="mt-1">
-                    Awol since {{ $server->alerting_since->diffForHumans() }}
+                    Overdue since {{ $server->alerting_since->diffForHumans() }}
                 </flux:text>
             @endif
         </div>
@@ -30,9 +30,7 @@
     <div class="mt-6 grid gap-6 sm:grid-cols-2 max-w-1/2">
         <flux:card>
             <flux:heading size="sm">Schedule</flux:heading>
-            <flux:text class="mt-1">
-                Every {{ $server->interval_months }} {{ \Illuminate\Support\Str::plural('month', $server->interval_months) }}
-            </flux:text>
+            <flux:text class="mt-1">{{ $server->intervalLabel() }}</flux:text>
             <flux:text size="sm" class="mt-1">{{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }} grace</flux:text>
         </flux:card>
 

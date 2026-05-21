@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OsType;
 use App\Livewire\HomePage;
 use App\Models\Server;
 use App\Models\Team;
@@ -247,4 +248,64 @@ it('hides rows matching any token in exclude mode', function () {
         ->toContain('clean server')
         ->not->toContain('linux only')
         ->not->toContain('rankine only');
+});
+
+it('narrows the listing by silenced state', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+
+    Server::factory()->forTeam($team)->silenced()->create(['name' => 'Quiet box']);
+    Server::factory()->forTeam($team)->create(['name' => 'Noisy box']);
+
+    $onlySilenced = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('silencedFilter', 'silenced');
+
+    expect($onlySilenced->instance()->teamServers->pluck('name')->all())
+        ->toContain('Quiet box')
+        ->not->toContain('Noisy box');
+
+    $onlyActive = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('silencedFilter', 'active');
+
+    expect($onlyActive->instance()->teamServers->pluck('name')->all())
+        ->toContain('Noisy box')
+        ->not->toContain('Quiet box');
+});
+
+it('narrows the listing to a single team when a team filter is set', function () {
+    $alice = User::factory()->create();
+    $netservices = Team::factory()->create();
+    $storage = Team::factory()->create();
+    $alice->teams()->attach([$netservices->id, $storage->id]);
+
+    Server::factory()->forTeam($netservices)->create(['name' => 'Net A']);
+    Server::factory()->forTeam($storage)->create(['name' => 'Storage A']);
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('teamFilter', (string) $storage->id);
+
+    expect($component->instance()->teamServers->pluck('name')->all())
+        ->toContain('Storage A')
+        ->not->toContain('Net A');
+});
+
+it('narrows the listing to a single OS when an OS filter is set', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+
+    Server::factory()->forTeam($team)->create(['name' => 'Linux box', 'os_type' => OsType::Linux]);
+    Server::factory()->forTeam($team)->create(['name' => 'Windows box', 'os_type' => OsType::Windows]);
+    Server::factory()->forTeam($team)->create(['name' => 'Other box', 'os_type' => OsType::Other]);
+
+    $component = Livewire::actingAs($alice)->test(HomePage::class)->set('osFilter', 'windows');
+
+    expect($component->instance()->teamServers->pluck('name')->all())
+        ->toContain('Windows box')
+        ->not->toContain('Linux box')
+        ->not->toContain('Other box');
 });

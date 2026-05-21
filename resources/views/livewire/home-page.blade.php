@@ -2,7 +2,7 @@
     <div class="flex items-start justify-between gap-4">
         <div>
             <flux:heading size="xl">Servers</flux:heading>
-            <flux:text class="mt-2">Servers that are awol come to the top so you can see them at a glance.</flux:text>
+            <flux:text class="mt-2">Overdue servers come to the top so you can see them at a glance.</flux:text>
         </div>
         <flux:button wire:click="openCreate" icon="plus">New server</flux:button>
     </div>
@@ -13,39 +13,51 @@
             <flux:tab name="alerting">Alerting servers</flux:tab>
         </flux:tabs>
 
-        <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+        <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] md:items-end">
             <flux:input
                 wire:model.live.debounce.300ms="filter"
                 placeholder="Filter by name, description, or location"
                 icon="magnifying-glass"
                 clearable
-                class="md:max-w-md"
             />
+            <flux:select wire:model.live="osFilter" placeholder="Any OS">
+                <flux:select.option value="">Any OS</flux:select.option>
+                @foreach ($osTypeOptions as $os)
+                    <flux:select.option value="{{ $os->value }}">{{ $os->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:select wire:model.live="teamFilter" placeholder="Any team">
+                <flux:select.option value="">Any team</flux:select.option>
+                @foreach ($teams as $team)
+                    <flux:select.option value="{{ $team->id }}">{{ $team->name }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:select wire:model.live="silencedFilter">
+                <flux:select.option value="">Silenced &amp; active</flux:select.option>
+                <flux:select.option value="active">Active only</flux:select.option>
+                <flux:select.option value="silenced">Silenced only</flux:select.option>
+            </flux:select>
             <flux:checkbox wire:model.live="excludeFilter" label="Exclude matches" />
         </div>
 
         <flux:tab.panel name="teams">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @forelse ($this->teamServers as $server)
-                    <x-patchmon.server-row :server="$server" />
-                @empty
+            <x-patchmon.server-table :servers="$this->teamServers">
+                <x-slot:empty>
                     @if ($this->userIsInAnyTeam)
-                        <flux:text class="mt-6">None of your teams have servers yet.</flux:text>
+                        <flux:text>No servers match your filters.</flux:text>
                     @else
-                        <flux:text class="mt-6">You are not a member of any teams.</flux:text>
+                        <flux:text>You are not a member of any teams.</flux:text>
                     @endif
-                @endforelse
-            </div>
+                </x-slot:empty>
+            </x-patchmon.server-table>
         </flux:tab.panel>
 
         <flux:tab.panel name="alerting">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @forelse ($this->alertingServers as $server)
-                    <x-patchmon.server-row :server="$server" />
-                @empty
-                    <flux:text class="mt-6">Nothing is currently alerting.</flux:text>
-                @endforelse
-            </div>
+            <x-patchmon.server-table :servers="$this->alertingServers">
+                <x-slot:empty>
+                    <flux:text>Nothing is currently alerting.</flux:text>
+                </x-slot:empty>
+            </x-patchmon.server-table>
         </flux:tab.panel>
     </flux:tab.group>
 

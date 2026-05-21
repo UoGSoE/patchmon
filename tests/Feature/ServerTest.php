@@ -62,3 +62,11 @@ it('persists an optional location string on a server', function () {
 
     expect($server->fresh()->location)->toBe('Rankine');
 });
+
+it('returns a friendly label for common patching intervals and falls back for unusual ones', function () {
+    expect(Server::factory()->withInterval(1)->make()->intervalLabel())->toBe('Monthly')
+        ->and(Server::factory()->withInterval(3)->make()->intervalLabel())->toBe('Quarterly')
+        ->and(Server::factory()->withInterval(6)->make()->intervalLabel())->toBe('Twice-yearly')
+        ->and(Server::factory()->withInterval(12)->make()->intervalLabel())->toBe('Yearly')
+        ->and(Server::factory()->withInterval(4)->make()->intervalLabel())->toBe('Every 4 months');
+});

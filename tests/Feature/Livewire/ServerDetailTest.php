@@ -138,6 +138,6 @@ it('shows the server name, interval and record-patch URL to the team member', fu
         ->get(route('servers.show', $server))
         ->assertOk()
         ->assertSee('fileserver-prod-02')
-        ->assertSee('Every 3 months')
+        ->assertSee('Quarterly')
         ->assertSee($server->patch_token);
 });
