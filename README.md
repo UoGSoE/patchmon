@@ -1,167 +1,143 @@
-# Cronmon
+# Patchmon
 
-A watchdog for cron-style jobs. Teams register the jobs they care
-about, each job gets a unique check-in URL, and Cronmon emails the
-responsible person or team if a job doesn't check in within its
-schedule plus a grace period.
+A watchdog for server patching. Teams register the servers they look
+after, each server has an expected patching cadence and a grace
+period, and Patchmon emails the team if a server goes past its
+window without being patched.
 
 ## What it does
 
-Cronmon sits between your scheduled tasks and the people who need
-to know when they break. Every job has a schedule (either a cron
-expression or a simple interval like "daily") and a grace period.
-When the job runs, it pings its check-in URL; if the ping doesn't
-arrive in time, Cronmon raises an alert and keeps re-alerting on
-each missed window until the job checks in again.
+Patchmon replaces a shared spreadsheet with something that will
+actually nag you when patching slips. Each server belongs to a team
+and has a cadence (monthly, quarterly, twice-yearly or yearly) and a
+grace period (days, weeks or months). When the server is patched,
+something pings its unique record-patch URL — a one-line curl in a
+cron job, a Puppet exec, an SCCM hook, or a sysadmin clicking
+"Record a patch" on the server's detail page.
 
-It's intended for internal IT use: nightly backups, config
-snapshots, tape rotation reminders, and the small army of quiet
-cron jobs that nobody notices until they stop running.
-Authentication is handled by SSO (Keycloak via Socialite), so
-there's no public signup.
+If a server passes its deadline, Patchmon flips it to alerting and
+emails the team. The alert is throttled to once a week, so a single
+missed message over a holiday won't sit unnoticed. Silencing windows
+let you tell Patchmon to stay quiet during planned change freezes
+(exam periods, say) for a chosen date range rather than just "until
+X".
 
-## Checking in a job
+The home page is the report: a filterable table of every server,
+with overdue ones at the top. There are no separate dashboards.
 
-Append a `curl` to whatever your cron entry runs. The full URL is
-shown on each job's detail page in Cronmon.
+Patchmon is not a patch management tool. It doesn't apply patches,
+talk to SCCM or Puppet directly, or track CVEs. It notices when a
+server hasn't been patched in too long, and tells someone.
 
-```bash
-0 2 * * * /usr/local/bin/nightly-backup && curl -fsS \
-  https://cronmon.example.ac.uk/check-in/00000000-0000-0000-0000-000000000000 \
-  > /dev/null
-```
+## Stack
 
-A few things worth knowing:
-
-- The token in the URL is per-job. Treat it like a webhook URL:
-  unguessable, but not a high-stakes secret.
-- Use `-fsS` so curl fails the cron command on a non-2xx response.
-- The response body is empty; the 200 status is the acknowledgement.
+- Laravel 13 with Livewire 4 and Flux UI 2
+- Sanctum for the JSON API, with `ability:` scoped personal access tokens
+- Horizon for queued mail
+- Socialite (Keycloak) for SSO; there is no public signup
+- Pest 4 for tests, against an in-memory SQLite database
+- Scramble for auto-generated OpenAPI docs at `/docs/api`
 
 ## Prerequisites
 
-- PHP 8.4
-- [Lando](https://lando.dev/) for the local development environment
-- A [Flux UI](https://fluxui.dev/) Pro licence (Cronmon uses Flux Pro
-  components, so the licence is needed to install Composer
-  dependencies)
-- Composer credentials for the Flux Pro repository in `auth.json`
+- PHP 8.3 or later
+- Composer
+- [Lando](https://lando.dev/) (which needs Docker Desktop or
+  equivalent)
+- A [FluxUI Pro](https://fluxui.dev/) licence. `livewire/flux-pro` is
+  in `composer.json` because the UI uses the date-picker and other
+  Pro components, so `composer install` will fail without one.
 
 ## Getting started
 
 ```bash
+git clone git@github.com:UoGSoE/patchmon.git
+cd patchmon
 cp .env.example .env
 lando start
-lando mfs        # drop, migrate and seed the dev database
+lando mfs
 ```
 
-The `.env.example` file is pre-configured for Lando, so the
-defaults should work without further changes. `lando mfs` runs
-the `TestDataSeeder`, which creates a small set of users, teams
-and jobs to make the UI usable straight away.
+`lando mfs` is a shortcut for `migrate:fresh` plus seeding. The
+seeder gives you a realistic set of teams, around 330 servers, a few
+currently-alerting and silenced examples, and a test user to log in
+with:
 
-Sign in as **admin2x** / **secret** (admin) or **user2x** / **secret**
-(standard user). MailHog is exposed on the Lando proxy so you can
-read alert emails locally.
+- Username: `admin2x`
+- Password: `secret`
 
-### Useful Lando commands
+SSO is the production login. The seeded user is for local
+development only.
+
+## Day-to-day lando commands
 
 ```bash
-lando artisan ...     # any artisan command
-lando composer ...    # composer inside the appserver
-lando npm ...         # npm inside the node container
-lando mfs             # drop + migrate + seed
+lando artisan ...        # any artisan command
+lando composer ...       # composer in the container
+lando test               # full Pest suite
+lando mfs                # migrate:fresh + seed (rebuild local DB)
 ```
 
-## Self-hosted deployment with Docker Compose
+If you'd rather run things directly on the host without lando, the
+usual `php artisan ...` and `composer ...` work too.
 
-For anyone who'd like to run Cronmon themselves without our internal
-Docker Swarm setup, there's a `compose.yml` in the repo root that
-brings up the app, scheduler, queue worker, a one-shot migrations
-service, MariaDB and Redis. Reverse-proxy / TLS termination is left
-to you — the app is published on a configurable host port.
+## Recording a patch
+
+Every server has a unique record-patch URL containing a UUID token.
+The endpoint is deliberately unauthenticated so a one-line cron
+entry or a Puppet hook can ping it directly. Sending a personal
+access token as a bearer is optional, and only attributes the patch
+event to the token's owner.
 
 ```bash
-cp compose.dotenv.example .env       # then edit — see notes inside
-docker compose build                 # needs Flux Pro credentials
-docker compose up -d
-docker compose exec app php artisan cronmon:add-user --admin
+# Anonymous (Puppet, SCCM, cron one-liner)
+curl -X POST https://patchmon.example.ac.uk/record-patch/<patch_token>
+
+# Attributed, with notes
+curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -X POST -d '{"notes": "Rebooted twice"}' \
+  https://patchmon.example.ac.uk/record-patch/<patch_token>
 ```
 
-A few things to know:
+A logged-in user can also record a patch from the server's detail
+page in the UI; the event is attributed to them automatically.
 
-- **Flux Pro licence required to build the image.** Cronmon's UI is
-  built on [Flux Pro](https://fluxui.dev/), Caleb Porzio's paid
-  component library that helps fund Livewire and Flux. Set
-  `FLUX_USERNAME` and `FLUX_LICENSE_KEY` in `.env` before
-  `docker compose build`. There's no canonical prebuilt image — if
-  you're using this app, please chuck a few quid Caleb's way.
-- **`APP_KEY` needs generating once.** Run
-  `docker compose run --rm app php artisan key:generate --show`
-  and paste the result into `.env`, then `up -d`.
-- **Mail in demo mode.** If you just want to see the app work without
-  wiring up real SMTP, the `mailpit` service in `compose.yml` is
-  commented out — uncomment it, set `MAIL_HOST=mailpit` /
-  `MAIL_PORT=1025` in `.env`, and alert emails will land in
-  Mailpit's web UI on port 8025.
-- **SSO is the only sign-in path.** Cronmon is built around Keycloak
-  via Socialite. The `KEYCLOAK_*` variables in
-  `compose.dotenv.example` need to point at your own realm.
-- **Persistence.** MariaDB and Redis use named Docker volumes
-  (`cronmon_mariadb`, `cronmon_redis`); back those up if the data
-  matters to you.
-
-## Bootstrapping a fresh deploy
-
-On a brand-new install nobody can sign in via SSO yet — there are
-no users in the database for the allowlist to match against. Create
-the first admin from the command line:
-
-```bash
-php artisan cronmon:add-user                    # interactive walkthrough
-php artisan cronmon:add-user kmc2y kit.mcauthor@example.ac.uk McAuthor Kit --admin
-```
-
-Positional arguments are `<username> <email> <surname> <forenames>`.
-The interactive mode asks for the email first and prefills surname
-and forenames from it when the address follows the
-`forename.surname[.N]@...` pattern, so most of the time you just
-confirm the defaults. After that the user can sign in via SSO and
-the rest of the admin UI takes over.
+The JSON API at `/api/v1/...` covers listing, creating, updating and
+silencing servers, gated by Sanctum scopes (`servers:read`,
+`servers:write`, `admin:read`, `admin:write`). Once logged in,
+`/api/help` has curl and python examples for the common flows, and
+`/docs/api` has the auto-generated OpenAPI reference.
 
 ## Running tests
 
-The test suite uses Pest and runs against an in-memory SQLite
-database via `RefreshDatabase`, so no migration step is needed.
-
 ```bash
-lando test                              # full suite
-lando test --filter=HomePageTest        # one file or test
+lando test
+# or
+php artisan test --compact
 ```
 
-Outside of Lando, `php artisan test --compact` works too if you
-have PHP installed locally.
-
-CI runs the suite against both MySQL and PostgreSQL on every push
-(see `.github/workflows/`). Production runs on PostgreSQL but a
-sibling system uses MySQL, and keeping both happy catches the
-occasional dialect difference early.
+The test environment uses an in-memory SQLite database via
+`RefreshDatabase`, so there's no need to migrate or seed before
+running the suite. Around 200 feature tests cover the data model, the
+UI flows, the API endpoints and the scheduled overdue evaluator.
 
 ## Contributing
 
-Pull requests are welcome. The short version:
+It's a small project with a small team behind it. If you'd like to
+suggest a change:
 
-1. Fork or clone the repository.
-2. Follow the [Getting started](#getting-started) steps above.
-3. Write a test for your change, make it pass, then run the full
-   suite with `lando test`.
-4. Run `vendor/bin/pint --dirty` to format any PHP files you've
-   touched.
-5. Open a pull request describing what changed and why.
+1. Fork or clone the repository
+2. `cp .env.example .env` and `lando start`
+3. `lando mfs` to set up the database
+4. Write or update a Pest test first, then make the change
+5. `lando test` before pushing
+6. Open a pull request
 
-Project-specific conventions live in `CLAUDE.md` and the `.ai/`
-directory. Worth a skim before making larger changes.
+We follow Laravel conventions, use `pint` for formatting, and prefer
+readable code over clever code. The existing Livewire components and
+feature tests are the best guide to the house style.
 
 ## Licence
 
-Cronmon is released under the [MIT licence](LICENSE).
+Patchmon is MIT-licensed. See [LICENSE](LICENSE) for the full text.
