@@ -6,6 +6,16 @@
     </flux:text>
 
     <flux:callout class="mt-6" icon="key" variant="secondary">
+        <flux:callout.heading>Two tokens, two purposes</flux:callout.heading>
+        <flux:callout.text>
+            Your <strong>personal access token</strong> (<code>PATCHMON_API_TOKEN</code>) authenticates you against the JSON API: listing servers, silencing, etc.
+        </flux:callout.text>
+        <flux:callout.text>
+            Each server also has its own <strong>patch token</strong> — a UUID baked into a per-server <code>/record-patch/&lt;token&gt;</code> URL. That endpoint is unauthenticated by design so Puppet, SCCM or a one-liner cron job can ping it. Adding your personal access token as a bearer is optional and only attributes the patch event to you.
+        </flux:callout.text>
+    </flux:callout>
+
+    <flux:callout class="mt-4" icon="key" variant="secondary">
         <flux:callout.heading>Set your token once</flux:callout.heading>
         <flux:callout.text>
             Examples below use the environment variable <code>PATCHMON_API_TOKEN</code>. Put this in your shell rc file so every example below works as-is:
@@ -30,49 +40,55 @@
                 </div>
 
                 <div>
-                    <flux:heading size="sm">List my personal servers</flux:heading>
-                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
-  "{{ $baseUrl }}/api/v1/servers?scope=mine"</pre>
+                    <flux:heading size="sm">Record a patch (unauthenticated — Puppet / SCCM / cron one-liner)</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -X POST {{ $baseUrl }}/record-patch/&lt;patch_token&gt;</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">List team servers, filter by name, sort newest-patched first</flux:heading>
-                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
-  "{{ $baseUrl }}/api/v1/servers?scope=teams&filter[name]=backup&sort=-last_patched_at"</pre>
-                </div>
-
-                <div>
-                    <flux:heading size="sm">Create a personal interval server (every day, 30 min grace)</flux:heading>
+                    <flux:heading size="sm">Record a patch with attribution and notes</flux:heading>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
   -H "Content-Type: application/json" \
   -X POST \
-  -d '{
-    "name": "Nightly backup",
-    "schedule_interval": "daily",
-    "schedule_frequency": 1,
-    "grace_value": 30,
-    "grace_units": "minutes"
-  }' \
+  -d '{"notes": "Had to reboot twice"}' \
+  {{ $baseUrl }}/record-patch/&lt;patch_token&gt;</pre>
+                </div>
+
+                <div>
+                    <flux:heading size="sm">List every server I can see</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
   {{ $baseUrl }}/api/v1/servers</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">Create a team-owned cron server (team_id 1)</flux:heading>
+                    <flux:heading size="sm">List Linux servers, sort newest-patched first</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
+  "{{ $baseUrl }}/api/v1/servers?filter[os_type]=linux&sort=-last_patched_at"</pre>
+                </div>
+
+                <div>
+                    <flux:heading size="sm">Restrict to one team</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
+  "{{ $baseUrl }}/api/v1/servers?filter[team_id]=1"</pre>
+                </div>
+
+                <div>
+                    <flux:heading size="sm">Create a server (team-owned, monthly patching, 7 days grace)</flux:heading>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
   -H "Content-Type: application/json" \
   -X POST \
   -d '{
-    "name": "Replication healthcheck",
+    "name": "fileserver-prod-02",
     "team_id": 1,
-    "cron_expression": "*/5 * * * *",
-    "grace_value": 2,
-    "grace_units": "minutes"
+    "os_type": "linux",
+    "interval_months": 1,
+    "grace_value": 7,
+    "grace_units": "days"
   }' \
   {{ $baseUrl }}/api/v1/servers</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">Silence a server until tomorrow</flux:heading>
+                    <flux:heading size="sm">Silence a server between two dates (e.g. exam window)</flux:heading>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
   -H "Content-Type: application/json" \
   -X POST \
@@ -102,8 +118,10 @@
                 <div>
                     <flux:heading size="sm">Shared setup</flux:heading>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">import os, requests
+from datetime import datetime, timedelta, timezone
 
-BASE = "{{ $baseUrl }}/api/v1"
+ROOT = "{{ $baseUrl }}"
+BASE = f"{ROOT}/api/v1"
 HEADERS = {"Authorization": f"Bearer {os.environ['PATCHMON_API_TOKEN']}"}</pre>
                 </div>
 
@@ -115,54 +133,55 @@ print(r.json()["user"]["full_name"])</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">List my personal servers</flux:heading>
-                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.get(f"{BASE}/servers", headers=HEADERS, params={"scope": "mine"})
+                    <flux:heading size="sm">Record a patch (unauthenticated — Puppet / SCCM / cron one-liner)</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">requests.post(f"{ROOT}/record-patch/&lt;patch_token&gt;").raise_for_status()</pre>
+                </div>
+
+                <div>
+                    <flux:heading size="sm">Record a patch with attribution and notes</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.post(
+    f"{ROOT}/record-patch/&lt;patch_token&gt;",
+    headers=HEADERS,
+    json={"notes": "Had to reboot twice"},
+)
+r.raise_for_status()</pre>
+                </div>
+
+                <div>
+                    <flux:heading size="sm">List every server I can see</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.get(f"{BASE}/servers", headers=HEADERS)
 r.raise_for_status()
 for server in r.json()["servers"]["data"]:
     print(server["name"], server["is_overdue"])</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">List team servers, filter by name, sort newest-patched first</flux:heading>
+                    <flux:heading size="sm">List Linux servers, sort newest-patched first</flux:heading>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.get(f"{BASE}/servers", headers=HEADERS, params={
-    "scope": "teams",
-    "filter[name]": "backup",
+    "filter[os_type]": "linux",
     "sort": "-last_patched_at",
 })
 r.raise_for_status()</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">Create a personal interval server (every day, 30 min grace)</flux:heading>
+                    <flux:heading size="sm">Create a server (team-owned, monthly patching, 7 days grace)</flux:heading>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.post(f"{BASE}/servers", headers=HEADERS, json={
-    "name": "Nightly backup",
-    "schedule_interval": "daily",
-    "schedule_frequency": 1,
-    "grace_value": 30,
-    "grace_units": "minutes",
+    "name": "fileserver-prod-02",
+    "team_id": 1,
+    "os_type": "linux",
+    "interval_months": 1,
+    "grace_value": 7,
+    "grace_units": "days",
 })
 r.raise_for_status()
 server = r.json()["data"]
-print("Record-patch URL:", f"{BASE.replace('/api/v1', '')}/record-patch/{server['patch_token']}")</pre>
+print("Record-patch URL:", f"{ROOT}/record-patch/{server['patch_token']}")</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">Create a team-owned cron server (team_id 1)</flux:heading>
-                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.post(f"{BASE}/servers", headers=HEADERS, json={
-    "name": "Replication healthcheck",
-    "team_id": 1,
-    "cron_expression": "*/5 * * * *",
-    "grace_value": 2,
-    "grace_units": "minutes",
-})
-r.raise_for_status()</pre>
-                </div>
-
-                <div>
-                    <flux:heading size="sm">Silence a server until tomorrow</flux:heading>
-                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">from datetime import datetime, timedelta, timezone
-
-r = requests.post(f"{BASE}/servers/42/silence", headers=HEADERS, json={
+                    <flux:heading size="sm">Silence a server between two dates (e.g. exam window)</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.post(f"{BASE}/servers/42/silence", headers=HEADERS, json={
     "silenced_from": datetime.now(timezone.utc).isoformat(),
     "silenced_until": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
     "silence_reason": "Investigating",
@@ -191,7 +210,6 @@ r.raise_for_status()</pre>
         <flux:callout.heading>Looking for the full reference?</flux:callout.heading>
         <flux:callout.text>
             <flux:link :href="$docsUrl" external>Auto-generated OpenAPI docs ↗</flux:link> list every endpoint and field.
-            Note: those docs don't currently document the <code>filter[…]</code> query parameters or the <code>scope</code> filter on the servers list endpoint — see the examples above for those.
         </flux:callout.text>
     </flux:callout>
 </div>
