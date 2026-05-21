@@ -4,8 +4,8 @@ namespace App\Livewire;
 
 use App\Enums\GraceUnit;
 use App\Enums\ScheduleInterval;
-use App\Livewire\Forms\JobForm;
-use App\Models\Job;
+use App\Livewire\Forms\ServerForm;
+use App\Models\Server;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -24,7 +24,7 @@ class HomePage extends Component
     #[Url(as: 'invert')]
     public $excludeFilter = false;
 
-    public JobForm $form;
+    public ServerForm $form;
 
     public function mount(): void
     {
@@ -41,25 +41,25 @@ class HomePage extends Component
         $this->form->schedule_frequency = 1;
         $this->form->grace_value = 1;
 
-        Flux::modal('job-form')->show();
+        Flux::modal('server-form')->show();
     }
 
     public function save(): void
     {
         $this->form->save();
 
-        Flux::modal('job-form')->close();
-        Flux::toast('Job created.', variant: 'success');
+        Flux::modal('server-form')->close();
+        Flux::toast('Server created.', variant: 'success');
 
-        unset($this->myJobs, $this->teamJobs);
+        unset($this->myServers, $this->teamServers);
     }
 
     #[Computed]
-    public function myJobs(): Collection
+    public function myServers(): Collection
     {
         return $this->sortForListing(
             $this->applyFilter(
-                Job::query()
+                Server::query()
                     ->where('user_id', auth()->id())
                     ->with(['team', 'user'])
             )->get()
@@ -67,13 +67,13 @@ class HomePage extends Component
     }
 
     #[Computed]
-    public function teamJobs(): Collection
+    public function teamServers(): Collection
     {
         $teamIds = auth()->user()->teams()->pluck('teams.id');
 
         return $this->sortForListing(
             $this->applyFilter(
-                Job::query()
+                Server::query()
                     ->whereIn('team_id', $teamIds)
                     ->with(['team', 'user'])
             )->get()
@@ -81,11 +81,11 @@ class HomePage extends Component
     }
 
     #[Computed]
-    public function alertingJobs(): Collection
+    public function alertingServers(): Collection
     {
         $user = auth()->user();
 
-        $query = Job::query()
+        $query = Server::query()
             ->whereNotNull('alerting_since')
             ->with(['team', 'user']);
 
@@ -113,7 +113,7 @@ class HomePage extends Component
             'teams' => auth()->user()->teams()->orderBy('name')->get(),
             'intervalOptions' => ScheduleInterval::cases(),
             'graceUnitOptions' => GraceUnit::cases(),
-            'existingLocations' => Job::query()
+            'existingLocations' => Server::query()
                 ->whereNotNull('location')
                 ->distinct()
                 ->orderBy('location')
@@ -159,9 +159,9 @@ class HomePage extends Component
         return $query;
     }
 
-    private function sortForListing(Collection $jobs): Collection
+    private function sortForListing(Collection $servers): Collection
     {
-        return $jobs->sort(function (Job $a, Job $b) {
+        return $servers->sort(function (Server $a, Server $b) {
             $aAlerting = $a->alerting_since !== null;
             $bAlerting = $b->alerting_since !== null;
 

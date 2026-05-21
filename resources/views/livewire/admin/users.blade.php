@@ -75,19 +75,19 @@
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Delete {{ $deletingUserName }}</flux:heading>
-                    @if ($deletingUserPersonalJobCount === 0)
-                        <flux:text class="mt-2">This user owns no personal jobs. Their team memberships will be removed.</flux:text>
+                    @if ($deletingUserPersonalServerCount === 0)
+                        <flux:text class="mt-2">This user owns no personal servers. Their team memberships will be removed.</flux:text>
                     @else
                         <flux:text class="mt-2">
-                            This user owns {{ $deletingUserPersonalJobCount }} personal {{ \Illuminate\Support\Str::plural('job', $deletingUserPersonalJobCount) }}.
+                            This user owns {{ $deletingUserPersonalServerCount }} personal {{ \Illuminate\Support\Str::plural('server', $deletingUserPersonalServerCount) }}.
                             Choose what happens to them before the user can be deleted.
                         </flux:text>
                     @endif
                 </div>
 
-                @if ($deletingUserPersonalJobCount > 0)
+                @if ($deletingUserPersonalServerCount > 0)
                     <form wire:submit="transferAndDelete" class="space-y-3">
-                        <flux:heading size="md">Transfer personal jobs to another user</flux:heading>
+                        <flux:heading size="md">Transfer personal servers to another user</flux:heading>
                         <flux:select wire:model="transferTargetUserId" variant="listbox" searchable placeholder="Choose a user…">
                             @foreach ($transferCandidates as $candidate)
                                 <flux:select.option :value="$candidate->id">{{ $candidate->full_name ?: $candidate->email }} ({{ $candidate->email }})</flux:select.option>
@@ -99,10 +99,10 @@
                     </form>
                 @endif
 
-                <form wire:submit="deleteWithJobs" class="space-y-3">
+                <form wire:submit="deleteWithServers" class="space-y-3">
                     <flux:heading size="md">
-                        @if ($deletingUserPersonalJobCount > 0)
-                            Or delete the user and all their personal jobs
+                        @if ($deletingUserPersonalServerCount > 0)
+                            Or delete the user and all their personal servers
                         @else
                             Confirm delete
                         @endif

@@ -1,7 +1,7 @@
 <?php
 
 use App\Livewire\Admin\Users;
-use App\Models\Job;
+use App\Models\Server;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -130,7 +130,7 @@ it('deletes a user with no personal jobs after typed confirmation', function () 
         ->test(Users::class)
         ->call('confirmDelete', $target->id)
         ->set('typedConfirmation', 'Quiet Leaver')
-        ->call('deleteWithJobs')
+        ->call('deleteWithServers')
         ->assertHasNoErrors();
 
     expect(User::find($target->id))->toBeNull();
@@ -140,7 +140,7 @@ it('transfers personal jobs to another user on delete', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $target = User::factory()->create();
     $recipient = User::factory()->create();
-    $job = Job::factory()->forUser($target)->create();
+    $server = Server::factory()->forUser($target)->create();
 
     Livewire::actingAs($admin)
         ->test(Users::class)
@@ -150,7 +150,7 @@ it('transfers personal jobs to another user on delete', function () {
         ->assertHasNoErrors();
 
     expect(User::find($target->id))->toBeNull()
-        ->and($job->fresh()->user_id)->toBe($recipient->id);
+        ->and($server->fresh()->user_id)->toBe($recipient->id);
 });
 
 it('creates a new user via the user-form flyout', function () {

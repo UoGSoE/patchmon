@@ -1,0 +1,128 @@
+<div>
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+                @if ($server->alerting_since)
+                    <flux:icon.exclamation-triangle variant="micro" class="text-red-500" />
+                @endif
+                <flux:heading size="xl">{{ $server->name }}</flux:heading>
+            </div>
+            @if ($server->description)
+                <flux:text class="mt-2">{{ $server->description }}</flux:text>
+            @endif
+            @if ($server->alerting_since)
+                <flux:text size="sm" class="mt-1">
+                    @if ($server->alerting_since)
+                        Awol since {{ $server->alerting_since->diffForHumans() }}@if ($server->isCurrentlySilenced()) · @endif
+                    @endif
+                </flux:text>
+            @endif
+        </div>
+
+        <div class="flex gap-2">
+            <flux:button wire:click="openEdit" icon="pencil-square" tooltip="Edit" />
+
+            <flux:modal.trigger name="delete-server">
+                <flux:button icon="trash" tooltip="Delete" variant="danger" />
+            </flux:modal.trigger>
+        </div>
+    </div>
+
+    <div class="mt-6 grid gap-6 sm:grid-cols-2 max-w-1/2">
+        <flux:card>
+            <flux:heading size="sm">Schedule</flux:heading>
+            <flux:text class="mt-1">
+                @if ($server->cron_expression)
+                    Cron: <code>{{ $server->cron_expression }}</code>
+                @else
+                    {{ $server->schedule_frequency }} × {{ strtolower($server->schedule_interval->label()) }}
+                @endif
+            </flux:text>
+            <flux:text size="sm" class="mt-1">{{ $server->grace_value }} {{ strtolower($server->grace_units->label()) }} grace</flux:text>
+        </flux:card>
+
+        <flux:card>
+            <flux:heading size="sm">Owner</flux:heading>
+            <flux:text class="mt-1">
+                @if ($server->team)
+                    Team: {{ $server->team->name }}
+                @else
+                    Personal — {{ $server->user->full_name ?: $server->user->email }}
+                @endif
+            </flux:text>
+            <flux:text size="sm" class="mt-1">Created by {{ $server->createdBy->full_name ?: $server->createdBy->email }}</flux:text>
+            @if ($server->location)
+                <flux:text size="sm" class="mt-1">Location: {{ $server->location }}</flux:text>
+            @endif
+        </flux:card>
+    </div>
+
+    <div class="mt-6 max-w-1/2">
+        <flux:heading size="sm">Record-patch URL</flux:heading>
+        <flux:text size="sm">Curl this URL when you patch the server. Treat it like a webhook URL.</flux:text>
+        <flux:input class="mt-2 font-mono" readonly :value="$recordPatchUrl" copyable />
+    </div>
+
+    <flux:fieldset class="mt-8">
+        <div class="max-w-1/2 space-y-6">
+        <flux:switch wire:model.live="silenced" label="Silenced" description="When silenced, Patchmon won't alert about this server."/>
+        @if ($silenced)
+            <div class="grid gap-3 sm:grid-cols-2">
+                <flux:input wire:model.blur="silenceUntil" type="datetime-local" label="Silenced until" />
+                <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Building works" />
+            </div>
+        @endif
+        </div>
+    </flux:fieldset>
+
+    <div class="mt-8">
+        <flux:heading size="sm">Recent patches</flux:heading>
+        @if ($recentPatchEvents->isEmpty())
+            <flux:text class="mt-2">No patches recorded yet.</flux:text>
+        @else
+            <flux:table class="mt-2">
+                <flux:table.columns>
+                    <flux:table.column>When</flux:table.column>
+                    <flux:table.column>Source IP</flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($recentPatchEvents as $patchEvent)
+                        <flux:table.row wire:key="patch-event-row-{{ $patchEvent->id }}">
+                            <flux:table.cell>{{ $patchEvent->patched_at->toDayDateTimeString() }} ({{ $patchEvent->patched_at->diffForHumans() }})</flux:table.cell>
+                            <flux:table.cell>{{ $patchEvent->source_ip ?? '—' }}</flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        @endif
+    </div>
+
+    <flux:modal name="server-form" variant="flyout" class="max-w-2xl">
+        <div class="space-y-6">
+            <flux:heading size="lg">Edit server</flux:heading>
+            <x-patchmon.server-form
+                :form="$form"
+                :teams="$teams"
+                :interval-options="$intervalOptions"
+                :grace-unit-options="$graceUnitOptions"
+                :existing-locations="$existingLocations"
+                submit-label="Save changes"
+                cancel-action="$flux.modal('server-form').close()"
+            />
+        </div>
+    </flux:modal>
+
+    <flux:modal name="delete-server" variant="flyout" class="max-w-md">
+        <div class="space-y-6">
+            <flux:heading size="lg">Delete this server?</flux:heading>
+            <flux:text>
+                This removes <strong>{{ $server->name }}</strong> and its patch event history.
+                The record-patch URL will stop working.
+            </flux:text>
+            <div class="flex justify-end gap-2">
+                <flux:button x-on:click="$flux.modal('delete-server').close()">Cancel</flux:button>
+                <flux:button wire:click="delete" variant="danger">Yes, delete</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+</div>

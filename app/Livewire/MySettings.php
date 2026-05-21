@@ -25,7 +25,7 @@ class MySettings extends Component
     public string $tokenName = '';
 
     /** @var array<int, string> */
-    public array $tokenAbilities = ['jobs:read', 'jobs:write'];
+    public array $tokenAbilities = ['servers:read', 'servers:write'];
 
     public ?string $lastCreatedToken = null;
 
@@ -66,7 +66,7 @@ class MySettings extends Component
         if ($value) {
             $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
             auth()->user()->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
-            Flux::toast('All your jobs are silenced.', variant: 'success');
+            Flux::toast('All your servers are silenced.', variant: 'success');
         } else {
             auth()->user()->unsilence();
             $this->silenceReason = null;
@@ -96,7 +96,7 @@ class MySettings extends Component
     public function openCreateToken(): void
     {
         $this->tokenName = '';
-        $this->tokenAbilities = ['jobs:read', 'jobs:write'];
+        $this->tokenAbilities = ['servers:read', 'servers:write'];
         $this->lastCreatedToken = null;
         $this->resetErrorBag();
 
@@ -115,7 +115,7 @@ class MySettings extends Component
                     ->where('tokenable_type', User::class)),
             ],
             'tokenAbilities' => ['required', 'array', 'min:1'],
-            'tokenAbilities.*' => ['in:jobs:read,jobs:write'],
+            'tokenAbilities.*' => ['in:servers:read,servers:write'],
         ]);
 
         $token = auth()->user()->createToken($this->tokenName, $this->tokenAbilities);

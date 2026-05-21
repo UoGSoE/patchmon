@@ -89,14 +89,14 @@ class Teams extends Component
         ]);
 
         $team = Team::findOrFail($this->deletingId);
-        $team->jobs()->update([
+        $team->servers()->update([
             'team_id' => $this->transferTargetTeamId,
             'user_id' => null,
         ]);
         $team->delete();
 
         Flux::modal('delete-team')->close();
-        Flux::toast('Team deleted; jobs transferred.', variant: 'success');
+        Flux::toast('Team deleted; servers transferred.', variant: 'success');
     }
 
     public function transferToUserAndDelete(): void
@@ -107,17 +107,17 @@ class Teams extends Component
         ]);
 
         $team = Team::findOrFail($this->deletingId);
-        $team->jobs()->update([
+        $team->servers()->update([
             'team_id' => null,
             'user_id' => $this->transferTargetUserId,
         ]);
         $team->delete();
 
         Flux::modal('delete-team')->close();
-        Flux::toast('Team deleted; jobs transferred.', variant: 'success');
+        Flux::toast('Team deleted; servers transferred.', variant: 'success');
     }
 
-    public function deleteWithJobs(): void
+    public function deleteWithServers(): void
     {
         $team = Team::findOrFail($this->deletingId);
 
@@ -128,13 +128,13 @@ class Teams extends Component
         $team->delete();
 
         Flux::modal('delete-team')->close();
-        Flux::toast('Team and its jobs deleted.', variant: 'success');
+        Flux::toast('Team and its servers deleted.', variant: 'success');
     }
 
     public function render()
     {
         $deletingTeam = $this->deletingId
-            ? Team::with('jobs')->find($this->deletingId)
+            ? Team::with('servers')->find($this->deletingId)
             : null;
 
         return view('livewire.admin.teams', [

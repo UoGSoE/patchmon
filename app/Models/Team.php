@@ -34,9 +34,9 @@ class Team extends Model
         return $this->belongsToMany(User::class);
     }
 
-    public function jobs(): HasMany
+    public function servers(): HasMany
     {
-        return $this->hasMany(Job::class);
+        return $this->hasMany(Server::class);
     }
 
     public function silenceUntil(Carbon $until, ?string $reason = null): void

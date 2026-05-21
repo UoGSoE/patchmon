@@ -3,7 +3,7 @@
 use App\Models\User;
 
 it('rejects a non-GUID-shaped username in args mode', function () {
-    $this->artisan('cronmon:add-user', [
+    $this->artisan('patchmon:add-user', [
         'username' => '1234567z',
         'email' => 'kit@example.test',
         'surname' => 'McAuthor',
@@ -16,7 +16,7 @@ it('rejects a non-GUID-shaped username in args mode', function () {
 it('rejects a duplicate username in args mode', function () {
     User::factory()->create(['username' => 'abc1d']);
 
-    $this->artisan('cronmon:add-user', [
+    $this->artisan('patchmon:add-user', [
         'username' => 'abc1d',
         'email' => 'kit@example.test',
         'surname' => 'McAuthor',
@@ -27,7 +27,7 @@ it('rejects a duplicate username in args mode', function () {
 });
 
 it('walks the interactive prompts and infers names from the email', function () {
-    $this->artisan('cronmon:add-user')
+    $this->artisan('patchmon:add-user')
         ->expectsQuestion('Email', 'jed.murphy.2@example.test')
         ->expectsQuestion('SSO username', 'jed1y')
         ->expectsQuestion('Forenames', 'Jed')
@@ -44,7 +44,7 @@ it('walks the interactive prompts and infers names from the email', function () 
 });
 
 it('creates a user from positional arguments', function () {
-    $this->artisan('cronmon:add-user', [
+    $this->artisan('patchmon:add-user', [
         'username' => 'kmc2y',
         'email' => 'kit@example.test',
         'surname' => 'McAuthor',

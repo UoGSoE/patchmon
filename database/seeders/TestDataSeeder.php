@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Enums\GraceUnit;
 use App\Enums\ScheduleInterval;
-use App\Models\CheckIn;
-use App\Models\Job;
+use App\Models\PatchEvent;
+use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -41,7 +41,7 @@ class TestDataSeeder extends Seeder
         $this->createFulfilmentJobs($teams['fulfilment']);
         $this->createPersonalJobs($admin, $standardUser);
 
-        $this->backfillCheckIns();
+        $this->backfillPatchEvents();
     }
 
     private function createNamedTestAccounts(): array
@@ -174,59 +174,59 @@ class TestDataSeeder extends Seeder
         foreach ($apps as $index => $app) {
             $createdBy = $members->random();
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('* * * * *')
                 ->create([
                     'name' => "{$app} — schedule:run heartbeat",
                     'description' => "Pings whenever the {$app} scheduler ticks.",
                     'grace_value' => 5,
                     'grace_units' => GraceUnit::Minutes,
-                    'last_checked_in_at' => now()->subSeconds(30),
+                    'last_patched_at' => now()->subSeconds(30),
                 ]);
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('15 2 * * *')
                 ->create([
                     'name' => "{$app} — nightly database backup",
                     'description' => 'Dumps the database and ships it to object storage.',
                     'grace_value' => 1,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(45),
+                    'last_patched_at' => now()->subMinutes(45),
                 ]);
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('30 3 * * *')
                 ->create([
                     'name' => "{$app} — session and cache sweep",
                     'grace_value' => 30,
                     'grace_units' => GraceUnit::Minutes,
-                    'last_checked_in_at' => now()->subMinutes(45),
+                    'last_patched_at' => now()->subMinutes(45),
                 ]);
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('0 * * * *')
                 ->create([
                     'name' => "{$app} — Horizon snapshot",
                     'grace_value' => 15,
                     'grace_units' => GraceUnit::Minutes,
-                    'last_checked_in_at' => now()->subMinutes(20),
+                    'last_patched_at' => now()->subMinutes(20),
                 ]);
 
             // Half the apps also send a weekly digest.
             if ($index % 2 === 0) {
-                Job::factory()->forTeam($team, $createdBy)
+                Server::factory()->forTeam($team, $createdBy)
                     ->withCron('0 8 * * MON')
                     ->create([
                         'name' => "{$app} — weekly digest email",
                         'grace_value' => 2,
                         'grace_units' => GraceUnit::Hours,
-                        'last_checked_in_at' => now()->subMinutes(45),
+                        'last_patched_at' => now()->subMinutes(45),
                     ]);
             }
         }
 
         // A failing payment reconciliation, two days into an alerting state.
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('15 2 * * *')
             ->alerting()
             ->create([
@@ -235,11 +235,11 @@ class TestDataSeeder extends Seeder
                 'location' => 'DataVita',
                 'grace_value' => 30,
                 'grace_units' => GraceUnit::Minutes,
-                'last_checked_in_at' => now()->subDays(2),
+                'last_patched_at' => now()->subDays(2),
             ]);
 
         // One silenced for planned maintenance.
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('0 4 * * SUN')
             ->silenced()
             ->create([
@@ -248,7 +248,7 @@ class TestDataSeeder extends Seeder
                 'location' => 'MDR',
                 'grace_value' => 1,
                 'grace_units' => GraceUnit::Hours,
-                'last_checked_in_at' => now()->subDays(5),
+                'last_patched_at' => now()->subDays(5),
             ]);
     }
 
@@ -258,7 +258,7 @@ class TestDataSeeder extends Seeder
 
         // ~80 Linux servers — rsnapshot to the central backup pool.
         for ($i = 1; $i <= 80; $i++) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron(sprintf('%d %d * * *', ($i * 7) % 60, 1 + ($i % 4)))
                 ->create([
                     'name' => sprintf('linux-srv-%03d nightly backup', $i),
@@ -266,13 +266,13 @@ class TestDataSeeder extends Seeder
                     'location' => self::LOCATIONS[$i % count(self::LOCATIONS)],
                     'grace_value' => 1,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(30 + ($i % 20)),
+                    'last_patched_at' => now()->subMinutes(30 + ($i % 20)),
                 ]);
         }
 
         // ~70 Windows servers — VSS + offsite replication.
         for ($i = 1; $i <= 70; $i++) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron(sprintf('%d %d * * *', ($i * 11) % 60, 22 + ($i % 3)))
                 ->create([
                     'name' => sprintf('win-srv-%03d VSS backup', $i),
@@ -280,13 +280,13 @@ class TestDataSeeder extends Seeder
                     'location' => self::LOCATIONS[($i + 3) % count(self::LOCATIONS)],
                     'grace_value' => 2,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(30 + ($i % 25)),
+                    'last_patched_at' => now()->subMinutes(30 + ($i % 25)),
                 ]);
         }
 
         // ~30 AD domain controllers — NTDS / system state backups.
         for ($i = 1; $i <= 30; $i++) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron(sprintf('%d 23 * * *', ($i * 13) % 60))
                 ->create([
                     'name' => sprintf('ad-dc-%02d system state backup', $i),
@@ -294,13 +294,13 @@ class TestDataSeeder extends Seeder
                     'location' => self::DATA_CENTRE_LOCATIONS[$i % count(self::DATA_CENTRE_LOCATIONS)],
                     'grace_value' => 1,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(30 + ($i % 15)),
+                    'last_patched_at' => now()->subMinutes(30 + ($i % 15)),
                 ]);
         }
 
         // ~20 network and storage devices — config exports for diffing.
         for ($i = 1; $i <= 20; $i++) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron(sprintf('%d 5 * * *', ($i * 17) % 60))
                 ->create([
                     'name' => sprintf('netdev-%02d config export', $i),
@@ -308,12 +308,12 @@ class TestDataSeeder extends Seeder
                     'location' => self::LOCATIONS[($i * 2) % count(self::LOCATIONS)],
                     'grace_value' => 30,
                     'grace_units' => GraceUnit::Minutes,
-                    'last_checked_in_at' => now()->subMinutes(25),
+                    'last_patched_at' => now()->subMinutes(25),
                 ]);
         }
 
         // A couple of stuck backups to demo the alerting view.
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('25 22 * * *')
             ->alerting()
             ->create([
@@ -322,10 +322,10 @@ class TestDataSeeder extends Seeder
                 'location' => 'MDR',
                 'grace_value' => 2,
                 'grace_units' => GraceUnit::Hours,
-                'last_checked_in_at' => now()->subDays(3),
+                'last_patched_at' => now()->subDays(3),
             ]);
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('0 23 * * *')
             ->alerting()
             ->create([
@@ -334,11 +334,11 @@ class TestDataSeeder extends Seeder
                 'location' => 'DataVita',
                 'grace_value' => 1,
                 'grace_units' => GraceUnit::Hours,
-                'last_checked_in_at' => now()->subDays(2),
+                'last_patched_at' => now()->subDays(2),
             ]);
 
         // One silenced because the server is being decommissioned.
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('0 1 * * *')
             ->silenced()
             ->create([
@@ -358,63 +358,63 @@ class TestDataSeeder extends Seeder
         foreach ($clusters as $cluster) {
             $createdBy = $members->random();
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('*/15 * * * *')
                 ->create([
                     'name' => "{$cluster} — Slurm scheduler health",
                     'location' => 'MDR',
                     'grace_value' => 5,
                     'grace_units' => GraceUnit::Minutes,
-                    'last_checked_in_at' => now()->subMinutes(4),
+                    'last_patched_at' => now()->subMinutes(4),
                 ]);
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('0 * * * *')
                 ->create([
                     'name' => "{$cluster} — GPFS health check",
                     'location' => 'MDR',
                     'grace_value' => 10,
                     'grace_units' => GraceUnit::Minutes,
-                    'last_checked_in_at' => now()->subMinutes(25),
+                    'last_patched_at' => now()->subMinutes(25),
                 ]);
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('0 4 * * *')
                 ->create([
                     'name' => "{$cluster} — nightly metadata backup",
                     'location' => 'MDR',
                     'grace_value' => 1,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(45),
+                    'last_patched_at' => now()->subMinutes(45),
                 ]);
 
-            Job::factory()->forTeam($team, $createdBy)
+            Server::factory()->forTeam($team, $createdBy)
                 ->withCron('0 6 * * MON')
                 ->create([
                     'name' => "{$cluster} — weekly usage report",
                     'location' => 'MDR',
                     'grace_value' => 2,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(45),
+                    'last_patched_at' => now()->subMinutes(45),
                 ]);
         }
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('*/5 * * * *')
             ->create([
                 'name' => 'Research storage — replication lag check',
                 'grace_value' => 5,
                 'grace_units' => GraceUnit::Minutes,
-                'last_checked_in_at' => now()->subMinutes(2),
+                'last_patched_at' => now()->subMinutes(2),
             ]);
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('30 5 * * *')
             ->create([
                 'name' => 'Software licence server — daily liveness probe',
                 'grace_value' => 30,
                 'grace_units' => GraceUnit::Minutes,
-                'last_checked_in_at' => now()->subMinutes(40),
+                'last_patched_at' => now()->subMinutes(40),
             ]);
     }
 
@@ -430,13 +430,13 @@ class TestDataSeeder extends Seeder
         ];
 
         foreach ($weeklyReports as $name) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron('0 7 * * MON')
                 ->create([
                     'name' => $name,
                     'grace_value' => 4,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(45),
+                    'last_patched_at' => now()->subMinutes(45),
                 ]);
         }
 
@@ -452,13 +452,13 @@ class TestDataSeeder extends Seeder
         ];
 
         foreach ($dailyVerifications as $name) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron('30 6 * * *')
                 ->create([
                     'name' => $name,
                     'grace_value' => 2,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(45),
+                    'last_patched_at' => now()->subMinutes(45),
                 ]);
         }
 
@@ -472,13 +472,13 @@ class TestDataSeeder extends Seeder
         ];
 
         foreach ($criticalServices as $name) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron('*/10 * * * *')
                 ->create([
                     'name' => $name,
                     'grace_value' => 5,
                     'grace_units' => GraceUnit::Minutes,
-                    'last_checked_in_at' => now()->subMinutes(3),
+                    'last_patched_at' => now()->subMinutes(3),
                 ]);
         }
 
@@ -492,18 +492,18 @@ class TestDataSeeder extends Seeder
         ];
 
         foreach ($weeklyDrills as $name) {
-            Job::factory()->forTeam($team, $members->random())
+            Server::factory()->forTeam($team, $members->random())
                 ->withCron('0 9 * * WED')
                 ->create([
                     'name' => $name,
                     'grace_value' => 2,
                     'grace_units' => GraceUnit::Hours,
-                    'last_checked_in_at' => now()->subMinutes(45),
+                    'last_patched_at' => now()->subMinutes(45),
                 ]);
         }
 
         // Critical service that has stopped pinging — alerting badge.
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('*/10 * * * *')
             ->alerting()
             ->create([
@@ -511,7 +511,7 @@ class TestDataSeeder extends Seeder
                 'description' => 'Has not pinged since the firewall rule change this morning.',
                 'grace_value' => 5,
                 'grace_units' => GraceUnit::Minutes,
-                'last_checked_in_at' => now()->subHours(3),
+                'last_patched_at' => now()->subHours(3),
             ]);
     }
 
@@ -519,31 +519,31 @@ class TestDataSeeder extends Seeder
     {
         $members = $team->users()->get();
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('0 8 * * MON-FRI')
             ->create([
                 'name' => 'Ticket queue daily digest',
                 'grace_value' => 30,
                 'grace_units' => GraceUnit::Minutes,
-                'last_checked_in_at' => now()->subMinutes(40),
+                'last_patched_at' => now()->subMinutes(40),
             ]);
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('30 17 * * FRI')
             ->create([
                 'name' => 'Weekly walk-up KPI export',
                 'grace_value' => 1,
                 'grace_units' => GraceUnit::Hours,
-                'last_checked_in_at' => now()->subMinutes(45),
+                'last_patched_at' => now()->subMinutes(45),
             ]);
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('45 7 * * *')
             ->create([
                 'name' => 'After-hours voicemail digest',
                 'grace_value' => 15,
                 'grace_units' => GraceUnit::Minutes,
-                'last_checked_in_at' => now()->subMinutes(10),
+                'last_patched_at' => now()->subMinutes(10),
             ]);
     }
 
@@ -551,47 +551,47 @@ class TestDataSeeder extends Seeder
     {
         $members = $team->users()->get();
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('0 7 * * MON')
             ->create([
                 'name' => 'Weekly order status poll',
                 'description' => 'curl against the order-tracking API; emails the team summary.',
                 'grace_value' => 2,
                 'grace_units' => GraceUnit::Hours,
-                'last_checked_in_at' => now()->subMinutes(45),
+                'last_patched_at' => now()->subMinutes(45),
             ]);
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('0 23 * * *')
             ->create([
                 'name' => 'Stock reconciliation',
                 'grace_value' => 1,
                 'grace_units' => GraceUnit::Hours,
-                'last_checked_in_at' => now()->subMinutes(40),
+                'last_patched_at' => now()->subMinutes(40),
             ]);
 
-        Job::factory()->forTeam($team, $members->random())
+        Server::factory()->forTeam($team, $members->random())
             ->withCron('*/30 * * * *')
             ->create([
                 'name' => 'Shipping API health probe',
                 'grace_value' => 10,
                 'grace_units' => GraceUnit::Minutes,
-                'last_checked_in_at' => now()->subMinutes(8),
+                'last_patched_at' => now()->subMinutes(8),
             ]);
     }
 
     private function createPersonalJobs(User $admin, User $standardUser): void
     {
-        Job::factory()->forUser($admin)->create([
+        Server::factory()->forUser($admin)->create([
             'name' => 'Personal home NAS backup',
             'location' => 'Home',
             'schedule_interval' => ScheduleInterval::Daily,
             'grace_value' => 6,
             'grace_units' => GraceUnit::Hours,
-            'last_checked_in_at' => now()->subHours(2),
+            'last_patched_at' => now()->subHours(2),
         ]);
 
-        Job::factory()->forUser($standardUser)->silenced()->create([
+        Server::factory()->forUser($standardUser)->silenced()->create([
             'name' => 'Lab printer toner check',
             'schedule_interval' => ScheduleInterval::Weekly,
             'grace_value' => 1,
@@ -599,20 +599,20 @@ class TestDataSeeder extends Seeder
         ]);
     }
 
-    private function backfillCheckIns(): void
+    private function backfillPatchEvents(): void
     {
-        Job::query()
+        Server::query()
             ->whereNull('alerting_since')
-            ->whereNotNull('last_checked_in_at')
+            ->whereNotNull('last_patched_at')
             ->cursor()
-            ->each(function (Job $job): void {
-                CheckIn::factory()
+            ->each(function (Server $server): void {
+                PatchEvent::factory()
                     ->count(3)
-                    ->for($job)
+                    ->for($server)
                     ->sequence(
-                        ['checked_in_at' => now()->subDays(2)],
-                        ['checked_in_at' => now()->subDay()],
-                        ['checked_in_at' => $job->last_checked_in_at],
+                        ['patched_at' => now()->subDays(2)],
+                        ['patched_at' => now()->subDay()],
+                        ['patched_at' => $server->last_patched_at],
                     )
                     ->create();
             });

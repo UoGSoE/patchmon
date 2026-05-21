@@ -13,7 +13,7 @@ it('refuses /api/v1/admin/teams for a non-admin', function () {
 
 it('refuses /api/v1/admin/teams without the admin:read ability', function () {
     $admin = User::factory()->create(['is_admin' => true]);
-    Sanctum::actingAs($admin, ['jobs:read']);
+    Sanctum::actingAs($admin, ['servers:read']);
 
     $this->getJson('/api/v1/admin/teams')->assertStatus(403);
 });

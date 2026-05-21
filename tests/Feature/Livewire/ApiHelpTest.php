@@ -12,6 +12,6 @@ it('renders /api/help for an authenticated user', function () {
     $this->actingAs($alice)
         ->get(route('api.help'))
         ->assertOk()
-        ->assertSee('CRONMON_API_TOKEN')
+        ->assertSee('PATCHMON_API_TOKEN')
         ->assertSee('curl');
 });

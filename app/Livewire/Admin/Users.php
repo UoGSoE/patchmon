@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Admin;
 
-use App\Models\Job;
+use App\Models\Server;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Support\Str;
@@ -26,7 +26,7 @@ class Users extends Component
 
     public ?string $deletingUserName = null;
 
-    public int $deletingUserPersonalJobCount = 0;
+    public int $deletingUserPersonalServerCount = 0;
 
     public ?int $transferTargetUserId = null;
 
@@ -121,7 +121,7 @@ class Users extends Component
 
         $this->deletingUserId = $user->id;
         $this->deletingUserName = $user->full_name ?: $user->email;
-        $this->deletingUserPersonalJobCount = Job::where('user_id', $user->id)->count();
+        $this->deletingUserPersonalServerCount = Server::where('user_id', $user->id)->count();
         $this->transferTargetUserId = null;
         $this->typedConfirmation = '';
         $this->resetErrorBag();
@@ -142,15 +142,15 @@ class Users extends Component
 
         $user = User::findOrFail($this->deletingUserId);
 
-        Job::where('user_id', $user->id)->update(['user_id' => $this->transferTargetUserId]);
+        Server::where('user_id', $user->id)->update(['user_id' => $this->transferTargetUserId]);
         $this->reassignAuthorshipAndDelete($user, $this->transferTargetUserId);
 
         Flux::modal('delete-user')->close();
-        Flux::toast('User deleted; personal jobs transferred.', variant: 'success');
+        Flux::toast('User deleted; personal servers transferred.', variant: 'success');
         $this->resetDeleteState();
     }
 
-    public function deleteWithJobs(): void
+    public function deleteWithServers(): void
     {
         $user = User::findOrFail($this->deletingUserId);
 
@@ -161,7 +161,7 @@ class Users extends Component
         $this->reassignAuthorshipAndDelete($user, auth()->id());
 
         Flux::modal('delete-user')->close();
-        Flux::toast('User and their personal jobs deleted.', variant: 'success');
+        Flux::toast('User and their personal servers deleted.', variant: 'success');
         $this->resetDeleteState();
     }
 
@@ -179,7 +179,7 @@ class Users extends Component
 
     private function reassignAuthorshipAndDelete(User $user, int $authorshipFallbackUserId): void
     {
-        Job::where('created_by_user_id', $user->id)
+        Server::where('created_by_user_id', $user->id)
             ->where(function ($q) use ($user) {
                 $q->whereNotNull('team_id')->orWhere('user_id', '!=', $user->id);
             })
@@ -192,7 +192,7 @@ class Users extends Component
     {
         $this->deletingUserId = null;
         $this->deletingUserName = null;
-        $this->deletingUserPersonalJobCount = 0;
+        $this->deletingUserPersonalServerCount = 0;
         $this->transferTargetUserId = null;
         $this->typedConfirmation = '';
     }

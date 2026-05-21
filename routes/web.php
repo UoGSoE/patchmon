@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\CheckInController;
+use App\Http\Controllers\PatchEventController;
 use App\Livewire\Admin\ApiTokens as AdminApiTokens;
 use App\Livewire\Admin\TeamDetail as AdminTeamDetail;
 use App\Livewire\Admin\Teams as AdminTeams;
@@ -8,18 +8,18 @@ use App\Livewire\Admin\Users as AdminUsers;
 use App\Livewire\AdminDashboard;
 use App\Livewire\ApiHelp;
 use App\Livewire\HomePage;
-use App\Livewire\JobDetail;
 use App\Livewire\MySettings;
+use App\Livewire\ServerDetail;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/sso-auth.php';
 
-Route::get('/check-in/{token}', CheckInController::class)
-    ->name('check-in');
+Route::get('/record-patch/{token}', PatchEventController::class)
+    ->name('record-patch');
 
 Route::middleware('auth')->group(function () {
     Route::get('/', HomePage::class)->name('home');
-    Route::get('/jobs/{job}', JobDetail::class)->name('jobs.show');
+    Route::get('/servers/{server}', ServerDetail::class)->name('servers.show');
 
     Route::get('/settings', MySettings::class)->name('settings');
     Route::get('/api/help', ApiHelp::class)->name('api.help');

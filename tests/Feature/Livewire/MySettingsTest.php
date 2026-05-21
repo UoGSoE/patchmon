@@ -34,13 +34,13 @@ it('saves email preferences for the signed-in user', function () {
     Livewire::actingAs($alice)
         ->test(MySettings::class)
         ->set('notificationEmail', 'alice-alerts@example.ac.uk')
-        ->set('senderEmail', 'cronmon-noreply@example.ac.uk')
+        ->set('senderEmail', 'patchmon-noreply@example.ac.uk')
         ->call('saveEmails')
         ->assertHasNoErrors();
 
     $alice->refresh();
     expect($alice->notification_email)->toBe('alice-alerts@example.ac.uk')
-        ->and($alice->sender_email)->toBe('cronmon-noreply@example.ac.uk');
+        ->and($alice->sender_email)->toBe('patchmon-noreply@example.ac.uk');
 });
 
 it('mints an API token with the selected abilities', function () {
@@ -50,7 +50,7 @@ it('mints an API token with the selected abilities', function () {
         ->test(MySettings::class)
         ->call('openCreateToken')
         ->set('tokenName', 'laptop dev')
-        ->set('tokenAbilities', ['jobs:read', 'jobs:write'])
+        ->set('tokenAbilities', ['servers:read', 'servers:write'])
         ->call('createToken')
         ->assertHasNoErrors()
         ->assertSet('lastCreatedToken', fn ($t) => is_string($t) && str_contains($t, '|'));
@@ -58,7 +58,7 @@ it('mints an API token with the selected abilities', function () {
     $token = $alice->tokens()->first();
     expect($token)->not->toBeNull()
         ->and($token->name)->toBe('laptop dev')
-        ->and($token->abilities)->toEqualCanonicalizing(['jobs:read', 'jobs:write']);
+        ->and($token->abilities)->toEqualCanonicalizing(['servers:read', 'servers:write']);
 });
 
 it('revokes one of the signed-in users tokens', function () {
@@ -96,7 +96,7 @@ it('rejects creating a token with a name the same user already used', function (
         ->test(MySettings::class)
         ->call('openCreateToken')
         ->set('tokenName', 'laptop dev')
-        ->set('tokenAbilities', ['jobs:read'])
+        ->set('tokenAbilities', ['servers:read'])
         ->call('createToken')
         ->assertHasErrors(['tokenName']);
 
@@ -112,7 +112,7 @@ it('allows two different users to use the same token name', function () {
         ->test(MySettings::class)
         ->call('openCreateToken')
         ->set('tokenName', 'laptop')
-        ->set('tokenAbilities', ['jobs:read'])
+        ->set('tokenAbilities', ['servers:read'])
         ->call('createToken')
         ->assertHasNoErrors();
 

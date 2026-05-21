@@ -1,6 +1,6 @@
 <div class="max-w-2xl">
     <flux:heading size="xl">My settings</flux:heading>
-    <flux:text class="mt-2">Defaults that apply to your personal jobs.</flux:text>
+    <flux:text class="mt-2">Defaults that apply to your personal servers.</flux:text>
 
     <div class="mt-8">
         <flux:heading size="sm">Email preferences</flux:heading>
@@ -8,7 +8,7 @@
 
         <form wire:submit="saveEmails" class="mt-3 space-y-3">
             <flux:input wire:model="notificationEmail" type="email" label="Alerts go to" placeholder="alerts@example.ac.uk" />
-            <flux:input wire:model="senderEmail" type="email" label="Alerts come from" placeholder="cronmon-noreply@example.ac.uk" />
+            <flux:input wire:model="senderEmail" type="email" label="Alerts come from" placeholder="patchmon-noreply@example.ac.uk" />
             <flux:button type="submit" variant="primary">Save preferences</flux:button>
         </form>
     </div>
@@ -16,8 +16,8 @@
     <div class="mt-10">
         <flux:heading size="sm">Silence everything</flux:heading>
         <flux:text size="sm">
-            Stop Cronmon emailing you about any of your personal jobs.
-            Team jobs aren't affected — silence those from the team page.
+            Stop Patchmon emailing you about any of your personal servers.
+            Team servers aren't affected — silence those from the team page.
         </flux:text>
 
         <div class="mt-3 space-y-3">
@@ -36,7 +36,7 @@
             <div>
                 <flux:heading size="sm">API tokens</flux:heading>
                 <flux:text size="sm">
-                    Mint a token to script against Cronmon from a terminal. Tokens act as you, scoped to read / write on jobs.
+                    Mint a token to script against Patchmon from a terminal. Tokens act as you, scoped to read / write on servers.
                 </flux:text>
                 <flux:link :href="route('api.help')" wire:navigate class="mt-1 inline-block text-sm">
                     API examples &amp; docs →
@@ -96,8 +96,8 @@
                 <flux:heading size="lg">New API token</flux:heading>
                 <flux:input wire:model="tokenName" label="Name" description="What's this token for? e.g. backup-host-01" required />
                 <flux:checkbox.group wire:model="tokenAbilities" label="Abilities">
-                    <flux:checkbox value="jobs:read" label="Read jobs and check-ins" />
-                    <flux:checkbox value="jobs:write" label="Create, update, silence and delete jobs" />
+                    <flux:checkbox value="servers:read" label="Read servers and patch events" />
+                    <flux:checkbox value="servers:write" label="Create, update, silence and delete servers" />
                 </flux:checkbox.group>
                 <div class="flex justify-end gap-2">
                     <flux:button type="button" x-on:click="$flux.modal('create-api-token').close()">Cancel</flux:button>

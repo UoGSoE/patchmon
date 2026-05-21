@@ -13,14 +13,14 @@ use function Laravel\Prompts\text;
 
 class AddUser extends Command
 {
-    protected $signature = 'cronmon:add-user
+    protected $signature = 'patchmon:add-user
         {username? : SSO username, e.g. kmc2y}
         {email? : Email address}
         {surname? : Surname}
         {forenames? : Forenames}
         {--admin : Make this user an admin}';
 
-    protected $description = 'Add a Cronmon user (e.g. to bootstrap the app on a fresh deploy).';
+    protected $description = 'Add a Patchmon user (e.g. to bootstrap the app on a fresh deploy).';
 
     public function handle(): int
     {

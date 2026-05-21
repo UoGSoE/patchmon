@@ -1,4 +1,4 @@
-name: cronmon
+name: patchmon
 recipe: laravel
 config:
   webroot: public
@@ -70,13 +70,13 @@ tooling:
     service: database
     description: "Fix AIO stopping mysql starting up"
     user: root
-    cmd: echo "\n\n" >> /opt/bitnami/mysql/conf/bitnami/my_custom.cnf 
+    cmd: echo "\n\n" >> /opt/bitnami/mysql/conf/bitnami/my_custom.cnf
   ci:
     service: appserver
     description: "Run pseudo CI run"
-    cmd: 
+    cmd:
       - set -e
-      - composer global require enlightn/security-checker 
+      - composer global require enlightn/security-checker
       - curl -OL -o /usr/local/bin/phpcs https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar
       - php /usr/local/bin/phpcs --config-set ignore_warnings_on_exit 1
       - php /usr/local/bin/phpcs --standard=PSR12 app

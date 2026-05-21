@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Job;
+use App\Models\Server;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
@@ -8,35 +8,35 @@ it('transfers personal jobs and deletes the user', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $target = User::factory()->create();
     $recipient = User::factory()->create();
-    $job = Job::factory()->forUser($target)->create();
+    $server = Server::factory()->forUser($target)->create();
     Sanctum::actingAs($admin, ['admin:write']);
 
     $this->deleteJson("/api/v1/admin/users/{$target->id}", [
-        'transfer_jobs_to' => $recipient->id,
+        'transfer_servers_to' => $recipient->id,
     ])->assertNoContent();
 
     expect(User::find($target->id))->toBeNull()
-        ->and($job->fresh()->user_id)->toBe($recipient->id);
+        ->and($server->fresh()->user_id)->toBe($recipient->id);
 });
 
-it('cascades personal jobs when delete_personal_jobs is true', function () {
+it('cascades personal jobs when delete_personal_servers is true', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $target = User::factory()->create();
-    $job = Job::factory()->forUser($target)->create();
+    $server = Server::factory()->forUser($target)->create();
     Sanctum::actingAs($admin, ['admin:write']);
 
     $this->deleteJson("/api/v1/admin/users/{$target->id}", [
-        'delete_personal_jobs' => true,
+        'delete_personal_servers' => true,
     ])->assertNoContent();
 
     expect(User::find($target->id))->toBeNull()
-        ->and(Job::find($job->id))->toBeNull();
+        ->and(Server::find($server->id))->toBeNull();
 });
 
 it('returns 422 when deleting a user with personal jobs and no flag set', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $target = User::factory()->create();
-    Job::factory()->forUser($target)->create();
+    Server::factory()->forUser($target)->create();
     Sanctum::actingAs($admin, ['admin:write']);
 
     $this->deleteJson("/api/v1/admin/users/{$target->id}")

@@ -2,9 +2,9 @@
 
 use Illuminate\Console\Scheduling\Schedule;
 
-it('schedules cronmon:evaluate to run every minute', function () {
+it('schedules patchmon:evaluate to run every minute', function () {
     $events = collect(app(Schedule::class)->events())
-        ->filter(fn ($event) => str_contains($event->command ?? '', 'cronmon:evaluate'));
+        ->filter(fn ($event) => str_contains($event->command ?? '', 'patchmon:evaluate'));
 
     expect($events)->toHaveCount(1)
         ->and($events->first()->expression)->toBe('* * * * *');

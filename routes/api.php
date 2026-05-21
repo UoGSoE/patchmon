@@ -4,8 +4,8 @@ use App\Http\Controllers\Api\V1\Admin\ApiTokensController as AdminApiTokensContr
 use App\Http\Controllers\Api\V1\Admin\TeamMembersController as AdminTeamMembersController;
 use App\Http\Controllers\Api\V1\Admin\TeamsController as AdminTeamsController;
 use App\Http\Controllers\Api\V1\Admin\UsersController as AdminUsersController;
-use App\Http\Controllers\Api\V1\JobsController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\ServersController;
 use App\Http\Controllers\Api\V1\TeamsController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,18 +13,18 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('/me', [MeController::class, 'show'])->name('api.v1.me');
     Route::get('/teams', [TeamsController::class, 'index'])->name('api.v1.teams.index');
 
-    Route::middleware('ability:jobs:read')->group(function () {
-        Route::get('/jobs', [JobsController::class, 'index'])->name('api.v1.jobs.index');
-        Route::get('/jobs/{job}', [JobsController::class, 'show'])->name('api.v1.jobs.show');
-        Route::get('/jobs/{job}/check-ins', [JobsController::class, 'checkIns'])->name('api.v1.jobs.check-ins');
+    Route::middleware('ability:servers:read')->group(function () {
+        Route::get('/servers', [ServersController::class, 'index'])->name('api.v1.servers.index');
+        Route::get('/servers/{server}', [ServersController::class, 'show'])->name('api.v1.servers.show');
+        Route::get('/servers/{server}/patch-events', [ServersController::class, 'patchEvents'])->name('api.v1.servers.patch-events');
     });
 
-    Route::middleware('ability:jobs:write')->group(function () {
-        Route::post('/jobs', [JobsController::class, 'store'])->name('api.v1.jobs.store');
-        Route::patch('/jobs/{job}', [JobsController::class, 'update'])->name('api.v1.jobs.update');
-        Route::delete('/jobs/{job}', [JobsController::class, 'destroy'])->name('api.v1.jobs.destroy');
-        Route::post('/jobs/{job}/silence', [JobsController::class, 'silence'])->name('api.v1.jobs.silence');
-        Route::delete('/jobs/{job}/silence', [JobsController::class, 'unsilence'])->name('api.v1.jobs.unsilence');
+    Route::middleware('ability:servers:write')->group(function () {
+        Route::post('/servers', [ServersController::class, 'store'])->name('api.v1.servers.store');
+        Route::patch('/servers/{server}', [ServersController::class, 'update'])->name('api.v1.servers.update');
+        Route::delete('/servers/{server}', [ServersController::class, 'destroy'])->name('api.v1.servers.destroy');
+        Route::post('/servers/{server}/silence', [ServersController::class, 'silence'])->name('api.v1.servers.silence');
+        Route::delete('/servers/{server}/silence', [ServersController::class, 'unsilence'])->name('api.v1.servers.unsilence');
     });
 
     Route::middleware('admin')->prefix('admin')->group(function () {
