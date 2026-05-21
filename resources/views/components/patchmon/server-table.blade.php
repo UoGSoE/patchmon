@@ -40,7 +40,7 @@
                     </flux:table.cell>
                     <flux:table.cell>
                         @if ($server->alerting_since)
-                            <flux:badge size="sm" color="red" icon="exclamation-triangle">Overdue since {{ $server->alerting_since->diffForHumans() }}</flux:badge>
+                            <flux:badge size="sm" color="red" icon="exclamation-triangle">Due {{ $server->alerting_since->diffForHumans() }}</flux:badge>
                         @elseif ($server->silenced_until && $server->silenced_until->isFuture())
                             <flux:badge size="sm" color="zinc" icon="speaker-x-mark">Silenced until {{ $server->silenced_until->format('D j M') }}</flux:badge>
                         @else

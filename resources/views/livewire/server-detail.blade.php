@@ -13,7 +13,7 @@
             @endif
             @if ($server->alerting_since)
                 <flux:text size="sm" class="mt-1">
-                    Overdue since {{ $server->alerting_since->diffForHumans() }}
+                    Due {{ $server->alerting_since->diffForHumans() }}
                 </flux:text>
             @endif
         </div>
