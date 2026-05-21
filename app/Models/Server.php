@@ -33,6 +33,7 @@ class Server extends Model
         'last_patched_at',
         'alerting_since',
         'last_alerted_at',
+        'silenced_from',
         'silenced_until',
         'silence_reason',
     ];
@@ -54,6 +55,7 @@ class Server extends Model
             'last_patched_at' => 'datetime',
             'alerting_since' => 'datetime',
             'last_alerted_at' => 'datetime',
+            'silenced_from' => 'datetime',
             'silenced_until' => 'datetime',
         ];
     }
@@ -130,9 +132,10 @@ class Server extends Model
         return $patchEvent;
     }
 
-    public function silenceUntil(Carbon $until, ?string $reason = null): void
+    public function silenceBetween(Carbon $from, Carbon $until, ?string $reason = null): void
     {
         $this->update([
+            'silenced_from' => $from,
             'silenced_until' => $until,
             'silence_reason' => $reason,
         ]);
@@ -141,6 +144,7 @@ class Server extends Model
     public function unsilence(): void
     {
         $this->update([
+            'silenced_from' => null,
             'silenced_until' => null,
             'silence_reason' => null,
         ]);
@@ -148,6 +152,10 @@ class Server extends Model
 
     public function isCurrentlySilenced(): bool
     {
-        return (bool) $this->silenced_until?->isFuture();
+        if (! $this->silenced_from || ! $this->silenced_until) {
+            return false;
+        }
+
+        return now()->betweenIncluded($this->silenced_from, $this->silenced_until);
     }
 }

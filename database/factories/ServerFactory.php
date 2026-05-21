@@ -8,6 +8,7 @@ use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 
 /**
  * @extends Factory<Server>
@@ -60,7 +61,17 @@ class ServerFactory extends Factory
     public function silenced(): static
     {
         return $this->state(fn (array $attributes) => [
+            'silenced_from' => now()->subHour(),
             'silenced_until' => now()->addDay(),
+            'silence_reason' => fake()->sentence(),
+        ]);
+    }
+
+    public function scheduledSilenceFrom(Carbon $from, Carbon $until): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'silenced_from' => $from,
+            'silenced_until' => $until,
             'silence_reason' => fake()->sentence(),
         ]);
     }

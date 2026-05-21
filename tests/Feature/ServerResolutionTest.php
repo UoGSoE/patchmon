@@ -42,21 +42,30 @@ it('returns null sender email when neither the server nor the team has one set',
     expect($server->resolveSenderEmail())->toBeNull();
 });
 
-it('considers a server silenced when its own silenced_until is in the future', function () {
+it('considers a server silenced when now is between silenced_from and silenced_until', function () {
     $server = Server::factory()->silenced()->create();
 
     expect($server->isCurrentlySilenced())->toBeTrue();
 });
 
 it('does not consider a server silenced when silenced_until is in the past', function () {
-    $server = Server::factory()->create(['silenced_until' => now()->subHour()]);
+    $server = Server::factory()->create([
+        'silenced_from' => now()->subDays(3),
+        'silenced_until' => now()->subHour(),
+    ]);
+
+    expect($server->isCurrentlySilenced())->toBeFalse();
+});
+
+it('does not consider a server silenced when silenced_from is in the future (scheduled silence)', function () {
+    $server = Server::factory()->scheduledSilenceFrom(now()->addDays(3), now()->addDays(10))->create();
 
     expect($server->isCurrentlySilenced())->toBeFalse();
 });
 
 it('does not look at team-level silencing — only the server itself can be silenced', function () {
     $team = Team::factory()->create();
-    $server = Server::factory()->forTeam($team)->create(['silenced_until' => null]);
+    $server = Server::factory()->forTeam($team)->create(['silenced_from' => null, 'silenced_until' => null]);
 
     expect($server->isCurrentlySilenced())->toBeFalse();
 });

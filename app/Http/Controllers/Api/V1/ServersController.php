@@ -51,7 +51,7 @@ class ServersController extends Controller
     }
 
     /**
-     * Silence a server until a future moment. Body: silenced_until (ISO datetime), silence_reason (optional string). Idempotent.
+     * Silence a server between two moments. Body: silenced_from (ISO datetime), silenced_until (ISO datetime), silence_reason (optional string). Idempotent.
      */
     public function silence(Request $request, Server $server): ServerResource
     {
@@ -60,11 +60,16 @@ class ServersController extends Controller
         }
 
         $data = $request->validate([
-            'silenced_until' => ['required', 'date', 'after:now'],
+            'silenced_from' => ['required', 'date'],
+            'silenced_until' => ['required', 'date', 'after_or_equal:silenced_from'],
             'silence_reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $server->silenceUntil(Carbon::parse($data['silenced_until']), $data['silence_reason'] ?? null);
+        $server->silenceBetween(
+            Carbon::parse($data['silenced_from']),
+            Carbon::parse($data['silenced_until']),
+            $data['silence_reason'] ?? null,
+        );
 
         return new ServerResource($server->fresh());
     }

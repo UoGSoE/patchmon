@@ -20,7 +20,7 @@ class ServerDetail extends Component
 
     public bool $silenced = false;
 
-    public string $silenceUntil = '';
+    public $silenceUntil = '';
 
     public ?string $silenceReason = null;
 
@@ -33,9 +33,9 @@ class ServerDetail extends Component
         $this->authorize('view', $server);
         $this->server = $server;
         $this->silenced = $server->isCurrentlySilenced();
-        $this->silenceUntil = $server->silenced_until
-            ? $server->silenced_until->format('Y-m-d\TH:i')
-            : now()->addDay()->format('Y-m-d\TH:i');
+        $from = $server->silenced_from ?? now();
+        $until = $server->silenced_until ?? now()->addDay();
+        $this->silenceUntil = $from->format('Y-m-d').'/'.$until->format('Y-m-d');
         $this->silenceReason = $server->silence_reason;
         $this->patchedAt = now()->format('Y-m-d\TH:i');
     }
@@ -89,15 +89,16 @@ class ServerDetail extends Component
         $this->authorize('update', $this->server);
 
         if ($value) {
-            $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
-            $this->server->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
+            $this->validateSilenceWindow();
+            [$from, $until] = $this->silenceWindowFromPickedRange();
+            $this->server->silenceBetween($from, $until, $this->silenceReason);
             Flux::toast('Server silenced.', variant: 'success');
 
             return;
         }
         $this->server->unsilence();
         $this->silenceReason = null;
-        $this->silenceUntil = now()->addDay()->format('Y-m-d\TH:i');
+        $this->silenceUntil = now()->format('Y-m-d').'/'.now()->addDay()->format('Y-m-d');
         Flux::toast('Server unsilenced.', variant: 'success');
     }
 
@@ -107,8 +108,9 @@ class ServerDetail extends Component
             return;
         }
         $this->authorize('update', $this->server);
-        $this->validate(['silenceUntil' => ['required', 'date', 'after:now']]);
-        $this->server->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
+        $this->validateSilenceWindow();
+        [$from, $until] = $this->silenceWindowFromPickedRange();
+        $this->server->silenceBetween($from, $until, $this->silenceReason);
     }
 
     public function updatedSilenceReason(): void
@@ -118,7 +120,8 @@ class ServerDetail extends Component
         }
         $this->authorize('update', $this->server);
         $this->validate(['silenceReason' => ['nullable', 'string', 'max:255']]);
-        $this->server->silenceUntil(Carbon::parse($this->silenceUntil), $this->silenceReason);
+        [$from, $until] = $this->silenceWindowFromPickedRange();
+        $this->server->silenceBetween($from, $until, $this->silenceReason);
     }
 
     public function delete()
@@ -130,6 +133,75 @@ class ServerDetail extends Component
         Flux::toast('Server deleted.', variant: 'success');
 
         return $this->redirectRoute('home', navigate: true);
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function silenceWindowFromPickedRange(): array
+    {
+        [$startDate, $endDate] = $this->silenceRangeDates();
+
+        return [
+            Carbon::parse($startDate)->startOfDay(),
+            Carbon::parse($endDate)->endOfDay(),
+        ];
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function silenceRangeDates(): array
+    {
+        $value = $this->silenceUntil;
+
+        if (is_array($value)) {
+            $start = $value['start'] ?? null;
+            $end = $value['end'] ?? $start;
+
+            return [$start, $end];
+        }
+
+        if (is_string($value) && str_contains($value, '/')) {
+            [$start, $end] = explode('/', $value, 2);
+
+            return [trim($start) ?: null, trim($end) ?: null];
+        }
+
+        $only = is_string($value) && $value !== '' ? $value : null;
+
+        return [$only, $only];
+    }
+
+    private function validateSilenceWindow(): void
+    {
+        $this->validate([
+            'silenceUntil' => [
+                'required',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    [$startDate, $endDate] = $this->silenceRangeDates();
+
+                    if (! $startDate || ! $endDate || ! strtotime($startDate) || ! strtotime($endDate)) {
+                        $fail('Pick a start and end date.');
+
+                        return;
+                    }
+
+                    $start = Carbon::parse($startDate)->startOfDay();
+                    $end = Carbon::parse($endDate)->endOfDay();
+
+                    if ($end->isPast()) {
+                        $fail('End date must be today or later.');
+
+                        return;
+                    }
+
+                    if ($end->lessThan($start)) {
+                        $fail('End date must be on or after start date.');
+                    }
+                },
+            ],
+        ]);
     }
 
     public function render()

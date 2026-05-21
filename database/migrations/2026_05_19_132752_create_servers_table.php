@@ -25,6 +25,7 @@ return new class extends Migration
             $table->timestamp('last_patched_at')->nullable();
             $table->timestamp('alerting_since')->nullable();
             $table->timestamp('last_alerted_at')->nullable();
+            $table->timestamp('silenced_from')->nullable();
             $table->timestamp('silenced_until')->nullable();
             $table->text('silence_reason')->nullable();
             $table->timestamps();

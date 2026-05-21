@@ -275,6 +275,29 @@ it('narrows the listing by silenced state', function () {
         ->not->toContain('Quiet box');
 });
 
+it('treats a server with a future silenced_from as active, not silenced', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+
+    Server::factory()->forTeam($team)
+        ->scheduledSilenceFrom(now()->addDays(7), now()->addDays(14))
+        ->create(['name' => 'Future-silenced box']);
+
+    $silencedTab = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('silencedFilter', 'silenced');
+
+    $activeTab = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('silencedFilter', 'active');
+
+    expect($silencedTab->instance()->teamServers->pluck('name')->all())
+        ->not->toContain('Future-silenced box');
+    expect($activeTab->instance()->teamServers->pluck('name')->all())
+        ->toContain('Future-silenced box');
+});
+
 it('narrows the listing to a single team when a team filter is set', function () {
     $alice = User::factory()->create();
     $netservices = Team::factory()->create();

@@ -38,6 +38,7 @@ class ServerResource extends JsonResource
             'patch_token' => $this->patch_token,
             'last_patched_at' => $this->last_patched_at?->toIso8601String(),
             'alerting_since' => $this->alerting_since?->toIso8601String(),
+            'silenced_from' => $this->silenced_from?->toIso8601String(),
             'silenced_until' => $this->silenced_until?->toIso8601String(),
             'silence_reason' => $this->silence_reason,
             'is_overdue' => $this->isOverdue(),

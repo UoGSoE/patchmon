@@ -126,11 +126,14 @@ class HomePage extends Component
         }
 
         if ($this->silencedFilter === 'silenced') {
-            $query->where('silenced_until', '>', now());
+            $query->where('silenced_from', '<=', now())
+                ->where('silenced_until', '>=', now());
         }
 
         if ($this->silencedFilter === 'active') {
-            $query->where(fn ($q) => $q->whereNull('silenced_until')->orWhere('silenced_until', '<=', now()));
+            $query->where(fn ($q) => $q->whereNull('silenced_until')
+                ->orWhere('silenced_until', '<', now())
+                ->orWhere('silenced_from', '>', now()));
         }
 
         $needle = trim((string) $this->filter);

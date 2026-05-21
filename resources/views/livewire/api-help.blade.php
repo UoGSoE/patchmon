@@ -76,7 +76,7 @@
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
   -H "Content-Type: application/json" \
   -X POST \
-  -d '{"silenced_until": "{{ now()->addDay()->toIso8601String() }}", "silence_reason": "Investigating"}' \
+  -d '{"silenced_from": "{{ now()->toIso8601String() }}", "silenced_until": "{{ now()->addDay()->toIso8601String() }}", "silence_reason": "Investigating"}' \
   {{ $baseUrl }}/api/v1/servers/42/silence</pre>
                 </div>
 
@@ -163,6 +163,7 @@ r.raise_for_status()</pre>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">from datetime import datetime, timedelta, timezone
 
 r = requests.post(f"{BASE}/servers/42/silence", headers=HEADERS, json={
+    "silenced_from": datetime.now(timezone.utc).isoformat(),
     "silenced_until": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
     "silence_reason": "Investigating",
 })

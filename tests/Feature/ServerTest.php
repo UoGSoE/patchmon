@@ -27,25 +27,28 @@ it('auto-generates a unique patch_token when one is not provided', function () {
         ->and($serverA->patch_token)->not->toBe($serverB->patch_token);
 });
 
-it('silenceUntil persists the cutoff and reason on the server', function () {
+it('silenceBetween persists the start, end, and reason on the server', function () {
     $server = Server::factory()->create();
+    $from = now()->subHour()->startOfSecond();
     $until = now()->addDay()->startOfSecond();
 
-    $server->silenceUntil($until, 'Power works in the data centre');
+    $server->silenceBetween($from, $until, 'Power works in the data centre');
 
     $server->refresh();
-    expect($server->silenced_until->equalTo($until))->toBeTrue()
+    expect($server->silenced_from->equalTo($from))->toBeTrue()
+        ->and($server->silenced_until->equalTo($until))->toBeTrue()
         ->and($server->silence_reason)->toBe('Power works in the data centre')
         ->and($server->isCurrentlySilenced())->toBeTrue();
 });
 
-it('unsilence clears the cutoff and reason on the server', function () {
+it('unsilence clears the start, end, and reason on the server', function () {
     $server = Server::factory()->silenced()->create();
 
     $server->unsilence();
 
     $server->refresh();
-    expect($server->silenced_until)->toBeNull()
+    expect($server->silenced_from)->toBeNull()
+        ->and($server->silenced_until)->toBeNull()
         ->and($server->silence_reason)->toBeNull()
         ->and($server->isCurrentlySilenced())->toBeFalse();
 });

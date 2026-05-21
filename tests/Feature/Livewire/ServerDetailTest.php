@@ -17,26 +17,71 @@ it('unsilences the server when a team member flips the toggle off', function () 
         ->set('silenced', false);
 
     $server->refresh();
-    expect($server->silenced_until)->toBeNull()
+    expect($server->silenced_from)->toBeNull()
+        ->and($server->silenced_until)->toBeNull()
         ->and($server->silence_reason)->toBeNull();
 });
 
-it('silences the server when a team member flips the toggle on', function () {
+it('silences the server with the picked start and end when a preset delivers the production array payload', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->silenced()->create();
+    $start = now();
+    $end = now()->addDays(7);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->set('silenceUntil', [
+            'start' => $start->toDateString(),
+            'end' => $end->toDateString(),
+            'preset' => 'next7Days',
+        ]);
+
+    $server->refresh();
+    expect($server->silenced_from->toDateTimeString())->toBe($start->copy()->startOfDay()->toDateTimeString())
+        ->and($server->silenced_until->toDateTimeString())->toBe($end->copy()->endOfDay()->toDateTimeString());
+});
+
+it('silences the server through the picked range when a team member flips the toggle on', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create();
     $team->users()->attach($owner);
     $server = Server::factory()->forTeam($team, $owner)->create();
-    $until = now()->addDay()->startOfSecond();
+    $start = now();
+    $picked = now()->addDay();
+    $range = $start->toDateString().'/'.$picked->toDateString();
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
-        ->set('silenceUntil', $until->toDateTimeLocalString())
+        ->set('silenceUntil', $range)
         ->set('silenceReason', 'Power works')
         ->set('silenced', true);
 
     $server->refresh();
-    expect($server->silenced_until)->not->toBeNull()
+    expect($server->silenced_from->toDateTimeString())->toBe($start->copy()->startOfDay()->toDateTimeString())
+        ->and($server->silenced_until->toDateTimeString())->toBe($picked->copy()->endOfDay()->toDateTimeString())
         ->and($server->silence_reason)->toBe('Power works');
+});
+
+it('schedules a future silence when the picker start is in the future and leaves the server currently un-silenced', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create();
+    $start = now()->addDays(7);
+    $end = now()->addDays(14);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->set('silenceUntil', ['start' => $start->toDateString(), 'end' => $end->toDateString()])
+        ->set('silenceReason', 'Exam window')
+        ->set('silenced', true);
+
+    $server->refresh();
+    expect($server->silenced_from->toDateTimeString())->toBe($start->copy()->startOfDay()->toDateTimeString())
+        ->and($server->silenced_until->toDateTimeString())->toBe($end->copy()->endOfDay()->toDateTimeString())
+        ->and($server->isCurrentlySilenced())->toBeFalse();
 });
 
 it('saves changes to until and reason while already silenced', function () {
@@ -44,15 +89,16 @@ it('saves changes to until and reason while already silenced', function () {
     $team = Team::factory()->create();
     $team->users()->attach($owner);
     $server = Server::factory()->forTeam($team, $owner)->silenced()->create();
-    $newUntil = now()->addDays(3)->startOfSecond();
+    $newUntil = now()->addDays(3);
+    $range = now()->toDateString().'/'.$newUntil->toDateString();
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
-        ->set('silenceUntil', $newUntil->toDateTimeLocalString())
+        ->set('silenceUntil', $range)
         ->set('silenceReason', 'Extended works');
 
     $server->refresh();
-    expect($server->silenced_until->startOfSecond()->equalTo($newUntil))->toBeTrue()
+    expect($server->silenced_until->toDateTimeString())->toBe($newUntil->copy()->endOfDay()->toDateTimeString())
         ->and($server->silence_reason)->toBe('Extended works');
 });
 

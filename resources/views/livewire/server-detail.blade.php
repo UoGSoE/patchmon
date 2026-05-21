@@ -27,6 +27,22 @@
         </div>
     </div>
 
+    @if ($server->isCurrentlySilenced())
+        <flux:callout class="mt-4" icon="speaker-x-mark" variant="secondary">
+            <flux:callout.heading>Silenced until {{ $server->silenced_until->format('D j M Y') }}</flux:callout.heading>
+            @if ($server->silence_reason)
+                <flux:callout.text>Reason: {{ $server->silence_reason }}</flux:callout.text>
+            @endif
+        </flux:callout>
+    @elseif ($server->silenced_from && $server->silenced_from->isFuture())
+        <flux:callout class="mt-4" icon="clock" variant="secondary">
+            <flux:callout.heading>Silence scheduled {{ $server->silenced_from->format('D j M Y') }} – {{ $server->silenced_until->format('D j M Y') }}</flux:callout.heading>
+            @if ($server->silence_reason)
+                <flux:callout.text>Reason: {{ $server->silence_reason }}</flux:callout.text>
+            @endif
+        </flux:callout>
+    @endif
+
     <div class="mt-6 grid gap-6 sm:grid-cols-2 max-w-1/2">
         <flux:card>
             <flux:heading size="sm">Schedule</flux:heading>
@@ -55,8 +71,13 @@
         <flux:switch wire:model.live="silenced" label="Silenced" description="When silenced, Patchmon won't alert about this server."/>
         @if ($silenced)
             <div class="grid gap-3 sm:grid-cols-2">
-                <flux:input wire:model.blur="silenceUntil" type="datetime-local" label="Silenced until" />
-                <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Building works" />
+                <flux:date-picker
+                    mode="range"
+                    wire:model.live="silenceUntil"
+                    label="Silenced from / until end of"
+                    presets="tomorrow next7Days nextMonth next3Months"
+                />
+                <flux:input wire:model.blur="silenceReason" label="Reason (optional)" placeholder="Change freeze until term-end" />
             </div>
         @endif
         </div>

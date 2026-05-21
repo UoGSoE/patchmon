@@ -41,8 +41,10 @@
                     <flux:table.cell>
                         @if ($server->alerting_since)
                             <flux:badge size="sm" color="red" icon="exclamation-triangle">Due {{ $server->alerting_since->diffForHumans() }}</flux:badge>
-                        @elseif ($server->silenced_until && $server->silenced_until->isFuture())
+                        @elseif ($server->isCurrentlySilenced())
                             <flux:badge size="sm" color="zinc" icon="speaker-x-mark">Silenced until {{ $server->silenced_until->format('D j M') }}</flux:badge>
+                        @elseif ($server->silenced_from && $server->silenced_from->isFuture())
+                            <flux:badge size="sm" color="zinc" icon="clock">Silence scheduled {{ $server->silenced_from->format('D j M') }}</flux:badge>
                         @else
                             <flux:badge size="sm" color="green">OK</flux:badge>
                         @endif
