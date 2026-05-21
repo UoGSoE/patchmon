@@ -12,6 +12,7 @@
             <flux:tab name="teams">Team servers</flux:tab>
             <flux:tab name="all">All servers</flux:tab>
             <flux:tab name="alerting">Alerting servers</flux:tab>
+            <flux:tab name="silenced">Silenced servers</flux:tab>
         </flux:tabs>
 
         <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] md:items-end">
@@ -65,6 +66,14 @@
             <x-patchmon.server-table :servers="$this->alertingServers">
                 <x-slot:empty>
                     <flux:text>Nothing is currently alerting.</flux:text>
+                </x-slot:empty>
+            </x-patchmon.server-table>
+        </flux:tab.panel>
+
+        <flux:tab.panel name="silenced">
+            <x-patchmon.server-table :servers="$this->silencedServers">
+                <x-slot:empty>
+                    <flux:text>No servers are currently silenced.</flux:text>
                 </x-slot:empty>
             </x-patchmon.server-table>
         </flux:tab.panel>

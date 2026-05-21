@@ -190,6 +190,10 @@ class TestDataSeeder extends Seeder
 
         // ~30 AD domain controllers — quarterly cadence (DCs reboot rarely).
         for ($i = 1; $i <= 30; $i++) {
+            if ($i === 3) {
+                continue; // ad-dc-03 is silenced — see below.
+            }
+
             Server::factory()->forTeam($team, $members->random())->create([
                 'name' => sprintf('ad-dc-%02d', $i),
                 'description' => 'Active Directory domain controller.',
@@ -201,6 +205,19 @@ class TestDataSeeder extends Seeder
                 'last_patched_at' => now()->subWeeks(rand(2, 10)),
             ]);
         }
+
+        // ad-dc-03 held still during the exam diet — visible near the top of the list.
+        Server::factory()->forTeam($team, $members->random())->silenced()->create([
+            'name' => 'ad-dc-03',
+            'description' => 'Active Directory domain controller.',
+            'location' => self::DATA_CENTRE_LOCATIONS[3 % count(self::DATA_CENTRE_LOCATIONS)],
+            'os_type' => OsType::Windows,
+            'interval_months' => 3,
+            'grace_value' => 2,
+            'grace_units' => GraceUnit::Weeks,
+            'silenced_until' => now()->addWeeks(3),
+            'silence_reason' => 'Held during exam diet — no schema or GPO changes',
+        ]);
 
         // ~20 network / storage devices — yearly firmware updates.
         for ($i = 1; $i <= 20; $i++) {
@@ -228,15 +245,16 @@ class TestDataSeeder extends Seeder
             'last_patched_at' => now()->subMonths(2),
         ]);
 
-        Server::factory()->forTeam($team, $admin)->alerting()->create([
+        Server::factory()->forTeam($team, $admin)->silenced()->create([
             'name' => 'ad-dc-replica-02',
-            'description' => 'Service account password expired; ticket in flight.',
+            'description' => 'Active Directory replica — replication validation in progress.',
             'location' => 'DataVita',
             'os_type' => OsType::Windows,
             'interval_months' => 3,
             'grace_value' => 2,
             'grace_units' => GraceUnit::Weeks,
-            'last_patched_at' => now()->subMonths(5),
+            'silenced_until' => now()->addWeeks(2),
+            'silence_reason' => 'Awaiting infosec sign-off after term-end audit',
         ]);
 
         // One silenced because the server is being decommissioned.
@@ -328,6 +346,19 @@ class TestDataSeeder extends Seeder
             'grace_units' => GraceUnit::Days,
             'silence_reason' => 'Change freeze until term-end',
         ]);
+
+        // Silenced over the exam diet — no changes to student-facing systems.
+        Server::factory()->forTeam($team, $members->random())->silenced()->create([
+            'name' => 'exams-portal-db-01',
+            'description' => 'Online exams portal database.',
+            'location' => 'MDR',
+            'os_type' => OsType::Linux,
+            'interval_months' => 1,
+            'grace_value' => 5,
+            'grace_units' => GraceUnit::Days,
+            'silenced_until' => now()->addWeeks(3),
+            'silence_reason' => 'Exam period — no changes or patches until results are released',
+        ]);
     }
 
     private function createResearchComputingServers(Team $team): void
@@ -399,6 +430,19 @@ class TestDataSeeder extends Seeder
             'grace_value' => 1,
             'grace_units' => GraceUnit::Months,
             'silence_reason' => 'Vendor firmware window — alerts off till Monday',
+        ]);
+
+        // A GPU node held still while a research group finalises a conference paper.
+        Server::factory()->forTeam($team, $members->random())->silenced()->create([
+            'name' => 'cetus-node-gpu-07',
+            'description' => 'GPU node reserved for the vision group.',
+            'location' => 'MDR',
+            'os_type' => OsType::Linux,
+            'interval_months' => 6,
+            'grace_value' => 1,
+            'grace_units' => GraceUnit::Months,
+            'silenced_until' => now()->addWeeks(2),
+            'silence_reason' => 'Lab busy with conference paper submission — no reboots until camera-ready',
         ]);
     }
 

@@ -41,11 +41,11 @@
                     <flux:table.cell>
                         <div class="flex items-center gap-1">
                             @if ($server->isCurrentlySilenced())
-                                <flux:tooltip content="Silenced until {{ $server->silenced_until->format('D j M') }}">
+                                <flux:tooltip content="Silenced until {{ $server->silenced_until->format('D j M') }}{{ $server->silence_reason ? ' — '.$server->silence_reason : '' }}">
                                     <flux:badge size="sm" color="amber" icon="speaker-x-mark" />
                                 </flux:tooltip>
                             @elseif ($server->silenced_from && $server->silenced_from->isFuture())
-                                <flux:tooltip content="Silence scheduled {{ $server->silenced_from->format('D j M') }} – {{ $server->silenced_until->format('D j M') }}">
+                                <flux:tooltip content="Silence scheduled {{ $server->silenced_from->format('D j M') }} – {{ $server->silenced_until->format('D j M') }}{{ $server->silence_reason ? ' — '.$server->silence_reason : '' }}">
                                     <flux:badge size="sm" color="amber" icon="clock" />
                                 </flux:tooltip>
                             @endif

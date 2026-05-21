@@ -62,7 +62,7 @@ class HomePage extends Component
         Flux::modal('server-form')->close();
         Flux::toast('Server created.', variant: 'success');
 
-        unset($this->teamServers, $this->alertingServers);
+        unset($this->teamServers, $this->alertingServers, $this->silencedServers);
     }
 
     #[Computed]
@@ -104,6 +104,19 @@ class HomePage extends Component
         }
 
         return $this->sortForListing($this->applyFilter($query)->get());
+    }
+
+    #[Computed]
+    public function silencedServers(): Collection
+    {
+        return $this->sortForListing(
+            $this->applyFilter(
+                Server::query()
+                    ->where('silenced_from', '<=', now())
+                    ->where('silenced_until', '>=', now())
+                    ->with(['team'])
+            )->get()
+        );
     }
 
     #[Computed]
