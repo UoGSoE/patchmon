@@ -1,8 +1,9 @@
-<div class="mx-auto max-w-3xl space-y-8 p-6">
+<div class="max-w-1/2 space-y-8 p-6">
     <div>
         <flux:heading size="xl">Bulk import servers</flux:heading>
         <flux:text class="mt-1">
             Upload an Excel sheet with one server per row. Columns:
+            <flux:separator class="my-2" />
             <flux:badge>server name</flux:badge>, <flux:badge>os</flux:badge>, <flux:badge>last patched</flux:badge> (optional).
         </flux:text>
     </div>
@@ -55,12 +56,13 @@
     </div>
 
     <div class="space-y-3">
-        <flux:heading size="sm">Spreadsheet</flux:heading>
         <flux:checkbox
             wire:model.live="firstRowIsHeader"
             label="First row is a heading"
             description="Untick this if your first row is already a server."
         />
+        <flux:separator class="my-2" />
+        <flux:heading size="sm">Spreadsheet</flux:heading>
         <flux:file-upload
             wire:model="file"
             accept=".xlsx"
