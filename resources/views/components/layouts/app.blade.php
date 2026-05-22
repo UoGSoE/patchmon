@@ -38,33 +38,15 @@
                     <flux:sidebar.item icon="cog-6-tooth" :href="route('settings')" wire:navigate>My settings</flux:sidebar.item>
                 </flux:sidebar.nav>
                 <flux:sidebar.nav>
-                    <flux:sidebar.item tooltip="Logout" icon="arrow-right-start-on-rectangle">
-                        <form method="post" action="{{ route('auth.logout') }}">
-                            @csrf
-                            <flux:button class="w-full" type="submit">
-                                <span class="hidden sm:block">Logout</span>
-                            </flux:button>
-                        </form>
-                    </flux:sidebar.item>
+                    <form method="post" action="{{ route('auth.logout') }}">
+                        @csrf
+                        <flux:sidebar.item icon="arrow-right-start-on-rectangle" type="submit">Logout</flux:sidebar.item>
+                    </form>
                 </flux:sidebar.nav>
             </flux:sidebar>
         @endauth
         <flux:header class="lg:hidden print:hidden">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
-
-            <flux:spacer />
-
-            <flux:dropdown position="top" align="start">
-
-                <flux:menu>
-                    <flux:menu.item icon="arrow-right-start-on-rectangle">
-                        <form method="post" action="{{ route('auth.logout') }}">
-                            @csrf
-                            <flux:button type="submit">Logout</flux:button>
-                        </form>
-                    </flux:menu.item>
-                </flux:menu>
-            </flux:dropdown>
         </flux:header>
 
         <flux:main>
