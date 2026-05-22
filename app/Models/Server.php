@@ -98,6 +98,11 @@ class Server extends Model
         return now()->greaterThanOrEqualTo($this->deadline());
     }
 
+    public function daysOverdue(): int
+    {
+        return (int) floor($this->deadline()->diffInDays(now()));
+    }
+
     public function deadline(): Carbon
     {
         $reference = $this->last_patched_at ?? $this->created_at;
