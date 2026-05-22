@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use Database\Factories\ServerFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -73,6 +74,13 @@ class Server extends Model
     public function patchEvents(): HasMany
     {
         return $this->hasMany(PatchEvent::class);
+    }
+
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value === null ? null : strtolower($value),
+        );
     }
 
     public function resolveNotificationEmail(): string

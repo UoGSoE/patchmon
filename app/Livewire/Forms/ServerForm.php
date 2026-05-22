@@ -5,6 +5,7 @@ namespace App\Livewire\Forms;
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use App\Models\Server;
+use App\Rules\Fqdn;
 use Illuminate\Validation\Rule;
 use Livewire\Form;
 
@@ -50,7 +51,10 @@ class ServerForm extends Form
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => [
+                'required', 'string', 'max:255', new Fqdn,
+                Rule::unique('servers', 'name')->ignore($this->server?->id),
+            ],
             'description' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
             'os_type' => ['required', Rule::enum(OsType::class)],
@@ -68,6 +72,8 @@ class ServerForm extends Form
 
     public function save(): Server
     {
+        $this->name = strtolower(trim($this->name));
+
         $this->validate();
 
         $server = $this->server ?? new Server;

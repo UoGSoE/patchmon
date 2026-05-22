@@ -163,7 +163,7 @@ class TestDataSeeder extends Seeder
         // ~80 Linux servers — monthly patching, 1 week grace.
         for ($i = 1; $i <= 80; $i++) {
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => sprintf('linux-srv-%03d', $i),
+                'name' => sprintf('linux-srv-%03d.infra.example.test', $i),
                 'description' => 'General-purpose Linux server.',
                 'location' => self::LOCATIONS[$i % count(self::LOCATIONS)],
                 'os_type' => OsType::Linux,
@@ -177,7 +177,7 @@ class TestDataSeeder extends Seeder
         // ~70 Windows servers — monthly patching, 1 week grace.
         for ($i = 1; $i <= 70; $i++) {
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => sprintf('win-srv-%03d', $i),
+                'name' => sprintf('win-srv-%03d.infra.example.test', $i),
                 'description' => 'Windows file or application server.',
                 'location' => self::LOCATIONS[($i + 3) % count(self::LOCATIONS)],
                 'os_type' => OsType::Windows,
@@ -195,7 +195,7 @@ class TestDataSeeder extends Seeder
             }
 
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => sprintf('ad-dc-%02d', $i),
+                'name' => sprintf('ad-dc-%02d.infra.example.test', $i),
                 'description' => 'Active Directory domain controller.',
                 'location' => self::DATA_CENTRE_LOCATIONS[$i % count(self::DATA_CENTRE_LOCATIONS)],
                 'os_type' => OsType::Windows,
@@ -208,7 +208,7 @@ class TestDataSeeder extends Seeder
 
         // ad-dc-03 held still during the exam diet — visible near the top of the list.
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
-            'name' => 'ad-dc-03',
+            'name' => 'ad-dc-03.infra.example.test',
             'description' => 'Active Directory domain controller.',
             'location' => self::DATA_CENTRE_LOCATIONS[3 % count(self::DATA_CENTRE_LOCATIONS)],
             'os_type' => OsType::Windows,
@@ -222,7 +222,7 @@ class TestDataSeeder extends Seeder
         // ~20 network / storage devices — yearly firmware updates.
         for ($i = 1; $i <= 20; $i++) {
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => sprintf('netdev-%02d', $i),
+                'name' => sprintf('netdev-%02d.infra.example.test', $i),
                 'description' => 'Switch, router, or storage controller.',
                 'location' => self::LOCATIONS[($i * 2) % count(self::LOCATIONS)],
                 'os_type' => OsType::Other,
@@ -235,7 +235,7 @@ class TestDataSeeder extends Seeder
 
         // Two stuck Linux backups currently alerting.
         Server::factory()->forTeam($team, $members->random())->alerting()->create([
-            'name' => 'fileserver-prod-02',
+            'name' => 'fileserver-prod-02.infra.example.test',
             'description' => 'Patches stalled since the kernel CVE rollout — investigating.',
             'location' => 'MDR',
             'os_type' => OsType::Linux,
@@ -246,7 +246,7 @@ class TestDataSeeder extends Seeder
         ]);
 
         Server::factory()->forTeam($team, $admin)->silenced()->create([
-            'name' => 'ad-dc-replica-02',
+            'name' => 'ad-dc-replica-02.infra.example.test',
             'description' => 'Active Directory replica — replication validation in progress.',
             'location' => 'DataVita',
             'os_type' => OsType::Windows,
@@ -259,7 +259,7 @@ class TestDataSeeder extends Seeder
 
         // One silenced because the server is being decommissioned.
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
-            'name' => 'linux-srv-legacy-mailrelay',
+            'name' => 'linux-srv-legacy-mailrelay.infra.example.test',
             'description' => 'Being decommissioned next month — alerts off.',
             'location' => 'Boyd Orr',
             'os_type' => OsType::Linux,
@@ -292,7 +292,7 @@ class TestDataSeeder extends Seeder
 
             // Web frontend — Linux, monthly.
             Server::factory()->forTeam($team, $creator)->create([
-                'name' => "{$slug}-web-01",
+                'name' => "{$slug}-web-01.appdev.example.test",
                 'description' => "{$app} public web frontend.",
                 'os_type' => OsType::Linux,
                 'interval_months' => 1,
@@ -303,7 +303,7 @@ class TestDataSeeder extends Seeder
 
             // Database — Linux, monthly with tighter grace.
             Server::factory()->forTeam($team, $creator)->create([
-                'name' => "{$slug}-db-01",
+                'name' => "{$slug}-db-01.appdev.example.test",
                 'description' => "{$app} database server.",
                 'os_type' => OsType::Linux,
                 'interval_months' => 1,
@@ -314,7 +314,7 @@ class TestDataSeeder extends Seeder
 
             // Worker — varies between Linux and Windows.
             Server::factory()->forTeam($team, $creator)->create([
-                'name' => "{$slug}-worker-01",
+                'name' => "{$slug}-worker-01.appdev.example.test",
                 'description' => "{$app} background workers.",
                 'os_type' => fake()->randomElement([OsType::Linux, OsType::Windows]),
                 'interval_months' => 1,
@@ -326,7 +326,7 @@ class TestDataSeeder extends Seeder
 
         // One stuck Windows patch deploy.
         Server::factory()->forTeam($team, $admin)->alerting()->create([
-            'name' => 'conference-portal-payments-01',
+            'name' => 'conference-portal-payments-01.appdev.example.test',
             'description' => 'Stuck on a problematic .NET hotfix — vendor case open.',
             'location' => 'DataVita',
             'os_type' => OsType::Windows,
@@ -338,7 +338,7 @@ class TestDataSeeder extends Seeder
 
         // One silenced for a planned change freeze.
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
-            'name' => 'timetabling-web-staging-01',
+            'name' => 'timetabling-web-staging-01.appdev.example.test',
             'description' => 'Frozen until end-of-term release.',
             'os_type' => OsType::Linux,
             'interval_months' => 1,
@@ -349,7 +349,7 @@ class TestDataSeeder extends Seeder
 
         // Silenced over the exam diet — no changes to student-facing systems.
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
-            'name' => 'exams-portal-db-01',
+            'name' => 'exams-portal-db-01.appdev.example.test',
             'description' => 'Online exams portal database.',
             'location' => 'MDR',
             'os_type' => OsType::Linux,
@@ -369,7 +369,7 @@ class TestDataSeeder extends Seeder
         foreach ($clusters as $cluster) {
             // Login node — patched quarterly.
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => "{$cluster}-login-01",
+                'name' => "{$cluster}-login-01.research.example.test",
                 'description' => "{$cluster} cluster login node.",
                 'location' => 'MDR',
                 'os_type' => OsType::Linux,
@@ -381,7 +381,7 @@ class TestDataSeeder extends Seeder
 
             // Scheduler — patched quarterly.
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => "{$cluster}-sched-01",
+                'name' => "{$cluster}-sched-01.research.example.test",
                 'description' => "{$cluster} Slurm scheduler.",
                 'location' => 'MDR',
                 'os_type' => OsType::Linux,
@@ -394,7 +394,7 @@ class TestDataSeeder extends Seeder
             // Compute nodes — twice-yearly (researchers really don't like reboots).
             for ($i = 1; $i <= 25; $i++) {
                 Server::factory()->forTeam($team, $members->random())->create([
-                    'name' => sprintf('%s-node-%03d', $cluster, $i),
+                    'name' => sprintf('%s-node-%03d.research.example.test', $cluster, $i),
                     'description' => "{$cluster} compute node.",
                     'location' => 'MDR',
                     'os_type' => OsType::Linux,
@@ -409,7 +409,7 @@ class TestDataSeeder extends Seeder
         // GPFS storage controllers — Other (appliance), quarterly.
         for ($i = 1; $i <= 4; $i++) {
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => sprintf('gpfs-ctrl-%02d', $i),
+                'name' => sprintf('gpfs-ctrl-%02d.research.example.test', $i),
                 'description' => 'GPFS storage controller appliance.',
                 'location' => 'MDR',
                 'os_type' => OsType::Other,
@@ -422,7 +422,7 @@ class TestDataSeeder extends Seeder
 
         // One silenced — vendor patch window in progress.
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
-            'name' => 'orca-node-099',
+            'name' => 'orca-node-099.research.example.test',
             'description' => 'GPU node — vendor firmware update window.',
             'location' => 'MDR',
             'os_type' => OsType::Linux,
@@ -434,7 +434,7 @@ class TestDataSeeder extends Seeder
 
         // A GPU node held still while a research group finalises a conference paper.
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
-            'name' => 'cetus-node-gpu-07',
+            'name' => 'cetus-node-gpu-07.research.example.test',
             'description' => 'GPU node reserved for the vision group.',
             'location' => 'MDR',
             'os_type' => OsType::Linux,
@@ -470,7 +470,7 @@ class TestDataSeeder extends Seeder
 
         foreach ($names as $name) {
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => $name,
+                'name' => "{$name}.resilience.example.test",
                 'description' => 'Resilience and DR monitoring infrastructure.',
                 'location' => self::DATA_CENTRE_LOCATIONS[array_rand(self::DATA_CENTRE_LOCATIONS)],
                 'os_type' => OsType::Linux,
@@ -483,7 +483,7 @@ class TestDataSeeder extends Seeder
 
         // One critical monitor currently alerting.
         Server::factory()->forTeam($team, $members->random())->alerting()->create([
-            'name' => 'monitor-alerts-prod-02',
+            'name' => 'monitor-alerts-prod-02.resilience.example.test',
             'description' => 'Patches not running since the firewall change this morning.',
             'location' => 'DataVita',
             'os_type' => OsType::Linux,
@@ -508,7 +508,7 @@ class TestDataSeeder extends Seeder
 
         foreach ($names as $name) {
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => $name,
+                'name' => "{$name}.frontdesk.example.test",
                 'description' => 'Front desk service support.',
                 'os_type' => str_starts_with($name, 'kiosk') ? OsType::Windows : OsType::Linux,
                 'interval_months' => 1,
@@ -538,7 +538,7 @@ class TestDataSeeder extends Seeder
 
         foreach ($names as $name) {
             Server::factory()->forTeam($team, $members->random())->create([
-                'name' => $name,
+                'name' => "{$name}.fulfilment.example.test",
                 'description' => 'Fulfilment service infrastructure.',
                 'os_type' => str_contains($name, 'shipping') ? OsType::Windows : OsType::Linux,
                 'interval_months' => 1,

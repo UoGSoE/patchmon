@@ -13,14 +13,14 @@ it('shows every server on the All servers tab regardless of team membership', fu
     $strangerTeam = Team::factory()->create();
     $alice->teams()->attach($myTeam);
 
-    Server::factory()->forTeam($myTeam)->create(['name' => 'My team server']);
-    Server::factory()->forTeam($strangerTeam)->create(['name' => 'Other team server']);
+    Server::factory()->forTeam($myTeam)->create(['name' => 'my-team-server.example.test']);
+    Server::factory()->forTeam($strangerTeam)->create(['name' => 'other-team-server.example.test']);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class);
 
     expect($component->instance()->allServers->pluck('name')->all())
-        ->toContain('My team server')
-        ->toContain('Other team server');
+        ->toContain('my-team-server.example.test')
+        ->toContain('other-team-server.example.test');
 });
 
 it('applies OS, team and silenced filters to the All servers tab', function () {
@@ -29,18 +29,18 @@ it('applies OS, team and silenced filters to the All servers tab', function () {
     $strangerTeam = Team::factory()->create();
     $alice->teams()->attach($myTeam);
 
-    Server::factory()->forTeam($myTeam)->create(['name' => 'My linux box', 'os_type' => OsType::Linux]);
-    Server::factory()->forTeam($strangerTeam)->create(['name' => 'Other windows box', 'os_type' => OsType::Windows]);
-    Server::factory()->forTeam($strangerTeam)->create(['name' => 'Other linux box', 'os_type' => OsType::Linux]);
+    Server::factory()->forTeam($myTeam)->create(['name' => 'my-linux-box.example.test', 'os_type' => OsType::Linux]);
+    Server::factory()->forTeam($strangerTeam)->create(['name' => 'other-windows-box.example.test', 'os_type' => OsType::Windows]);
+    Server::factory()->forTeam($strangerTeam)->create(['name' => 'other-linux-box.example.test', 'os_type' => OsType::Linux]);
 
     $component = Livewire::actingAs($alice)
         ->test(HomePage::class)
         ->set('osFilter', 'linux');
 
     expect($component->instance()->allServers->pluck('name')->all())
-        ->toContain('My linux box')
-        ->toContain('Other linux box')
-        ->not->toContain('Other windows box');
+        ->toContain('my-linux-box.example.test')
+        ->toContain('other-linux-box.example.test')
+        ->not->toContain('other-windows-box.example.test');
 });
 
 it('keeps the Team servers listing scoped to teams the user belongs to', function () {
@@ -49,14 +49,14 @@ it('keeps the Team servers listing scoped to teams the user belongs to', functio
     $storage = Team::factory()->create();
     $alice->teams()->attach($netservices);
 
-    Server::factory()->forTeam($netservices)->create(['name' => 'Network DNS export']);
-    Server::factory()->forTeam($storage)->create(['name' => 'Storage tape rotation']);
+    Server::factory()->forTeam($netservices)->create(['name' => 'network-dns-export.example.test']);
+    Server::factory()->forTeam($storage)->create(['name' => 'storage-tape-rotation.example.test']);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class);
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Network DNS export')
-        ->not->toContain('Storage tape rotation');
+        ->toContain('network-dns-export.example.test')
+        ->not->toContain('storage-tape-rotation.example.test');
 });
 
 it('surfaces alerting servers above healthy ones, then sorts the healthy lot alphabetically', function () {
@@ -64,14 +64,14 @@ it('surfaces alerting servers above healthy ones, then sorts the healthy lot alp
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'Zebra healthy']);
-    Server::factory()->forTeam($team)->create(['name' => 'Apple healthy']);
+    Server::factory()->forTeam($team)->create(['name' => 'zebra-healthy.example.test']);
+    Server::factory()->forTeam($team)->create(['name' => 'apple-healthy.example.test']);
     Server::factory()->forTeam($team)->create([
-        'name' => 'Recently alerting',
+        'name' => 'recently-alerting.example.test',
         'alerting_since' => now()->subMinutes(10),
     ]);
     Server::factory()->forTeam($team)->create([
-        'name' => 'Long alerting',
+        'name' => 'long-alerting.example.test',
         'alerting_since' => now()->subHours(8),
     ]);
 
@@ -79,10 +79,10 @@ it('surfaces alerting servers above healthy ones, then sorts the healthy lot alp
     $orderedNames = $component->instance()->teamServers->pluck('name')->all();
 
     expect($orderedNames)->toBe([
-        'Recently alerting',
-        'Long alerting',
-        'Apple healthy',
-        'Zebra healthy',
+        'recently-alerting.example.test',
+        'long-alerting.example.test',
+        'apple-healthy.example.test',
+        'zebra-healthy.example.test',
     ]);
 });
 
@@ -92,14 +92,14 @@ it('lists servers from every team the user is a member of on the Team servers ta
     $storage = Team::factory()->create();
     $alice->teams()->attach([$netservices->id, $storage->id]);
 
-    Server::factory()->forTeam($netservices)->create(['name' => 'Network DNS export']);
-    Server::factory()->forTeam($storage)->create(['name' => 'Storage tape rotation']);
+    Server::factory()->forTeam($netservices)->create(['name' => 'network-dns-export.example.test']);
+    Server::factory()->forTeam($storage)->create(['name' => 'storage-tape-rotation.example.test']);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class);
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Network DNS export')
-        ->toContain('Storage tape rotation');
+        ->toContain('network-dns-export.example.test')
+        ->toContain('storage-tape-rotation.example.test');
 });
 
 it('shows the right empty state when the user has no teams', function () {
@@ -120,30 +120,30 @@ it('shows alerting servers from the users teams on the Alerting tab', function (
     $otherTeam = Team::factory()->create();
     $alice->teams()->attach($aliceTeam);
 
-    Server::factory()->forTeam($aliceTeam)->alerting()->create(['name' => 'Alice team alerting']);
-    Server::factory()->forTeam($aliceTeam)->create(['name' => 'Alice team healthy']);
-    Server::factory()->forTeam($otherTeam)->alerting()->create(['name' => 'Other team alerting']);
+    Server::factory()->forTeam($aliceTeam)->alerting()->create(['name' => 'alice-team-alerting.example.test']);
+    Server::factory()->forTeam($aliceTeam)->create(['name' => 'alice-team-healthy.example.test']);
+    Server::factory()->forTeam($otherTeam)->alerting()->create(['name' => 'other-team-alerting.example.test']);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class);
     $alertingNames = $component->instance()->alertingServers->pluck('name')->all();
 
-    expect($alertingNames)->toContain('Alice team alerting')
-        ->not->toContain('Alice team healthy')
-        ->not->toContain('Other team alerting');
+    expect($alertingNames)->toContain('alice-team-alerting.example.test')
+        ->not->toContain('alice-team-healthy.example.test')
+        ->not->toContain('other-team-alerting.example.test');
 });
 
 it('shows every alerting server across the system to admins on the Alerting tab', function () {
     $admin = User::factory()->admin()->create();
     $unrelatedTeam = Team::factory()->create();
 
-    Server::factory()->forTeam($unrelatedTeam)->alerting()->create(['name' => 'Stranger team alerting']);
-    Server::factory()->forTeam($unrelatedTeam)->create(['name' => 'Stranger team healthy']);
+    Server::factory()->forTeam($unrelatedTeam)->alerting()->create(['name' => 'stranger-team-alerting.example.test']);
+    Server::factory()->forTeam($unrelatedTeam)->create(['name' => 'stranger-team-healthy.example.test']);
 
     $component = Livewire::actingAs($admin)->test(HomePage::class);
     $alertingNames = $component->instance()->alertingServers->pluck('name')->all();
 
-    expect($alertingNames)->toContain('Stranger team alerting')
-        ->not->toContain('Stranger team healthy');
+    expect($alertingNames)->toContain('stranger-team-alerting.example.test')
+        ->not->toContain('stranger-team-healthy.example.test');
 });
 
 it('filters servers by a fragment of the name on every tab', function () {
@@ -151,18 +151,18 @@ it('filters servers by a fragment of the name on every tab', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->alerting()->create(['name' => 'Team linux alerting']);
-    Server::factory()->forTeam($team)->create(['name' => 'Team linux healthy']);
-    Server::factory()->forTeam($team)->create(['name' => 'Team windows healthy']);
+    Server::factory()->forTeam($team)->alerting()->create(['name' => 'team-linux-alerting.example.test']);
+    Server::factory()->forTeam($team)->create(['name' => 'team-linux-healthy.example.test']);
+    Server::factory()->forTeam($team)->create(['name' => 'team-windows-healthy.example.test']);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'linux');
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Team linux alerting')
-        ->toContain('Team linux healthy')
-        ->not->toContain('Team windows healthy');
+        ->toContain('team-linux-alerting.example.test')
+        ->toContain('team-linux-healthy.example.test')
+        ->not->toContain('team-windows-healthy.example.test');
     expect($component->instance()->alertingServers->pluck('name')->all())
-        ->toContain('Team linux alerting');
+        ->toContain('team-linux-alerting.example.test');
 });
 
 it('also matches the filter against the description', function () {
@@ -171,19 +171,19 @@ it('also matches the filter against the description', function () {
     $alice->teams()->attach($team);
 
     Server::factory()->forTeam($team)->create([
-        'name' => 'Nightly server',
+        'name' => 'nightly-server.example.test',
         'description' => 'rsnapshot of the linux fleet',
     ]);
     Server::factory()->forTeam($team)->create([
-        'name' => 'Other server',
+        'name' => 'other-server.example.test',
         'description' => 'curl against the order API',
     ]);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'linux');
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Nightly server')
-        ->not->toContain('Other server');
+        ->toContain('nightly-server.example.test')
+        ->not->toContain('other-server.example.test');
 });
 
 it('ignores filter strings that are blank or only one character', function () {
@@ -191,18 +191,18 @@ it('ignores filter strings that are blank or only one character', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'Alpha server']);
-    Server::factory()->forTeam($team)->create(['name' => 'Beta server']);
+    Server::factory()->forTeam($team)->create(['name' => 'alpha-server.example.test']);
+    Server::factory()->forTeam($team)->create(['name' => 'beta-server.example.test']);
 
     $blank = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', '   ');
     expect($blank->instance()->teamServers->pluck('name')->all())
-        ->toContain('Alpha server')
-        ->toContain('Beta server');
+        ->toContain('alpha-server.example.test')
+        ->toContain('beta-server.example.test');
 
     $singleChar = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'a');
     expect($singleChar->instance()->teamServers->pluck('name')->all())
-        ->toContain('Alpha server')
-        ->toContain('Beta server');
+        ->toContain('alpha-server.example.test')
+        ->toContain('beta-server.example.test');
 });
 
 it('inverts the filter when the exclude checkbox is ticked', function () {
@@ -210,10 +210,10 @@ it('inverts the filter when the exclude checkbox is ticked', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'Team linux backup', 'description' => null]);
-    Server::factory()->forTeam($team)->create(['name' => 'Team windows backup', 'description' => null]);
+    Server::factory()->forTeam($team)->create(['name' => 'team-linux-backup.example.test', 'description' => null]);
+    Server::factory()->forTeam($team)->create(['name' => 'team-windows-backup.example.test', 'description' => null]);
     Server::factory()->forTeam($team)->create([
-        'name' => 'Nightly probe',
+        'name' => 'nightly-probe.example.test',
         'description' => 'targets the linux fleet',
     ]);
 
@@ -223,9 +223,9 @@ it('inverts the filter when the exclude checkbox is ticked', function () {
         ->set('excludeFilter', true);
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Team windows backup')
-        ->not->toContain('Team linux backup')
-        ->not->toContain('Nightly probe');
+        ->toContain('team-windows-backup.example.test')
+        ->not->toContain('team-linux-backup.example.test')
+        ->not->toContain('nightly-probe.example.test');
 });
 
 it('matches the filter against the location column', function () {
@@ -233,16 +233,16 @@ it('matches the filter against the location column', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'Site server', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'Other site server', 'location' => 'JWS']);
-    Server::factory()->forTeam($team)->create(['name' => 'No location server', 'location' => null]);
+    Server::factory()->forTeam($team)->create(['name' => 'site-server.example.test', 'location' => 'Rankine']);
+    Server::factory()->forTeam($team)->create(['name' => 'other-site-server.example.test', 'location' => 'JWS']);
+    Server::factory()->forTeam($team)->create(['name' => 'no-location-server.example.test', 'location' => null]);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'rankine');
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Site server')
-        ->not->toContain('Other site server')
-        ->not->toContain('No location server');
+        ->toContain('site-server.example.test')
+        ->not->toContain('other-site-server.example.test')
+        ->not->toContain('no-location-server.example.test');
 });
 
 it('requires every whitespace-separated token to match in include mode', function () {
@@ -250,20 +250,20 @@ it('requires every whitespace-separated token to match in include mode', functio
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'linux backup', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'linux mirror', 'location' => 'JWS']);
-    Server::factory()->forTeam($team)->create(['name' => 'windows backup', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'unrelated', 'location' => 'MDR']);
+    Server::factory()->forTeam($team)->create(['name' => 'linux-backup.example.test', 'location' => 'Rankine']);
+    Server::factory()->forTeam($team)->create(['name' => 'linux-mirror.example.test', 'location' => 'JWS']);
+    Server::factory()->forTeam($team)->create(['name' => 'windows-backup.example.test', 'location' => 'Rankine']);
+    Server::factory()->forTeam($team)->create(['name' => 'unrelated.example.test', 'location' => 'MDR']);
 
     $component = Livewire::actingAs($alice)
         ->test(HomePage::class)
         ->set('filter', 'linux rankine');
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('linux backup')
-        ->not->toContain('linux mirror')
-        ->not->toContain('windows backup')
-        ->not->toContain('unrelated');
+        ->toContain('linux-backup.example.test')
+        ->not->toContain('linux-mirror.example.test')
+        ->not->toContain('windows-backup.example.test')
+        ->not->toContain('unrelated.example.test');
 });
 
 it('hides rows matching any token in exclude mode', function () {
@@ -271,10 +271,10 @@ it('hides rows matching any token in exclude mode', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'linux only', 'location' => null]);
-    Server::factory()->forTeam($team)->create(['name' => 'backup only', 'location' => null]);
-    Server::factory()->forTeam($team)->create(['name' => 'rankine only', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'clean server', 'location' => 'JWS']);
+    Server::factory()->forTeam($team)->create(['name' => 'linux-only.example.test', 'location' => null]);
+    Server::factory()->forTeam($team)->create(['name' => 'backup-only.example.test', 'location' => null]);
+    Server::factory()->forTeam($team)->create(['name' => 'rankine-only.example.test', 'location' => 'Rankine']);
+    Server::factory()->forTeam($team)->create(['name' => 'clean-server.example.test', 'location' => 'JWS']);
 
     $component = Livewire::actingAs($alice)
         ->test(HomePage::class)
@@ -282,10 +282,10 @@ it('hides rows matching any token in exclude mode', function () {
         ->set('excludeFilter', true);
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('backup only')
-        ->toContain('clean server')
-        ->not->toContain('linux only')
-        ->not->toContain('rankine only');
+        ->toContain('backup-only.example.test')
+        ->toContain('clean-server.example.test')
+        ->not->toContain('linux-only.example.test')
+        ->not->toContain('rankine-only.example.test');
 });
 
 it('narrows the listing by silenced state', function () {
@@ -293,24 +293,24 @@ it('narrows the listing by silenced state', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->silenced()->create(['name' => 'Quiet box']);
-    Server::factory()->forTeam($team)->create(['name' => 'Noisy box']);
+    Server::factory()->forTeam($team)->silenced()->create(['name' => 'quiet-box.example.test']);
+    Server::factory()->forTeam($team)->create(['name' => 'noisy-box.example.test']);
 
     $onlySilenced = Livewire::actingAs($alice)
         ->test(HomePage::class)
         ->set('silencedFilter', 'silenced');
 
     expect($onlySilenced->instance()->teamServers->pluck('name')->all())
-        ->toContain('Quiet box')
-        ->not->toContain('Noisy box');
+        ->toContain('quiet-box.example.test')
+        ->not->toContain('noisy-box.example.test');
 
     $onlyActive = Livewire::actingAs($alice)
         ->test(HomePage::class)
         ->set('silencedFilter', 'active');
 
     expect($onlyActive->instance()->teamServers->pluck('name')->all())
-        ->toContain('Noisy box')
-        ->not->toContain('Quiet box');
+        ->toContain('noisy-box.example.test')
+        ->not->toContain('quiet-box.example.test');
 });
 
 it('treats a server with a future silenced_from as active, not silenced', function () {
@@ -320,7 +320,7 @@ it('treats a server with a future silenced_from as active, not silenced', functi
 
     Server::factory()->forTeam($team)
         ->scheduledSilenceFrom(now()->addDays(7), now()->addDays(14))
-        ->create(['name' => 'Future-silenced box']);
+        ->create(['name' => 'future-silenced-box.example.test']);
 
     $silencedTab = Livewire::actingAs($alice)
         ->test(HomePage::class)
@@ -331,9 +331,9 @@ it('treats a server with a future silenced_from as active, not silenced', functi
         ->set('silencedFilter', 'active');
 
     expect($silencedTab->instance()->teamServers->pluck('name')->all())
-        ->not->toContain('Future-silenced box');
+        ->not->toContain('future-silenced-box.example.test');
     expect($activeTab->instance()->teamServers->pluck('name')->all())
-        ->toContain('Future-silenced box');
+        ->toContain('future-silenced-box.example.test');
 });
 
 it('narrows the listing to a single team when a team filter is set', function () {
@@ -342,16 +342,16 @@ it('narrows the listing to a single team when a team filter is set', function ()
     $storage = Team::factory()->create();
     $alice->teams()->attach([$netservices->id, $storage->id]);
 
-    Server::factory()->forTeam($netservices)->create(['name' => 'Net A']);
-    Server::factory()->forTeam($storage)->create(['name' => 'Storage A']);
+    Server::factory()->forTeam($netservices)->create(['name' => 'net-a.example.test']);
+    Server::factory()->forTeam($storage)->create(['name' => 'storage-a.example.test']);
 
     $component = Livewire::actingAs($alice)
         ->test(HomePage::class)
         ->set('teamFilter', (string) $storage->id);
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Storage A')
-        ->not->toContain('Net A');
+        ->toContain('storage-a.example.test')
+        ->not->toContain('net-a.example.test');
 });
 
 it('narrows the listing to a single OS when an OS filter is set', function () {
@@ -359,14 +359,14 @@ it('narrows the listing to a single OS when an OS filter is set', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'Linux box', 'os_type' => OsType::Linux]);
-    Server::factory()->forTeam($team)->create(['name' => 'Windows box', 'os_type' => OsType::Windows]);
-    Server::factory()->forTeam($team)->create(['name' => 'Other box', 'os_type' => OsType::Other]);
+    Server::factory()->forTeam($team)->create(['name' => 'linux-box.example.test', 'os_type' => OsType::Linux]);
+    Server::factory()->forTeam($team)->create(['name' => 'windows-box.example.test', 'os_type' => OsType::Windows]);
+    Server::factory()->forTeam($team)->create(['name' => 'other-box.example.test', 'os_type' => OsType::Other]);
 
     $component = Livewire::actingAs($alice)->test(HomePage::class)->set('osFilter', 'windows');
 
     expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('Windows box')
-        ->not->toContain('Linux box')
-        ->not->toContain('Other box');
+        ->toContain('windows-box.example.test')
+        ->not->toContain('linux-box.example.test')
+        ->not->toContain('other-box.example.test');
 });

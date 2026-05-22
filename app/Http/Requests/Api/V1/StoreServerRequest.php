@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Rules\Fqdn;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,13 +15,20 @@ class StoreServerRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('name') && is_string($this->input('name'))) {
+            $this->merge(['name' => strtolower(trim($this->input('name')))]);
+        }
+    }
+
     /**
      * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new Fqdn, Rule::unique('servers', 'name')],
             'description' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
             'os_type' => ['required', Rule::enum(OsType::class)],

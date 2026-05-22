@@ -22,7 +22,7 @@ class ServerFactory extends Factory
         return [
             'team_id' => Team::factory(),
             'created_by_user_id' => $creator,
-            'name' => fake()->unique()->words(2, true),
+            'name' => fake()->unique()->regexify('[a-z]{6}[0-9]{4}').'.example.com',
             'description' => null,
             'os_type' => OsType::Linux,
             'interval_months' => 1,

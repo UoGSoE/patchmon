@@ -146,16 +146,32 @@ it('edits the server via the openEdit flyout flow', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create();
     $team->users()->attach($owner);
-    $server = Server::factory()->forTeam($team, $owner)->create(['name' => 'Old name']);
+    $server = Server::factory()->forTeam($team, $owner)->create(['name' => 'old-name.example.test']);
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
         ->call('openEdit')
-        ->set('form.name', 'New name')
+        ->set('form.name', 'new-name.example.test')
         ->call('save')
         ->assertHasNoErrors();
 
-    expect($server->fresh()->name)->toBe('New name');
+    expect($server->fresh()->name)->toBe('new-name.example.test');
+});
+
+it('rejects an edit that sets the name to an invalid FQDN', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create(['name' => 'keeper.example.test']);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('openEdit')
+        ->set('form.name', 'not-an-fqdn')
+        ->call('save')
+        ->assertHasErrors(['form.name']);
+
+    expect($server->fresh()->name)->toBe('keeper.example.test');
 });
 
 it('clears the location when the edit form sets it to null', function () {

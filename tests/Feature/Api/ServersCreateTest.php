@@ -12,7 +12,7 @@ it('creates a team-owned server when the user is a member of that team', functio
     Sanctum::actingAs($alice, ['servers:write']);
 
     $this->postJson('/api/v1/servers', [
-        'name' => 'Team backup',
+        'name' => 'team-backup.example.test',
         'team_id' => $team->id,
         'os_type' => 'linux',
         'interval_months' => 1,
@@ -20,7 +20,7 @@ it('creates a team-owned server when the user is a member of that team', functio
         'grace_units' => 'days',
     ])->assertCreated();
 
-    $server = Server::firstWhere('name', 'Team backup');
+    $server = Server::firstWhere('name', 'team-backup.example.test');
     expect($server)->not->toBeNull()
         ->and($server->team_id)->toBe($team->id)
         ->and($server->created_by_user_id)->toBe($alice->id);
@@ -83,7 +83,7 @@ it('persists the location field on the API create endpoint', function () {
     Sanctum::actingAs($alice, ['servers:write']);
 
     $this->postJson('/api/v1/servers', [
-        'name' => 'Located server',
+        'name' => 'located-server.example.test',
         'location' => 'Rankine',
         'team_id' => $team->id,
         'os_type' => 'linux',
@@ -93,8 +93,63 @@ it('persists the location field on the API create endpoint', function () {
     ])->assertCreated()
         ->assertJsonPath('data.location', 'Rankine');
 
-    $server = Server::firstWhere('name', 'Located server');
+    $server = Server::firstWhere('name', 'located-server.example.test');
     expect($server->location)->toBe('Rankine');
+});
+
+it('rejects a name that is not a valid FQDN', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    Sanctum::actingAs($alice, ['servers:write']);
+
+    $this->postJson('/api/v1/servers', [
+        'name' => 'not-an-fqdn',
+        'team_id' => $team->id,
+        'os_type' => 'linux',
+        'interval_months' => 1,
+        'grace_value' => 7,
+        'grace_units' => 'days',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['name']);
+
+    expect(Server::count())->toBe(0);
+});
+
+it('lowercases and trims the name before saving', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    Sanctum::actingAs($alice, ['servers:write']);
+
+    $this->postJson('/api/v1/servers', [
+        'name' => '  DC1.Eng.Example.AC.UK  ',
+        'team_id' => $team->id,
+        'os_type' => 'linux',
+        'interval_months' => 1,
+        'grace_value' => 7,
+        'grace_units' => 'days',
+    ])->assertCreated();
+
+    expect(Server::firstWhere('name', 'dc1.eng.example.ac.uk'))->not->toBeNull();
+});
+
+it('rejects a duplicate server name on create', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    Server::factory()->forTeam($team)->create(['name' => 'taken.example.test']);
+    Sanctum::actingAs($alice, ['servers:write']);
+
+    $this->postJson('/api/v1/servers', [
+        'name' => 'taken.example.test',
+        'team_id' => $team->id,
+        'os_type' => 'linux',
+        'interval_months' => 1,
+        'grace_value' => 7,
+        'grace_units' => 'days',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['name']);
 });
 
 it('accepts os_type windows or other', function () {
@@ -104,7 +159,7 @@ it('accepts os_type windows or other', function () {
     Sanctum::actingAs($alice, ['servers:write']);
 
     $this->postJson('/api/v1/servers', [
-        'name' => 'Windows fileserver',
+        'name' => 'windows-fileserver.example.test',
         'team_id' => $team->id,
         'os_type' => 'windows',
         'interval_months' => 1,

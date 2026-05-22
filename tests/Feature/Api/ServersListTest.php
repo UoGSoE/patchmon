@@ -25,15 +25,15 @@ it('shows only servers from teams the user belongs to', function () {
     $otherTeam = Team::factory()->create();
     $alice->teams()->attach($myTeam);
 
-    Server::factory()->forTeam($myTeam)->create(['name' => 'MyTeamServer']);
-    Server::factory()->forTeam($otherTeam)->create(['name' => 'OtherTeamServer']);
+    Server::factory()->forTeam($myTeam)->create(['name' => 'myteamserver.example.test']);
+    Server::factory()->forTeam($otherTeam)->create(['name' => 'otherteamserver.example.test']);
 
     Sanctum::actingAs($alice, ['servers:read']);
 
     $response = $this->getJson('/api/v1/servers')->assertOk();
 
     $names = collect($response->json('servers.data'))->pluck('name')->all();
-    expect($names)->toEqualCanonicalizing(['MyTeamServer']);
+    expect($names)->toEqualCanonicalizing(['myteamserver.example.test']);
 });
 
 it('shows admins every server regardless of team membership', function () {
@@ -41,14 +41,14 @@ it('shows admins every server regardless of team membership', function () {
     $teamA = Team::factory()->create();
     $teamB = Team::factory()->create();
 
-    Server::factory()->forTeam($teamA)->create(['name' => 'A']);
-    Server::factory()->forTeam($teamB)->create(['name' => 'B']);
+    Server::factory()->forTeam($teamA)->create(['name' => 'a.example.test']);
+    Server::factory()->forTeam($teamB)->create(['name' => 'b.example.test']);
 
     Sanctum::actingAs($admin, ['servers:read']);
 
     $response = $this->getJson('/api/v1/servers')->assertOk();
     $names = collect($response->json('servers.data'))->pluck('name')->all();
-    expect($names)->toEqualCanonicalizing(['A', 'B']);
+    expect($names)->toEqualCanonicalizing(['a.example.test', 'b.example.test']);
 });
 
 it('filters the list by location', function () {
@@ -56,18 +56,18 @@ it('filters the list by location', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'rankine server', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'jws server', 'location' => 'JWS']);
-    Server::factory()->forTeam($team)->create(['name' => 'no-location server', 'location' => null]);
+    Server::factory()->forTeam($team)->create(['name' => 'rankine-server.example.test', 'location' => 'Rankine']);
+    Server::factory()->forTeam($team)->create(['name' => 'jws-server.example.test', 'location' => 'JWS']);
+    Server::factory()->forTeam($team)->create(['name' => 'no-location-server.example.test', 'location' => null]);
 
     Sanctum::actingAs($alice, ['servers:read']);
 
     $response = $this->getJson('/api/v1/servers?filter[location]=rankine')->assertOk();
     $names = collect($response->json('servers.data'))->pluck('name')->all();
 
-    expect($names)->toContain('rankine server')
-        ->not->toContain('jws server')
-        ->not->toContain('no-location server');
+    expect($names)->toContain('rankine-server.example.test')
+        ->not->toContain('jws-server.example.test')
+        ->not->toContain('no-location-server.example.test');
 });
 
 it('filters the list by os_type', function () {
@@ -75,14 +75,14 @@ it('filters the list by os_type', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'lx', 'os_type' => 'linux']);
-    Server::factory()->forTeam($team)->create(['name' => 'win', 'os_type' => 'windows']);
-    Server::factory()->forTeam($team)->create(['name' => 'oth', 'os_type' => 'other']);
+    Server::factory()->forTeam($team)->create(['name' => 'lx.example.test', 'os_type' => 'linux']);
+    Server::factory()->forTeam($team)->create(['name' => 'win.example.test', 'os_type' => 'windows']);
+    Server::factory()->forTeam($team)->create(['name' => 'oth.example.test', 'os_type' => 'other']);
 
     Sanctum::actingAs($alice, ['servers:read']);
 
     $response = $this->getJson('/api/v1/servers?filter[os_type]=windows')->assertOk();
     $names = collect($response->json('servers.data'))->pluck('name')->all();
 
-    expect($names)->toEqual(['win']);
+    expect($names)->toEqual(['win.example.test']);
 });

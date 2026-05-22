@@ -18,12 +18,12 @@ it('shows a server in a team the user belongs to', function () {
     $alice = User::factory()->create();
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
-    $server = Server::factory()->forTeam($team)->create(['name' => 'Mine']);
+    $server = Server::factory()->forTeam($team)->create(['name' => 'mine.example.test']);
     Sanctum::actingAs($alice, ['servers:read']);
 
     $this->getJson("/api/v1/servers/{$server->id}")
         ->assertOk()
-        ->assertJsonPath('data.name', 'Mine')
+        ->assertJsonPath('data.name', 'mine.example.test')
         ->assertJsonPath('data.id', $server->id);
 });
 
