@@ -2,22 +2,22 @@
     <flux:heading size="lg">Manage</flux:heading>
 
     <div class="mt-4 grid gap-4 sm:grid-cols-3">
-        <a href="{{ route('admin.teams.index') }}" wire:navigate>
-            <flux:card>
+        <a href="{{ route('admin.teams.index') }}" wire:navigate class="h-full">
+            <flux:card class="h-full hover:bg-zinc-50 dark:hover:bg-zinc-700">
                 <flux:heading size="sm">Teams</flux:heading>
                 <flux:text size="sm" class="mt-1">Create teams, manage membership, silence as a group.</flux:text>
             </flux:card>
         </a>
 
-        <a href="{{ route('admin.users.index') }}" wire:navigate>
-            <flux:card>
+        <a href="{{ route('admin.users.index') }}" wire:navigate class="h-full">
+            <flux:card class="h-full hover:bg-zinc-50 dark:hover:bg-zinc-700">
                 <flux:heading size="sm">Users</flux:heading>
                 <flux:text size="sm" class="mt-1">Edit, promote and remove user accounts.</flux:text>
             </flux:card>
         </a>
 
-        <a href="{{ route('admin.api-tokens.index') }}" wire:navigate>
-            <flux:card>
+        <a href="{{ route('admin.api-tokens.index') }}" wire:navigate class="h-full">
+            <flux:card class="h-full hover:bg-zinc-50 dark:hover:bg-zinc-700">
                 <flux:heading size="sm">API tokens</flux:heading>
                 <flux:text size="sm" class="mt-1">Audit and revoke API tokens across every user.</flux:text>
             </flux:card>
