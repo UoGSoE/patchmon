@@ -8,6 +8,7 @@ use App\Livewire\Admin\Users as AdminUsers;
 use App\Livewire\AdminDashboard;
 use App\Livewire\ApiHelp;
 use App\Livewire\HomePage;
+use App\Livewire\ImportServers;
 use App\Livewire\MySettings;
 use App\Livewire\ServerDetail;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ Route::post('/record-patch/{token}', PatchEventController::class)
 Route::middleware('auth')->group(function () {
     Route::get('/', HomePage::class)->name('home');
     Route::get('/servers/{server}', ServerDetail::class)->name('servers.show');
+    Route::get('/import', ImportServers::class)->name('import');
 
     Route::get('/settings', MySettings::class)->name('settings');
     Route::get('/api/help', ApiHelp::class)->name('api.help');
