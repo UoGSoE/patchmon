@@ -11,16 +11,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable([
-    'username',
-    'forenames',
-    'surname',
-    'email',
-    'password',
-    'is_admin',
-    'is_staff',
-])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -38,6 +28,18 @@ class User extends Authenticatable
             'is_staff' => 'boolean',
         ];
     }
+
+    protected $fillable = [
+        'username',
+        'forenames',
+        'surname',
+        'email',
+        'password',
+        'is_admin',
+        'is_staff',
+    ];
+
+    protected $hidden = ['password', 'remember_token'];
 
     public function teams(): BelongsToMany
     {
