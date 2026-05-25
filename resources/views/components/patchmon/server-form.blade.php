@@ -64,8 +64,8 @@
         <flux:heading size="sm">Email overrides</flux:heading>
         <flux:text size="sm">Leave blank to use the team's defaults.</flux:text>
         <div class="mt-2 space-y-3">
-            <flux:input wire:model="form.notification_email" type="email" label="Alerts go to" placeholder="alerts@example.ac.uk" />
-            <flux:input wire:model="form.sender_email" type="email" label="Alerts come from" placeholder="patchmon-noreply@example.ac.uk" />
+            <flux:input wire:model="form.notification_email" type="email" label="Alerts go to" />
+            <flux:input wire:model="form.sender_email" type="email" label="Alerts come from" />
         </div>
     </div>
 
