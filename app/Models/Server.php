@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * @property string $name
+ */
 class Server extends Model
 {
     /** @use HasFactory<ServerFactory> */
@@ -130,6 +133,7 @@ class Server extends Model
     ): PatchEvent {
         $at ??= now();
 
+        /** @var PatchEvent $patchEvent */
         $patchEvent = $this->patchEvents()->create([
             'patched_by' => $patchedBy?->id,
             'patched_at' => $at,

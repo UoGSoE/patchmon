@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -29,12 +30,12 @@ class UpdateUserRequest extends FormRequest
     }
 
     /**
-     * @return array<string, callable>
+     * @return array<int, \Closure(Validator): void>
      */
     public function after(): array
     {
         return [
-            function ($validator) {
+            function (Validator $validator): void {
                 $target = $this->route('user');
                 if ($target && $target->id === $this->user()->id && $this->has('is_admin') && $this->boolean('is_admin') === false) {
                     $validator->errors()->add('is_admin', 'You cannot demote yourself.');

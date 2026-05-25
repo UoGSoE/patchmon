@@ -20,12 +20,15 @@ class TeamMembersController extends Controller
 
         return response()->json([
             'members' => $team->users()->orderBy('surname')->orderBy('forenames')->get()
-                ->map(fn (User $u) => [
-                    'id' => $u->id,
-                    'username' => $u->username,
-                    'full_name' => $u->full_name,
-                    'email' => $u->email,
-                ]),
+                ->map(function ($u) {
+                    /** @var User $u */
+                    return [
+                        'id' => $u->id,
+                        'username' => $u->username,
+                        'full_name' => $u->full_name,
+                        'email' => $u->email,
+                    ];
+                }),
         ], 201);
     }
 

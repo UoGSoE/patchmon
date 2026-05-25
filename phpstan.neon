@@ -1,0 +1,44 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/nesbot/carbon/extension.neon
+
+parameters:
+
+    paths:
+        - app/
+
+    level: 5
+
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # Eloquent Model properties in closures (incl. belongsToMany pivot-attached form)
+        - identifier: property.notFound
+          message: '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model#'
+        - identifier: property.notFound
+          message: '#Access to an undefined property Illuminate\\Database\\Eloquent\\Relations\\Pivot::#'
+        - identifier: argument.type
+          message: '#Illuminate\\Database\\Eloquent\\Model given#'
+        - identifier: assign.propertyType
+          message: '#does not accept Illuminate\\Database\\Eloquent\\Model#'
+        - identifier: argument.unresolvableType
+          message: '#contains unresolvable type#'
+
+        # Eloquent casts (Carbon, enums)
+        - identifier: method.nonObject
+          message: '#Cannot call method .+\(\) on string#'
+        - identifier: property.nonObject
+          message: '#Cannot access property \$\w+ on (string|int)#'
+
+        # Eloquent scopes on relations
+        - identifier: method.notFound
+          message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\.+::#'
+
+        # Socialite contracts
+        - identifier: property.notFound
+          message: '#Laravel\\Socialite\\Contracts\\User::#'
+        - identifier: method.notFound
+          message: '#Laravel\\Socialite\\Contracts\\Provider::with\(\)#'
+
+        # Nullsafe false positives
+        - identifier: nullsafe.neverNull

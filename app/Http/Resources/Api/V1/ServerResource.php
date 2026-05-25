@@ -8,6 +8,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * @mixin Server
+ *
+ * @property string $name
  */
 class ServerResource extends JsonResource
 {
