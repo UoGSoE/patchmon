@@ -205,29 +205,6 @@ it('ignores filter strings that are blank or only one character', function () {
         ->toContain('beta-server.example.test');
 });
 
-it('inverts the filter when the exclude checkbox is ticked', function () {
-    $alice = User::factory()->create();
-    $team = Team::factory()->create();
-    $alice->teams()->attach($team);
-
-    Server::factory()->forTeam($team)->create(['name' => 'team-linux-backup.example.test', 'description' => null]);
-    Server::factory()->forTeam($team)->create(['name' => 'team-windows-backup.example.test', 'description' => null]);
-    Server::factory()->forTeam($team)->create([
-        'name' => 'nightly-probe.example.test',
-        'description' => 'targets the linux fleet',
-    ]);
-
-    $component = Livewire::actingAs($alice)
-        ->test(HomePage::class)
-        ->set('filter', 'linux')
-        ->set('excludeFilter', true);
-
-    expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('team-windows-backup.example.test')
-        ->not->toContain('team-linux-backup.example.test')
-        ->not->toContain('nightly-probe.example.test');
-});
-
 it('matches the filter against the location column', function () {
     $alice = User::factory()->create();
     $team = Team::factory()->create();
@@ -264,28 +241,6 @@ it('requires every whitespace-separated token to match in include mode', functio
         ->not->toContain('linux-mirror.example.test')
         ->not->toContain('windows-backup.example.test')
         ->not->toContain('unrelated.example.test');
-});
-
-it('hides rows matching any token in exclude mode', function () {
-    $alice = User::factory()->create();
-    $team = Team::factory()->create();
-    $alice->teams()->attach($team);
-
-    Server::factory()->forTeam($team)->create(['name' => 'linux-only.example.test', 'location' => null]);
-    Server::factory()->forTeam($team)->create(['name' => 'backup-only.example.test', 'location' => null]);
-    Server::factory()->forTeam($team)->create(['name' => 'rankine-only.example.test', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'clean-server.example.test', 'location' => 'JWS']);
-
-    $component = Livewire::actingAs($alice)
-        ->test(HomePage::class)
-        ->set('filter', 'linux rankine')
-        ->set('excludeFilter', true);
-
-    expect($component->instance()->teamServers->pluck('name')->all())
-        ->toContain('backup-only.example.test')
-        ->toContain('clean-server.example.test')
-        ->not->toContain('linux-only.example.test')
-        ->not->toContain('rankine-only.example.test');
 });
 
 it('narrows the listing by silenced state', function () {

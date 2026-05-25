@@ -22,9 +22,6 @@ class HomePage extends Component
     #[Url(as: 'q')]
     public $filter = '';
 
-    #[Url(as: 'invert')]
-    public $excludeFilter = false;
-
     #[Url(as: 'os')]
     public $osFilter = '';
 
@@ -169,19 +166,6 @@ class HomePage extends Component
 
         $tokens = preg_split('/\s+/', $needle, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $columns = ['name', 'description', 'location'];
-
-        if ($this->excludeFilter) {
-            foreach ($tokens as $token) {
-                $pattern = '%'.$token.'%';
-                $query->where(function ($outer) use ($pattern, $columns) {
-                    foreach ($columns as $column) {
-                        $outer->where(fn ($inner) => $inner->whereNull($column)->orWhereNotLike($column, $pattern));
-                    }
-                });
-            }
-
-            return $query;
-        }
 
         foreach ($tokens as $token) {
             $pattern = '%'.$token.'%';

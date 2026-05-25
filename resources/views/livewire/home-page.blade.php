@@ -15,7 +15,7 @@
             <flux:tab name="silenced">Silenced servers</flux:tab>
         </flux:tabs>
 
-        <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] md:items-end">
+        <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-end">
             <flux:input
                 wire:model.live.debounce.300ms="filter"
                 placeholder="Filter by name, description, or location"
@@ -39,7 +39,6 @@
                 <flux:select.option value="active">Active only</flux:select.option>
                 <flux:select.option value="silenced">Silenced only</flux:select.option>
             </flux:select>
-            <flux:checkbox wire:model.live="excludeFilter" label="Exclude matches" />
         </div>
 
         <flux:tab.panel name="teams">
