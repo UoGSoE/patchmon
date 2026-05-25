@@ -9,13 +9,18 @@ use App\Models\Server;
 use App\Models\Team;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class HomePage extends Component
 {
+    use WithPagination;
+
+    private const PAGE_NAMES = ['teamPage', 'allPage', 'alertingPage', 'silencedPage'];
+
     #[Url(as: 'tab')]
     public $tab = 'teams';
 
@@ -31,6 +36,9 @@ class HomePage extends Component
     #[Url(as: 'silenced')]
     public $silencedFilter = '';
 
+    #[Url(as: 'per')]
+    public $perPage = '50';
+
     public ServerForm $form;
 
     public function mount(): void
@@ -38,6 +46,31 @@ class HomePage extends Component
         if (request()->query('new')) {
             $this->openCreate();
         }
+    }
+
+    public function updatingFilter(): void
+    {
+        $this->resetAllPages();
+    }
+
+    public function updatingOsFilter(): void
+    {
+        $this->resetAllPages();
+    }
+
+    public function updatingTeamFilter(): void
+    {
+        $this->resetAllPages();
+    }
+
+    public function updatingSilencedFilter(): void
+    {
+        $this->resetAllPages();
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetAllPages();
     }
 
     public function openCreate(): void
@@ -63,31 +96,33 @@ class HomePage extends Component
     }
 
     #[Computed]
-    public function teamServers(): Collection
+    public function teamServers(): LengthAwarePaginator
     {
         $teamIds = auth()->user()->teams()->pluck('teams.id');
 
-        return $this->sortForListing(
+        return $this->applySortAndPaginate(
             $this->applyFilter(
                 Server::query()
                     ->whereIn('team_id', $teamIds)
                     ->with(['team'])
-            )->get()
+            ),
+            'teamPage'
         );
     }
 
     #[Computed]
-    public function allServers(): Collection
+    public function allServers(): LengthAwarePaginator
     {
-        return $this->sortForListing(
+        return $this->applySortAndPaginate(
             $this->applyFilter(
                 Server::query()->with(['team'])
-            )->get()
+            ),
+            'allPage'
         );
     }
 
     #[Computed]
-    public function alertingServers(): Collection
+    public function alertingServers(): LengthAwarePaginator
     {
         $user = auth()->user();
 
@@ -100,19 +135,20 @@ class HomePage extends Component
             $query->whereIn('team_id', $teamIds);
         }
 
-        return $this->sortForListing($this->applyFilter($query)->get());
+        return $this->applySortAndPaginate($this->applyFilter($query), 'alertingPage');
     }
 
     #[Computed]
-    public function silencedServers(): Collection
+    public function silencedServers(): LengthAwarePaginator
     {
-        return $this->sortForListing(
+        return $this->applySortAndPaginate(
             $this->applyFilter(
                 Server::query()
                     ->where('silenced_from', '<=', now())
                     ->where('silenced_until', '>=', now())
                     ->with(['team'])
-            )->get()
+            ),
+            'silencedPage'
         );
     }
 
@@ -135,6 +171,13 @@ class HomePage extends Component
                 ->orderBy('location')
                 ->pluck('location'),
         ]);
+    }
+
+    private function resetAllPages(): void
+    {
+        foreach (self::PAGE_NAMES as $pageName) {
+            $this->resetPage(pageName: $pageName);
+        }
     }
 
     private function applyFilter(Builder $query): Builder
@@ -181,21 +224,19 @@ class HomePage extends Component
         return $query;
     }
 
-    private function sortForListing(Collection $servers): Collection
+    private function applySortAndPaginate(Builder $query, string $pageName): LengthAwarePaginator
     {
-        return $servers->sort(function (Server $a, Server $b) {
-            $aAlerting = $a->alerting_since !== null;
-            $bAlerting = $b->alerting_since !== null;
+        // (alerting_since IS NULL) sorts non-null first on both MySQL and Postgres,
+        // sidestepping each engine's default null ordering.
+        return $query
+            ->orderByRaw('alerting_since IS NULL')
+            ->orderByDesc('alerting_since')
+            ->orderBy('name')
+            ->paginate($this->effectivePerPage(), ['*'], $pageName);
+    }
 
-            if ($aAlerting !== $bAlerting) {
-                return $aAlerting ? -1 : 1;
-            }
-
-            if ($aAlerting) {
-                return $b->alerting_since->timestamp <=> $a->alerting_since->timestamp;
-            }
-
-            return strcasecmp($a->name, $b->name);
-        })->values();
+    private function effectivePerPage(): int
+    {
+        return $this->perPage === 'all' ? 10000 : (int) $this->perPage;
     }
 }

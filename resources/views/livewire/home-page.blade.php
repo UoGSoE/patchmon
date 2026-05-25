@@ -15,7 +15,7 @@
             <flux:tab name="silenced">Silenced servers</flux:tab>
         </flux:tabs>
 
-        <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-end">
+        <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] md:items-end">
             <flux:input
                 wire:model.live.debounce.300ms="filter"
                 placeholder="Filter by name, description, or location"
@@ -38,6 +38,12 @@
                 <flux:select.option value="">Silenced &amp; active</flux:select.option>
                 <flux:select.option value="active">Active only</flux:select.option>
                 <flux:select.option value="silenced">Silenced only</flux:select.option>
+            </flux:select>
+            <flux:select wire:model.live="perPage">
+                <flux:select.option value="25">25 per page</flux:select.option>
+                <flux:select.option value="50">50 per page</flux:select.option>
+                <flux:select.option value="100">100 per page</flux:select.option>
+                <flux:select.option value="all">Show all</flux:select.option>
             </flux:select>
         </div>
 

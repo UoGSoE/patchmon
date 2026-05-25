@@ -222,7 +222,7 @@ it('matches the filter against the location column', function () {
         ->not->toContain('no-location-server.example.test');
 });
 
-it('requires every whitespace-separated token to match in include mode', function () {
+it('requires every whitespace-separated token to match', function () {
     $alice = User::factory()->create();
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
@@ -324,4 +324,74 @@ it('narrows the listing to a single OS when an OS filter is set', function () {
         ->toContain('windows-box.example.test')
         ->not->toContain('linux-box.example.test')
         ->not->toContain('other-box.example.test');
+});
+
+it('gives each tab its own paginator page name so they hold independent page state', function () {
+    $alice = User::factory()->admin()->create();
+
+    $component = Livewire::actingAs($alice)->test(HomePage::class);
+
+    expect($component->instance()->teamServers->getPageName())->toBe('teamPage');
+    expect($component->instance()->allServers->getPageName())->toBe('allPage');
+    expect($component->instance()->alertingServers->getPageName())->toBe('alertingPage');
+    expect($component->instance()->silencedServers->getPageName())->toBe('silencedPage');
+});
+
+it('paginates results according to the perPage selection', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+
+    Server::factory()->count(5)->forTeam($team)->create();
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('perPage', '2');
+
+    $page = $component->instance()->teamServers;
+    expect($page->perPage())->toBe(2);
+    expect($page->count())->toBe(2);
+    expect($page->total())->toBe(5);
+    expect($page->lastPage())->toBe(3);
+});
+
+it('returns every server on a single page when perPage is set to "all"', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+
+    Server::factory()->count(7)->forTeam($team)->create();
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('perPage', 'all');
+
+    $page = $component->instance()->teamServers;
+    expect($page->count())->toBe(7);
+    expect($page->lastPage())->toBe(1);
+});
+
+it('resets every tab back to page one when a filter changes', function () {
+    $alice = User::factory()->admin()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+
+    Server::factory()->count(5)->forTeam($team)->create();
+
+    $component = Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->set('perPage', '2')
+        ->call('setPage', 2, 'teamPage')
+        ->call('setPage', 2, 'allPage')
+        ->call('setPage', 2, 'alertingPage')
+        ->call('setPage', 2, 'silencedPage');
+
+    expect($component->instance()->teamServers->currentPage())->toBe(2);
+
+    $component->set('filter', 'something-new');
+
+    expect($component->instance()->teamServers->currentPage())->toBe(1);
+    expect($component->instance()->allServers->currentPage())->toBe(1);
+    expect($component->instance()->alertingServers->currentPage())->toBe(1);
+    expect($component->instance()->silencedServers->currentPage())->toBe(1);
 });

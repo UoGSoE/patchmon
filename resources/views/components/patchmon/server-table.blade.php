@@ -5,7 +5,7 @@
         {{ $empty ?? '' }}
     </div>
 @else
-    <flux:table class="mt-4">
+    <flux:table :paginate="$servers" class="mt-4">
         <flux:table.columns>
             <flux:table.column>Name</flux:table.column>
             <flux:table.column>OS</flux:table.column>
