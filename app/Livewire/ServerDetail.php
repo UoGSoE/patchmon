@@ -6,6 +6,7 @@ use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
+use App\Jobs\RecordPatchEvent;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
@@ -49,11 +50,12 @@ class ServerDetail extends Component
             'patchedAt' => ['required', 'date', 'before_or_equal:now'],
         ]);
 
-        $this->server->recordPatch(
-            auth()->user(),
-            $this->patchNotes,
+        RecordPatchEvent::dispatchSync(
+            $this->server->id,
             null,
             Carbon::parse($this->patchedAt),
+            auth()->id(),
+            $this->patchNotes,
         );
 
         $this->patchNotes = null;
