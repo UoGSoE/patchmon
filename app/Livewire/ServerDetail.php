@@ -4,9 +4,9 @@ namespace App\Livewire;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Jobs\RecordPatchEvent;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
-use App\Jobs\RecordPatchEvent;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;

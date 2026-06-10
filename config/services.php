@@ -35,7 +35,6 @@ return [
         ],
     ],
 
-
     'keycloak' => [
         'client_id' => env('KEYCLOAK_CLIENT_ID'),
         'client_secret' => env('KEYCLOAK_CLIENT_SECRET'),
