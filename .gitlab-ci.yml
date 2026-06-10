@@ -170,7 +170,9 @@ deploy_to_prod:
     DOTENV: ${PROD_DOTENV}
 
 .build:
-  image: docker:stable
+  # docker:28 — pinned 2026-06-10 (was docker:stable, deprecated & frozen since 2020)
+  # refresh: docker buildx imagetools inspect docker:28 --format '{{.Manifest.Digest}}'
+  image: docker:28@sha256:2a232a42256f70d78e3cc5d2b5d6b3276710a0de0596c145f627ecfae90282ac
   variables:
     DOCKER_TARGET: ""
     IMAGE_NAME: ""
@@ -181,7 +183,9 @@ deploy_to_prod:
 
 .deployment:
   when: manual
-  image: docker:stable
+  # docker:28 — pinned 2026-06-10 (was docker:stable, deprecated & frozen since 2020)
+  # refresh: docker buildx imagetools inspect docker:28 --format '{{.Manifest.Digest}}'
+  image: docker:28@sha256:2a232a42256f70d78e3cc5d2b5d6b3276710a0de0596c145f627ecfae90282ac
   variables:
     IMAGE_NAME: ""
     TRAEFIK_BACKEND: ""

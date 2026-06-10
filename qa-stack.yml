@@ -97,7 +97,9 @@ services:
         target: .env
 
   redis:
-    image: redis:8.2.2
+    # redis:8.2.2 — pinned 2026-06-10
+    # refresh: docker pull redis:8.2.2 && docker images --digests | grep '^redis'
+    image: redis:8.2.2@sha256:4521b581dbddea6e7d81f8fe95ede93f5648aaa66a9dacd581611bf6fe7527bd
     deploy: *default-deploy
     networks:
       - private
@@ -120,7 +122,9 @@ services:
       MYSQL_PASSWORD: secret
 
   mailhog:
-    image: axllent/mailpit
+    # axllent/mailpit:v1.30.1 — pinned 2026-06-10 (was untagged → :latest)
+    # refresh: docker pull axllent/mailpit:v1.30.1 && docker images --digests | grep mailpit
+    image: axllent/mailpit:v1.30.1@sha256:3bd7c2f2696deb35a4780d152b404dceec99cb041b942c0877b3b22384714f85
     deploy:
       labels:
         # note: this assumes traefik v2

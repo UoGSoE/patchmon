@@ -74,7 +74,9 @@ services:
         condition: service_healthy
 
   mariadb:
-    image: mariadb:11
+    # mariadb:11 — pinned 2026-06-10
+    # refresh: docker pull mariadb:11 && docker images --digests | grep '^mariadb'
+    image: mariadb:11@sha256:be1ef4fe5f14589325c08a41c76334097ce66c86264b75e1d28342c742782a61
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: ${DB_DATABASE:-cronmon}
@@ -90,7 +92,9 @@ services:
       retries: 10
 
   redis:
-    image: redis:8.2.2
+    # redis:8.2.2 — pinned 2026-06-10
+    # refresh: docker pull redis:8.2.2 && docker images --digests | grep '^redis'
+    image: redis:8.2.2@sha256:4521b581dbddea6e7d81f8fe95ede93f5648aaa66a9dacd581611bf6fe7527bd
     restart: unless-stopped
     volumes:
       - redis:/data

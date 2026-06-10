@@ -1,142 +1,70 @@
-name: build-images
+name: laravel-ci
+
+# Supplementary quality + supply-chain gate for the GitHub mirror.
+# The real build/test/deploy pipeline lives in .gitlab-ci.yml (GitLab is primary).
+# This runs a fast PHP-only check: Pest, Pint and a Composer security audit.
 
 on:
-  workflow_dispatch:
   push:
-    tags:
-      - "**"
-    branches:
-      - "**"
+    branches: [master, main]
   pull_request:
-    branches:
-      - master
+    branches: [master, main]
+  workflow_dispatch:
 
 permissions:
-  contents: write # marvinpinto/action-automatic-releases creates GitHub releases on versioned tags
+  contents: read
+
+concurrency:
+  group: laravel-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  test:
+    name: Pest, Pint & audit
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: homestead
-          MYSQL_DATABASE: homestead
-        ports:
-          - 33306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      -
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          driver-opts: network=host
-      -
-        name: Cache Docker layers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+          persist-credentials: false
+
+      - name: Set up PHP
+        # PHP version tracks .lando.yml (which matches production). Bump both together.
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-      -
-        name: Build and push local test image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+          php-version: '8.4'
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64 #,linux/arm/v7,linux/arm64
-          push: true
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          target: ci
-          build-args: |
-            PHP_VERSION=8.4
-            FLUX_USERNAME=${{ secrets.FLUX_USERNAME }}
-            FLUX_LICENSE_KEY=${{ secrets.FLUX_LICENSE_KEY }}
-          tags: |
-            localhost:5000/${{ github.event.repository.name }}:qa-${{ github.sha }}
-      -
-        name: Run tests
-        uses: addnab/docker-run-action@4f65fabd2431ebc8d299f8e5a018d79a769ae185 # v3
-        with:
-          options: "--network host"
-          image: localhost:5000/${{ github.event.repository.name }}:qa-${{ github.sha }}
-          run: rm -fv .env && cp -v .env.github .env && php artisan config:clear && CI=1 APP_ENV=testing ./vendor/bin/phpunit -c phpunit.github.xml
-      -
-        name: Get tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
-      -
-        name: Login to DockerHub
-        if: startsWith(steps.get_version.outputs.VERSION, 'v') || startsWith(steps.get_version.outputs.VERSION, 'qa') || github.ref == 'refs/heads/master'
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
-        name: Retag and publish local QA image
-        if: startsWith(steps.get_version.outputs.VERSION, 'qa')
-        uses: akhilerm/tag-push-action@0b1ac4285d74bfe8c5595a1f916b4b155f09bdb8 # v1.1.0
-        with:
-          src: localhost:5000/${{ github.event.repository.name }}:qa-${{ github.sha }}
-          dst: |
-            docker.io/uogsoe/${{ github.event.repository.name }}:${{ steps.get_version.outputs.VERSION }}
-      -
-        name: Build and push prod
-        if: github.ref == 'refs/heads/master'
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64 #,linux/arm/v7,linux/arm64
-          push: true
-          target: prod
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          build-args: |
-            PHP_VERSION=8.4
-            FLUX_USERNAME=${{ secrets.FLUX_USERNAME }}
-            FLUX_LICENSE_KEY=${{ secrets.FLUX_LICENSE_KEY }}
-          tags: |
-            uogsoe/${{ github.event.repository.name }}:prod-${{ github.sha }}
-      -
-        name: Build and push versioned tag
-        if: startsWith(steps.get_version.outputs.VERSION, 'v')
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64 #,linux/arm/v7,linux/arm64
-          push: true
-          target: prod
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-          build-args: |
-            PHP_VERSION=8.4
-            FLUX_USERNAME=${{ secrets.FLUX_USERNAME }}
-            FLUX_LICENSE_KEY=${{ secrets.FLUX_LICENSE_KEY }}
-          tags: |
-            docker.io/uogsoe/${{ github.event.repository.name }}:${{ steps.get_version.outputs.VERSION }}
-      -
-        name: Create automatic release on new versioned tag
-        if: startsWith(steps.get_version.outputs.VERSION, 'v')
-        uses: marvinpinto/action-automatic-releases@8d9ddb2546e687f72855285d2719a11709cea6d0 # v1.1.0
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          draft: false
-          prerelease: false
-          automatic_release_tag: ${{ steps.get_version.outputs.VERSION }}
-          title: ${{ steps.get_version.outputs.VERSION }}
+          node-version: '22'
+          cache: npm
+
+      - name: Authenticate Flux Pro
+        run: composer config --global --auth http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests (Pest)
+        run: php artisan test
+
+      - name: Check code style (Pint)
+        if: ${{ !cancelled() }}
+        run: vendor/bin/pint --test
+
+      - name: Security audit (Composer)
+        if: ${{ !cancelled() }}
+        run: composer audit

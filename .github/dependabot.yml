@@ -6,9 +6,31 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    # Don't raise PRs for releases younger than this many days — dodges a
+    # freshly-poisoned version that gets yanked within hours/days. 1–90; tune to taste.
+    cooldown:
+      default-days: 7
 
   # Maintain dependencies for Composer
   - package-ecosystem: "composer"
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
+
+  # Maintain dependencies for npm (frontend assets)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+
+  # Maintain dependencies for Docker base images
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
