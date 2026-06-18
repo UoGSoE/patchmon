@@ -22,6 +22,9 @@ class ServerFactory extends Factory
         return [
             'team_id' => Team::factory(),
             'created_by_user_id' => $creator,
+            'netbox_id' => null,
+            'is_virtual' => false,
+            'inactive_since' => null,
             'name' => fake()->unique()->regexify('[a-z]{6}[0-9]{4}').'.example.com',
             'description' => null,
             'os_type' => OsType::Linux,
@@ -55,6 +58,36 @@ class ServerFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'grace_value' => $value,
             'grace_units' => $units,
+        ]);
+    }
+
+    public function virtual(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_virtual' => true,
+        ]);
+    }
+
+    public function fromNetbox(int $netboxId, bool $isVirtual = false): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'netbox_id' => $netboxId,
+            'is_virtual' => $isVirtual,
+        ]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'inactive_since' => now()->subDays(3),
+        ]);
+    }
+
+    public function unassigned(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'team_id' => null,
+            'created_by_user_id' => null,
         ]);
     }
 

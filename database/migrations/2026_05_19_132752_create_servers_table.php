@@ -10,8 +10,12 @@ return new class extends Migration
     {
         Schema::create('servers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('team_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('created_by_user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('team_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->unsignedInteger('netbox_id')->nullable();
+            $table->boolean('is_virtual')->default(false);
+            $table->timestamp('inactive_since')->nullable();
+            $table->unique(['netbox_id', 'is_virtual']);
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('location')->nullable();

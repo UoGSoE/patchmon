@@ -24,6 +24,9 @@ class Server extends Model
     protected $fillable = [
         'team_id',
         'created_by_user_id',
+        'netbox_id',
+        'is_virtual',
+        'inactive_since',
         'name',
         'description',
         'location',
@@ -56,6 +59,8 @@ class Server extends Model
         return [
             'os_type' => OsType::class,
             'grace_units' => GraceUnit::class,
+            'is_virtual' => 'boolean',
+            'inactive_since' => 'datetime',
             'last_patched_at' => 'datetime',
             'alerting_since' => 'datetime',
             'last_alerted_at' => 'datetime',

@@ -39,6 +39,7 @@ class TestDataSeeder extends Seeder
         $this->createResilienceServers($teams['resilience']);
         $this->createFrontDeskServers($teams['frontdesk']);
         $this->createFulfilmentServers($teams['fulfilment']);
+        $this->createNetboxSyncedServers($teams['infra']);
 
         $this->backfillPatchEvents();
     }
@@ -546,6 +547,43 @@ class TestDataSeeder extends Seeder
                 'grace_units' => GraceUnit::Days,
                 'last_patched_at' => now()->subDays(rand(1, 25)),
             ]);
+        }
+    }
+
+    private function createNetboxSyncedServers(Team $team): void
+    {
+        // Freshly synced from NetBox, awaiting allocation to a team (team_id null) —
+        // populates the triage tab. A mix of physical and virtual, default cadence.
+        for ($i = 1; $i <= 12; $i++) {
+            Server::factory()
+                ->unassigned()
+                ->fromNetbox(1000 + $i, isVirtual: $i % 3 === 0)
+                ->create([
+                    'name' => sprintf('netbox-import-%02d.example.test', $i),
+                    'description' => 'Imported from NetBox — awaiting team allocation.',
+                    'os_type' => fake()->randomElement([OsType::Linux, OsType::Windows]),
+                    'interval_months' => 1,
+                    'grace_value' => 7,
+                    'grace_units' => GraceUnit::Days,
+                ]);
+        }
+
+        // Two NetBox-sourced servers that have dropped out of NetBox's active set —
+        // flagged inactive (alerts off), patch history kept.
+        for ($i = 1; $i <= 2; $i++) {
+            Server::factory()
+                ->forTeam($team)
+                ->fromNetbox(2000 + $i)
+                ->inactive()
+                ->create([
+                    'name' => sprintf('netbox-retired-%02d.infra.example.test', $i),
+                    'description' => 'Decommissioned in NetBox — kept for patch history.',
+                    'os_type' => OsType::Linux,
+                    'interval_months' => 1,
+                    'grace_value' => 7,
+                    'grace_units' => GraceUnit::Days,
+                    'last_patched_at' => now()->subMonths(4),
+                ]);
         }
     }
 
