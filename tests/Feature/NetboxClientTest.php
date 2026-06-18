@@ -54,6 +54,17 @@ it('fetches active devices and virtual machines across pages and normalises them
         ->and($servers->firstWhere(fn ($s) => $s->isVirtual && $s->netboxId === 9)->osType)->toBe(OsType::Other);
 });
 
+// REMINDER — our pagination handling (NetboxClient::fetch follows `next` until null)
+// is written against assumed NetBox v4 shapes, with no real responses to check it
+// against. Once we have an API key, capture real fixtures and confirm the awkward
+// cases: `next` is an absolute URL we can follow as-is (does it point at the same
+// host as base_url, or an internal one we can't reach?); offset/limit defaults don't
+// silently cap a ~1000-server estate at one page; and a server added/removed mid-walk
+// isn't dropped or double-counted. Then replace this with real assertions.
+it('handles real-world netbox pagination quirks', function () {
+    expect(true)->toBeTrue();
+})->skip('Pending NetBox API access — verify pagination against captured real responses (assumed v4).');
+
 it('builds a client from config, trimming a trailing slash off the base url', function () {
     config([
         'patchmon.netbox.base_url' => 'https://netbox.example.test/',

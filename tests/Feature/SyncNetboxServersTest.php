@@ -172,3 +172,21 @@ it('is idempotent when run twice with the same data', function () {
         ->and($server->refresh()->updated_at->equalTo($firstUpdatedAt))->toBeTrue()
         ->and(Cache::get('netbox.last_sync_summary')['created'])->toBe(0);
 });
+
+// REMINDER — written blind, before we have real NetBox API access. The inactive
+// sweep flags every synced server NOT seen this run. If the API has a transient blip
+// and returns a tiny fraction of the estate (e.g. 50 of ~1000), we'd mass-flag the
+// rest inactive and clear their alerting — silently suppressing alerts on live
+// servers. We want a safeguard that refuses to run the sweep on an implausibly small
+// response. This test asserts that desired invariant and will fail until the guard
+// exists. Design + open questions tracked in ait patchmon-kOKT9.8.
+it('does not flag servers inactive when netbox returns an implausibly small set', function () {
+    Server::factory()->count(12)->sequence(
+        fn ($sequence) => ['netbox_id' => 100 + $sequence->index, 'name' => "synced-{$sequence->index}.example.com"],
+    )->create();
+
+    // The API returns just one of the twelve — far too few to be believable.
+    runNetboxSync(devices: [netboxRecord(100, 'synced-0.example.com', 'Ubuntu 22.04')]);
+
+    expect(Server::whereNotNull('inactive_since')->count())->toBe(0);
+})->skip('Pending NetBox API access — guard the inactive sweep against partial responses. See ait patchmon-kOKT9.8.');
