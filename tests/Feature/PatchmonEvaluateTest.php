@@ -24,6 +24,28 @@ it('does not alert silenced servers even when they are overdue', function () {
         ->and($server->last_alerted_at)->toBeNull();
 });
 
+it('does not alert a server with no team even when it is overdue', function () {
+    Mail::fake();
+
+    $server = Server::factory()->unassigned()->overdue()->create();
+
+    $this->artisan('patchmon:evaluate')->assertSuccessful();
+
+    Mail::assertNothingQueued();
+    expect($server->refresh()->alerting_since)->toBeNull();
+});
+
+it('does not alert an inactive server even when it is overdue', function () {
+    Mail::fake();
+
+    $server = Server::factory()->inactive()->overdue()->create();
+
+    $this->artisan('patchmon:evaluate')->assertSuccessful();
+
+    Mail::assertNothingQueued();
+    expect($server->refresh()->alerting_since)->toBeNull();
+});
+
 it('renders the overdue email with key details about the server', function () {
     $server = Server::factory()->create([
         'name' => 'fileserver-prod-02',

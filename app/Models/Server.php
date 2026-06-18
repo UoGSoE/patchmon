@@ -180,4 +180,14 @@ class Server extends Model
 
         return now()->betweenIncluded($this->silenced_from, $this->silenced_until);
     }
+
+    public function isUnassigned(): bool
+    {
+        return $this->team_id === null;
+    }
+
+    public function isInactive(): bool
+    {
+        return $this->inactive_since !== null;
+    }
 }

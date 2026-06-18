@@ -8,4 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Schedule::command('patchmon:sync-netbox')->dailyAt('08:10')->withoutOverlapping();
 Schedule::command('patchmon:evaluate')->dailyAt('08:40')->withoutOverlapping();

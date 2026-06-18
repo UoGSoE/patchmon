@@ -16,6 +16,14 @@ class PatchmonEvaluate extends Command
     public function handle(): int
     {
         Server::query()->each(function (Server $server): void {
+            if ($server->isUnassigned()) {
+                return;
+            }
+
+            if ($server->isInactive()) {
+                return;
+            }
+
             if ($server->isCurrentlySilenced()) {
                 return;
             }

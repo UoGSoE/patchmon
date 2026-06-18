@@ -8,6 +8,32 @@
         </flux:text>
     </div>
 
+    <div class="space-y-3">
+        <flux:heading size="sm">Sync from NetBox</flux:heading>
+        <flux:text size="sm">
+            Pull the latest active servers from NetBox. New ones land in triage to be allocated to a team.
+        </flux:text>
+
+        <flux:button wire:click="refreshFromNetbox" icon="arrow-path">Refresh from NetBox</flux:button>
+
+        @if ($this->lastNetboxSync)
+            <flux:callout icon="server">
+                <flux:callout.heading>Last NetBox sync</flux:callout.heading>
+                <flux:callout.text>
+                    {{ $this->lastNetboxSync['created'] }} created,
+                    {{ $this->lastNetboxSync['updated'] }} updated,
+                    {{ $this->lastNetboxSync['reactivated'] }} reactivated,
+                    {{ $this->lastNetboxSync['inactive'] }} marked inactive.
+                    @if (count($this->lastNetboxSync['conflicts']) > 0)
+                        <flux:separator class="my-2" />
+                        Skipped {{ count($this->lastNetboxSync['conflicts']) }} name conflict(s):
+                        {{ implode(', ', $this->lastNetboxSync['conflicts']) }}.
+                    @endif
+                </flux:callout.text>
+            </flux:callout>
+        @endif
+    </div>
+
     @if ($this->lastImportSummary)
         <flux:callout variant="success" icon="check-circle">
             <flux:callout.heading>Imported {{ $this->lastImportSummary['created'] }} servers into {{ $this->lastImportSummary['team_name'] }}.</flux:callout.heading>

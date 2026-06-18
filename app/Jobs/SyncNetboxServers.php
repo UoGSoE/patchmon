@@ -46,7 +46,7 @@ class SyncNetboxServers implements ShouldQueue
                 ->first();
 
             if ($existing) {
-                $wasInactive = $existing->inactive_since !== null;
+                $wasInactive = $existing->isInactive();
 
                 $existing->update([
                     'name' => $netboxServer->name,

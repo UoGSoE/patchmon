@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\SyncNetboxServers;
 use App\Livewire\ImportServers;
 use App\Models\PatchEvent;
 use App\Models\Server;
@@ -7,6 +8,8 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Ohffs\SimpleSpout\ExcelSheet;
 
@@ -330,4 +333,44 @@ it('refuses non-staff users with a 403', function () {
     $this->actingAs($student)
         ->get(route('import'))
         ->assertStatus(403);
+});
+
+it('queues a netbox sync when a staff user refreshes', function () {
+    Bus::fake();
+    $alice = User::factory()->create(['is_staff' => true]);
+
+    Livewire::actingAs($alice)
+        ->test(ImportServers::class)
+        ->call('refreshFromNetbox');
+
+    Bus::assertDispatched(SyncNetboxServers::class);
+});
+
+it('does not let a non-staff user reach the refresh action', function () {
+    Bus::fake();
+    $student = User::factory()->create(['is_staff' => false]);
+
+    $this->actingAs($student)
+        ->get(route('import'))
+        ->assertForbidden();
+
+    Bus::assertNotDispatched(SyncNetboxServers::class);
+});
+
+it('shows the last netbox sync summary when one is cached', function () {
+    $alice = User::factory()->create(['is_staff' => true]);
+
+    Cache::put('netbox.last_sync_summary', [
+        'created' => 3,
+        'updated' => 1,
+        'reactivated' => 0,
+        'inactive' => 2,
+        'conflicts' => ['clash.example.com'],
+        'ran_at' => now()->toIso8601String(),
+    ]);
+
+    Livewire::actingAs($alice)
+        ->test(ImportServers::class)
+        ->assertSee('Last NetBox sync')
+        ->assertSee('clash.example.com');
 });

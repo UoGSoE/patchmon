@@ -4,10 +4,13 @@ namespace App\Livewire;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Jobs\SyncNetboxServers;
 use App\Models\Server;
 use App\Models\Team;
 use App\Rules\Fqdn;
+use Flux\Flux;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -196,6 +199,19 @@ class ImportServers extends Component
         $this->validRows = [];
         $this->invalidRows = [];
         $this->duplicateRows = [];
+    }
+
+    public function refreshFromNetbox(): void
+    {
+        SyncNetboxServers::dispatch();
+
+        Flux::toast('Sync queued.', variant: 'success');
+    }
+
+    #[Computed]
+    public function lastNetboxSync(): ?array
+    {
+        return Cache::get('netbox.last_sync_summary');
     }
 
     #[Computed]
