@@ -102,24 +102,4 @@ in the foundation entry. Use `ant foundation` for the full vision.
   across six teams with a mix of OS types, cadences, and a handful
   of alerting + silenced examples for UI work.
 
-### What exists today (May 2026)
-
-The data model epic (`patchmon-UkLWZ.1`) is done — schema, models,
-enums, factories, and a realistic seeder are all in. Most of the
-Livewire UI, API controllers, admin pages, and mailable came across
-from Cronmon during the rename and reshape passes and *technically
-work*, but they still reflect Cronmon's flow in places. The
-remaining epics under `patchmon-UkLWZ` cover the Patchmon-flavoured
-behavioural changes:
-
-- **Server CRUD** — interval-months UI, OS-type select, team-only
-  ownership flow in the Livewire form.
-- **Patch event recording (UI + API)** — the bearer-token-optional
-  endpoint and the Livewire form on the server detail page.
-- **Alerts** — confirm the weekly-throttle behaviour with a proper
-  Patchmon mailable (the basic logic already runs in
-  `PatchmonEvaluate`).
-- **Silencing UI**, **Admin**, **API token management** — same
-  shape as Cronmon, repurposed.
-
 Run `ait list --tree` for the current map.
