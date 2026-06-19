@@ -244,3 +244,87 @@ it('shows the server name, interval and record-patch URL to the team member', fu
         ->assertSee('Quarterly')
         ->assertSee($server->patch_token);
 });
+
+it('claims a creatorless server for the editor on save', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create(['created_by_user_id' => null]);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('openEdit')
+        ->set('form.name', 'claimed.example.test')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($server->fresh()->created_by_user_id)->toBe($owner->id);
+});
+
+it('leaves an existing creator untouched when another member edits', function () {
+    $creator = User::factory()->create();
+    $editor = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach([$creator->id, $editor->id]);
+    $server = Server::factory()->forTeam($team, $creator)->create(['name' => 'shared.example.test']);
+
+    Livewire::actingAs($editor)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('openEdit')
+        ->set('form.name', 'edited.example.test')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($server->fresh()->created_by_user_id)->toBe($creator->id);
+});
+
+it('lets the form set is_virtual on a server not linked to netbox', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create(['name' => 'manual.example.test', 'is_virtual' => false]);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('openEdit')
+        ->set('form.is_virtual', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($server->fresh()->is_virtual)->toBeTrue();
+});
+
+it('does not let the form change is_virtual while netbox_id is set', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->fromNetbox(5)->create(['name' => 'synced.example.test']);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('openEdit')
+        ->set('form.is_virtual', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($server->fresh()->is_virtual)->toBeFalse();
+});
+
+it('re-enables is_virtual once netbox_id is cleared', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->fromNetbox(5)->create(['name' => 'unlinking.example.test']);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('openEdit')
+        ->set('form.netbox_id', null)
+        ->set('form.is_virtual', true)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $server->refresh();
+    expect($server->netbox_id)->toBeNull()
+        ->and($server->is_virtual)->toBeTrue();
+});

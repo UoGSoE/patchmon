@@ -69,6 +69,26 @@
         </div>
     </div>
 
+    <div>
+        <flux:heading size="sm">NetBox link</flux:heading>
+        <flux:text size="sm">While a NetBox ID is set, NetBox owns the virtual-machine flag.</flux:text>
+        <div class="mt-2 space-y-3">
+            <flux:checkbox
+                wire:model="form.is_virtual"
+                label="Virtual machine"
+                :disabled="filled($form->netbox_id)"
+            />
+            <flux:input
+                wire:model.live="form.netbox_id"
+                type="number"
+                min="1"
+                label="NetBox ID"
+                description="Links this server to NetBox. Only change or clear it if you really, really mean to — it connects or disconnects the server from the sync."
+                clearable
+            />
+        </div>
+    </div>
+
     <div class="flex items-center justify-end gap-2">
         @if ($cancelAction)
             <flux:button type="button" x-on:click="{{ $cancelAction }}">Cancel</flux:button>

@@ -33,6 +33,10 @@ class ServerForm extends Form
 
     public ?string $sender_email = null;
 
+    public bool $is_virtual = false;
+
+    public ?int $netbox_id = null;
+
     public function setServer(Server $server): void
     {
         $this->server = $server;
@@ -46,6 +50,8 @@ class ServerForm extends Form
         $this->team_id = $server->team_id;
         $this->notification_email = $server->notification_email;
         $this->sender_email = $server->sender_email;
+        $this->is_virtual = $server->is_virtual;
+        $this->netbox_id = $server->netbox_id;
     }
 
     public function rules(): array
@@ -67,6 +73,8 @@ class ServerForm extends Form
             ],
             'notification_email' => ['nullable', 'email'],
             'sender_email' => ['nullable', 'email'],
+            'is_virtual' => ['boolean'],
+            'netbox_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -77,6 +85,13 @@ class ServerForm extends Form
         $this->validate();
 
         $server = $this->server ?? new Server;
+
+        // NetBox is authoritative for is_virtual on synced rows: while netbox_id is
+        // set, the form can't change it. Clearing netbox_id first re-enables editing.
+        $isVirtual = $this->server && $this->netbox_id !== null
+            ? $this->server->is_virtual
+            : $this->is_virtual;
+
         $server->fill([
             'name' => $this->name,
             'description' => $this->description,
@@ -88,9 +103,11 @@ class ServerForm extends Form
             'team_id' => $this->team_id,
             'notification_email' => $this->notification_email,
             'sender_email' => $this->sender_email,
+            'is_virtual' => $isVirtual,
+            'netbox_id' => $this->netbox_id,
         ]);
 
-        if (! $server->exists) {
+        if ($server->created_by_user_id === null) {
             $server->created_by_user_id = auth()->id();
         }
 
