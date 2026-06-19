@@ -328,3 +328,39 @@ it('re-enables is_virtual once netbox_id is cleared', function () {
     expect($server->netbox_id)->toBeNull()
         ->and($server->is_virtual)->toBeTrue();
 });
+
+it('rejects a netbox_id that collides with another synced server of the same kind', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    Server::factory()->forTeam($team, $owner)->fromNetbox(5, false)->create(['name' => 'already-synced.example.test']);
+    $editing = Server::factory()->forTeam($team, $owner)->create(['name' => 'mine.example.test', 'is_virtual' => false]);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $editing])
+        ->call('openEdit')
+        ->set('form.netbox_id', 5)
+        ->call('save')
+        ->assertHasErrors(['form.netbox_id']);
+
+    expect($editing->fresh()->netbox_id)->toBeNull();
+});
+
+it('allows the same netbox_id for the other kind, since device and VM ids are independent', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    Server::factory()->forTeam($team, $owner)->fromNetbox(5, false)->create(['name' => 'device-five.example.test']);
+    $editingVm = Server::factory()->forTeam($team, $owner)->virtual()->create(['name' => 'my-vm.example.test']);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $editingVm])
+        ->call('openEdit')
+        ->set('form.netbox_id', 5)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $editingVm->refresh();
+    expect($editingVm->netbox_id)->toBe(5)
+        ->and($editingVm->is_virtual)->toBeTrue();
+});

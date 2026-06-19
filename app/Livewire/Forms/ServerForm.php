@@ -74,7 +74,12 @@ class ServerForm extends Form
             'notification_email' => ['nullable', 'email'],
             'sender_email' => ['nullable', 'email'],
             'is_virtual' => ['boolean'],
-            'netbox_id' => ['nullable', 'integer', 'min:1'],
+            'netbox_id' => [
+                'nullable', 'integer', 'min:1',
+                Rule::unique('servers', 'netbox_id')
+                    ->where('is_virtual', $this->effectiveIsVirtual() ? 1 : 0)
+                    ->ignore($this->server?->id),
+            ],
         ];
     }
 
@@ -85,12 +90,6 @@ class ServerForm extends Form
         $this->validate();
 
         $server = $this->server ?? new Server;
-
-        // NetBox is authoritative for is_virtual on synced rows: while netbox_id is
-        // set, the form can't change it. Clearing netbox_id first re-enables editing.
-        $isVirtual = $this->server && $this->netbox_id !== null
-            ? $this->server->is_virtual
-            : $this->is_virtual;
 
         $server->fill([
             'name' => $this->name,
@@ -103,7 +102,7 @@ class ServerForm extends Form
             'team_id' => $this->team_id,
             'notification_email' => $this->notification_email,
             'sender_email' => $this->sender_email,
-            'is_virtual' => $isVirtual,
+            'is_virtual' => $this->effectiveIsVirtual(),
             'netbox_id' => $this->netbox_id,
         ]);
 
@@ -114,5 +113,18 @@ class ServerForm extends Form
         $server->save();
 
         return $server;
+    }
+
+    /**
+     * NetBox is authoritative for is_virtual on synced rows: while netbox_id is set,
+     * the form can't change it, so the stored value wins. Clearing netbox_id first
+     * re-enables editing. This is the value that will actually be persisted, so both
+     * validation and save() rely on it.
+     */
+    private function effectiveIsVirtual(): bool
+    {
+        return $this->server && $this->netbox_id !== null
+            ? $this->server->is_virtual
+            : $this->is_virtual;
     }
 }
