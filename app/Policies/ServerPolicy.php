@@ -33,6 +33,13 @@ class ServerPolicy
             return true;
         }
 
+        // Unassigned (in-triage) servers belong to no team yet, so staff who run
+        // triage can view and allocate them. Once a team owns it, the usual
+        // team-membership rule applies again.
+        if ($user->is_staff && $server->team_id === null) {
+            return true;
+        }
+
         return $user->teams()->whereKey($server->team_id)->exists();
     }
 }

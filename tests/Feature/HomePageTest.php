@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use App\Livewire\HomePage;
 use App\Models\Server;
@@ -21,6 +22,218 @@ it('shows every server on the All servers tab regardless of team membership', fu
     expect($component->instance()->allServers->pluck('name')->all())
         ->toContain('my-team-server.example.test')
         ->toContain('other-team-server.example.test');
+});
+
+it('renders unassigned servers without error and labels the empty team', function () {
+    $admin = User::factory()->admin()->create();
+
+    Server::factory()->unassigned()->create(['name' => 'triage-box.example.test']);
+
+    Livewire::actingAs($admin)
+        ->test(HomePage::class)
+        ->assertSee('triage-box.example.test')
+        ->assertSee('Unassigned');
+});
+
+it('lists only unassigned servers on the Unassigned tab', function () {
+    $admin = User::factory()->admin()->create();
+    $team = Team::factory()->create();
+
+    Server::factory()->unassigned()->create(['name' => 'triage-box.example.test']);
+    Server::factory()->forTeam($team)->create(['name' => 'owned-box.example.test']);
+
+    $component = Livewire::actingAs($admin)->test(HomePage::class);
+
+    expect($component->instance()->unassignedServers->pluck('name')->all())
+        ->toContain('triage-box.example.test')
+        ->not->toContain('owned-box.example.test');
+});
+
+it('shows the Unassigned tab to staff but hides it from non-staff', function () {
+    $staff = User::factory()->staff()->create();
+    $student = User::factory()->student()->create();
+
+    Livewire::actingAs($staff)->test(HomePage::class)->assertSee('Unassigned servers');
+    Livewire::actingAs($student)->test(HomePage::class)->assertDontSee('Unassigned servers');
+});
+
+it('flags inactive servers in the listing', function () {
+    $admin = User::factory()->admin()->create();
+    $team = Team::factory()->create();
+
+    Server::factory()->forTeam($team)->inactive()->create(['name' => 'decommissioned-box.example.test']);
+
+    Livewire::actingAs($admin)
+        ->test(HomePage::class)
+        ->assertSee('decommissioned-box.example.test')
+        ->assertSee('Inactive');
+});
+
+it('bulk-allocates selected unassigned servers to a team and cadence', function () {
+    $staff = User::factory()->staff()->create();
+    $team = Team::factory()->create();
+
+    $a = Server::factory()->unassigned()->create(['name' => 'triage-a.example.test']);
+    $b = Server::factory()->unassigned()->create(['name' => 'triage-b.example.test']);
+    $untouched = Server::factory()->unassigned()->create(['name' => 'triage-c.example.test']);
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('selected', [$a->id, $b->id])
+        ->set('allocateTeamId', $team->id)
+        ->set('allocateIntervalMonths', 3)
+        ->set('allocateGraceValue', 2)
+        ->set('allocateGraceUnits', GraceUnit::Weeks->value)
+        ->call('bulkAllocate')
+        ->assertHasNoErrors();
+
+    $freshA = $a->fresh();
+    expect($freshA->team_id)->toBe($team->id)
+        ->and($freshA->interval_months)->toBe(3)
+        ->and($freshA->grace_value)->toBe(2)
+        ->and($freshA->grace_units)->toBe(GraceUnit::Weeks)
+        ->and($freshA->created_by_user_id)->toBe($staff->id);
+
+    expect($b->fresh()->team_id)->toBe($team->id);
+    expect($untouched->fresh()->team_id)->toBeNull()
+        ->and($untouched->fresh()->created_by_user_id)->toBeNull();
+});
+
+it('does not overwrite created_by on an allocated server that already has one', function () {
+    $staff = User::factory()->staff()->create();
+    $originalCreator = User::factory()->create();
+    $team = Team::factory()->create();
+
+    $server = Server::factory()->unassigned()->create([
+        'name' => 'already-claimed.example.test',
+        'created_by_user_id' => $originalCreator->id,
+    ]);
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('selected', [$server->id])
+        ->set('allocateTeamId', $team->id)
+        ->set('allocateGraceUnits', GraceUnit::Days->value)
+        ->call('bulkAllocate')
+        ->assertHasNoErrors();
+
+    $fresh = $server->fresh();
+    expect($fresh->team_id)->toBe($team->id)
+        ->and($fresh->created_by_user_id)->toBe($originalCreator->id);
+});
+
+it('ticking select-all fills the selection with every matching unassigned server', function () {
+    $staff = User::factory()->staff()->create();
+    Server::factory()->count(3)->unassigned()->create();
+    Server::factory()->forTeam(Team::factory()->create())->create(['name' => 'owned.example.test']);
+
+    $component = Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('selectAllMatching', true);
+
+    expect($component->get('selected'))->toHaveCount(3);
+});
+
+it('clears the triage selection when a filter changes', function () {
+    $staff = User::factory()->staff()->create();
+    Server::factory()->count(3)->unassigned()->create();
+
+    $component = Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('selectAllMatching', true);
+
+    expect($component->get('selected'))->toHaveCount(3);
+
+    $component->set('osFilter', 'windows');
+
+    expect($component->get('selected'))->toBeEmpty()
+        ->and($component->get('selectAllMatching'))->toBeFalse();
+});
+
+it('allocates every matching unassigned server when select-all-matching is set', function () {
+    $staff = User::factory()->staff()->create();
+    $team = Team::factory()->create();
+    $strangerTeam = Team::factory()->create();
+
+    Server::factory()->count(3)->unassigned()->create();
+    $owned = Server::factory()->forTeam($strangerTeam)->create(['name' => 'owned.example.test']);
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('selectAllMatching', true)
+        ->set('allocateTeamId', $team->id)
+        ->set('allocateGraceUnits', GraceUnit::Days->value)
+        ->call('bulkAllocate')
+        ->assertHasNoErrors();
+
+    expect(Server::whereNull('team_id')->count())->toBe(0);
+    expect(Server::where('team_id', $team->id)->count())->toBe(3);
+    expect($owned->fresh()->team_id)->toBe($strangerTeam->id);
+});
+
+it('limits select-all-matching to servers passing the active filter', function () {
+    $staff = User::factory()->staff()->create();
+    $team = Team::factory()->create();
+
+    $linux = Server::factory()->unassigned()->create(['name' => 'u-linux.example.test', 'os_type' => OsType::Linux]);
+    $windows = Server::factory()->unassigned()->create(['name' => 'u-windows.example.test', 'os_type' => OsType::Windows]);
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('osFilter', 'linux')
+        ->set('selectAllMatching', true)
+        ->set('allocateTeamId', $team->id)
+        ->set('allocateGraceUnits', GraceUnit::Days->value)
+        ->call('bulkAllocate')
+        ->assertHasNoErrors();
+
+    expect($linux->fresh()->team_id)->toBe($team->id);
+    expect($windows->fresh()->team_id)->toBeNull();
+});
+
+it('forbids a non-staff user from bulk-allocating', function () {
+    $student = User::factory()->student()->create();
+    $team = Team::factory()->create();
+    $server = Server::factory()->unassigned()->create(['name' => 'triage.example.test']);
+
+    Livewire::actingAs($student)
+        ->test(HomePage::class)
+        ->set('selected', [$server->id])
+        ->set('allocateTeamId', $team->id)
+        ->set('allocateGraceUnits', GraceUnit::Days->value)
+        ->call('bulkAllocate')
+        ->assertForbidden();
+
+    expect($server->fresh()->team_id)->toBeNull();
+});
+
+it('rejects bulk-allocate with no team or cadence and changes nothing', function () {
+    $staff = User::factory()->staff()->create();
+    $server = Server::factory()->unassigned()->create(['name' => 'triage.example.test']);
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('selected', [$server->id])
+        ->set('allocateTeamId', null)
+        ->set('allocateGraceUnits', '')
+        ->call('bulkAllocate')
+        ->assertHasErrors(['allocateTeamId', 'allocateGraceUnits']);
+
+    expect($server->fresh()->team_id)->toBeNull();
+});
+
+it('opens the allocate modal with fresh cadence defaults', function () {
+    $staff = User::factory()->staff()->create();
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('allocateTeamId', 999)
+        ->set('allocateGraceUnits', '')
+        ->call('openAllocate')
+        ->assertSet('allocateTeamId', null)
+        ->assertSet('allocateIntervalMonths', 1)
+        ->assertSet('allocateGraceValue', 7)
+        ->assertSet('allocateGraceUnits', GraceUnit::Days->value);
 });
 
 it('applies OS, team and silenced filters to the All servers tab', function () {

@@ -10,6 +10,8 @@ use App\Models\Team;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -19,7 +21,7 @@ class HomePage extends Component
 {
     use WithPagination;
 
-    private const PAGE_NAMES = ['teamPage', 'allPage', 'alertingPage', 'silencedPage'];
+    private const PAGE_NAMES = ['teamPage', 'allPage', 'alertingPage', 'silencedPage', 'unassignedPage'];
 
     #[Url(as: 'tab')]
     public $tab = 'teams';
@@ -41,6 +43,19 @@ class HomePage extends Component
 
     public ServerForm $form;
 
+    /** @var array<int, int> */
+    public array $selected = [];
+
+    public bool $selectAllMatching = false;
+
+    public ?int $allocateTeamId = null;
+
+    public int $allocateIntervalMonths = 1;
+
+    public int $allocateGraceValue = 7;
+
+    public string $allocateGraceUnits = '';
+
     public function mount(): void
     {
         if (request()->query('new')) {
@@ -51,21 +66,32 @@ class HomePage extends Component
     public function updatingFilter(): void
     {
         $this->resetAllPages();
+        $this->resetSelection();
     }
 
     public function updatingOsFilter(): void
     {
         $this->resetAllPages();
+        $this->resetSelection();
     }
 
     public function updatingTeamFilter(): void
     {
         $this->resetAllPages();
+        $this->resetSelection();
     }
 
     public function updatingSilencedFilter(): void
     {
         $this->resetAllPages();
+        $this->resetSelection();
+    }
+
+    public function updatedSelectAllMatching(bool $value): void
+    {
+        // Fill the selection with every matching unassigned id (across all pages) so
+        // the row checkboxes reflect it; clear it when unticked.
+        $this->selected = $value ? $this->matchingUnassignedIds()->all() : [];
     }
 
     public function updatingPerPage(): void
@@ -93,6 +119,61 @@ class HomePage extends Component
         Flux::toast('Server created.', variant: 'success');
 
         unset($this->teamServers, $this->alertingServers, $this->silencedServers);
+    }
+
+    public function openAllocate(): void
+    {
+        $this->resetErrorBag();
+        $this->allocateTeamId = null;
+        $this->allocateIntervalMonths = 1;
+        $this->allocateGraceValue = 7;
+        $this->allocateGraceUnits = GraceUnit::Days->value;
+
+        Flux::modal('bulk-allocate')->show();
+    }
+
+    public function bulkAllocate(): void
+    {
+        abort_unless(auth()->user()->is_staff, 403);
+
+        $this->validate([
+            'allocateTeamId' => ['required', Rule::exists('teams', 'id')],
+            'allocateIntervalMonths' => ['required', 'integer', 'min:1'],
+            'allocateGraceValue' => ['required', 'integer', 'min:1'],
+            'allocateGraceUnits' => ['required', Rule::enum(GraceUnit::class)],
+        ]);
+
+        // $selected is the single source of truth — "select all matching" fills it
+        // (see updatedSelectAllMatching). The whereNull guard is belt-and-braces so a
+        // stale id for an already-allocated server can never be re-homed.
+        $targetIds = Server::query()
+            ->whereNull('team_id')
+            ->whereIn('id', $this->selected)
+            ->pluck('id');
+
+        if ($targetIds->isEmpty()) {
+            Flux::toast('No servers selected.', variant: 'warning');
+
+            return;
+        }
+
+        Server::query()->whereIn('id', $targetIds)->update([
+            'team_id' => $this->allocateTeamId,
+            'interval_months' => $this->allocateIntervalMonths,
+            'grace_value' => $this->allocateGraceValue,
+            'grace_units' => $this->allocateGraceUnits,
+        ]);
+
+        Server::query()->whereIn('id', $targetIds)
+            ->whereNull('created_by_user_id')
+            ->update(['created_by_user_id' => auth()->id()]);
+
+        $count = $targetIds->count();
+
+        $this->reset('selected', 'selectAllMatching');
+        Flux::modal('bulk-allocate')->close();
+        unset($this->unassignedServers, $this->teamServers, $this->allServers);
+        Flux::toast($count.' '.str('server')->plural($count).' allocated.', variant: 'success');
     }
 
     #[Computed]
@@ -153,6 +234,23 @@ class HomePage extends Component
     }
 
     #[Computed]
+    public function unassignedServers(): LengthAwarePaginator
+    {
+        return $this->applySortAndPaginate(
+            $this->applyFilter(
+                Server::query()->whereNull('team_id')
+            ),
+            'unassignedPage'
+        );
+    }
+
+    #[Computed]
+    public function selectedCount(): int
+    {
+        return count($this->selected);
+    }
+
+    #[Computed]
     public function userIsInAnyTeam(): bool
     {
         return auth()->user()->teams()->exists();
@@ -178,6 +276,19 @@ class HomePage extends Component
         foreach (self::PAGE_NAMES as $pageName) {
             $this->resetPage(pageName: $pageName);
         }
+    }
+
+    private function resetSelection(): void
+    {
+        $this->reset('selected', 'selectAllMatching');
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    private function matchingUnassignedIds(): Collection
+    {
+        return $this->applyFilter(Server::query()->whereNull('team_id'))->pluck('id');
     }
 
     private function applyFilter(Builder $query): Builder

@@ -54,7 +54,7 @@
 
                 <flux:card>
                     <flux:heading size="sm">Team</flux:heading>
-                    <flux:text class="mt-1">{{ $server->team->name }}</flux:text>
+                    <flux:text class="mt-1">{{ $server->team?->name ?? 'Unassigned' }}</flux:text>
                     @if ($server->createdBy)
                         <flux:text size="sm" class="mt-1">Created by {{ $server->createdBy->full_name ?: $server->createdBy->email }}</flux:text>
                     @else

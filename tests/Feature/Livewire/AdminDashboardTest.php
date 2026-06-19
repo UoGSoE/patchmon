@@ -43,6 +43,28 @@ it('computes the four summary card numbers', function () {
         ->assertViewHas('patchedRecentlyCount', 1);
 });
 
+it('excludes inactive and unassigned servers from the dashboard figures', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $team = Team::factory()->create();
+
+    // The only server the dashboard should count: a live, owned, overdue server.
+    Server::factory()->forTeam($team)->overdue()->create(['name' => 'live-overdue.example.test']);
+
+    // Decommissioned (dropped out of NetBox) — overdue, but the evaluator ignores it.
+    Server::factory()->forTeam($team)->overdue()->inactive()->create(['name' => 'decommissioned.example.test']);
+
+    // In triage (no team) — overdue, but the evaluator ignores it.
+    Server::factory()->unassigned()->overdue()->create(['name' => 'triage-overdue.example.test']);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertViewHas('totalCount', 1)
+        ->assertViewHas('overdueCount', 1)
+        ->assertViewHas('overdueServers', function ($servers) {
+            return $servers->pluck('name')->all() === ['live-overdue.example.test'];
+        });
+});
+
 it('lists overdue non-silenced servers most-overdue-first and excludes silenced ones', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();

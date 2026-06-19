@@ -18,7 +18,14 @@ class AdminDashboard extends Component
 
     public function render()
     {
-        $servers = Server::query()->with('team')->get();
+        // The dashboard reflects the live, monitored estate — the same servers the
+        // evaluator alerts on. Decommissioned (inactive) and in-triage (no team)
+        // servers are deliberately skipped by the evaluator, so they're excluded here too.
+        $servers = Server::query()
+            ->whereNull('inactive_since')
+            ->whereNotNull('team_id')
+            ->with('team')
+            ->get();
 
         $overdueServers = $servers
             ->filter(fn (Server $server) => $server->isOverdue() && ! $server->isCurrentlySilenced())

@@ -128,6 +128,24 @@ it('forbids a stranger from viewing a server in a team they are not in', functio
         ->assertForbidden();
 });
 
+it('lets a staff user view an unassigned server in triage', function () {
+    $staff = User::factory()->staff()->create();
+    $server = Server::factory()->unassigned()->create();
+
+    $this->actingAs($staff)
+        ->get(route('servers.show', $server))
+        ->assertOk();
+});
+
+it('forbids a non-staff user from viewing an unassigned server', function () {
+    $student = User::factory()->student()->create();
+    $server = Server::factory()->unassigned()->create();
+
+    $this->actingAs($student)
+        ->get(route('servers.show', $server))
+        ->assertForbidden();
+});
+
 it('shows recent patches on the detail page', function () {
     $owner = User::factory()->create(['forenames' => 'Pat', 'surname' => 'Cher']);
     $team = Team::factory()->create();
