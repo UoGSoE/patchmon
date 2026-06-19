@@ -36,11 +36,18 @@ class SyncNetboxServers implements ShouldQueue
             'inactive' => 0,
             'conflicts' => [],
             'invalid' => [],
+            'inactive_sweep_skipped' => false,
         ];
 
         $seen = [];
 
-        foreach ($client->activeServers() as $netboxServer) {
+        $netboxServers = $client->activeServers();
+
+        // Snapshot what we currently believe is active, so the inactive sweep below
+        // can sanity-check the response size before trusting it (see ait kOKT9.8).
+        $knownActiveBefore = Server::query()->whereNotNull('netbox_id')->whereNull('inactive_since')->count();
+
+        foreach ($netboxServers as $netboxServer) {
             $seen[] = $this->key($netboxServer->netboxId, $netboxServer->isVirtual);
 
             $existing = Server::query()
@@ -90,7 +97,17 @@ class SyncNetboxServers implements ShouldQueue
             $summary['created']++;
         }
 
-        $summary['inactive'] = $this->flagInactive($seen);
+        if ($this->responseIsPlausible(count($netboxServers), $knownActiveBefore)) {
+            $summary['inactive'] = $this->flagInactive($seen);
+        } else {
+            $summary['inactive_sweep_skipped'] = true;
+            Log::warning('NetBox sync: skipped the inactive sweep — implausibly small active set', [
+                'fetched' => count($netboxServers),
+                'known_active' => $knownActiveBefore,
+                'change_ratio' => (float) config('patchmon.netbox.change_ratio'),
+            ]);
+        }
+
         $summary['ran_at'] = now()->toIso8601String();
 
         Cache::put('netbox.last_sync_summary', $summary);
@@ -137,6 +154,22 @@ class SyncNetboxServers implements ShouldQueue
     private function isValidHostname(string $name): bool
     {
         return Validator::make(['name' => $name], ['name' => [new Fqdn]])->passes();
+    }
+
+    /**
+     * Guard against partial NetBox responses — an early-truncated page, a filter or
+     * permission change — before the destructive inactive sweep. If NetBox reports
+     * far fewer active servers than we currently track, we don't trust it enough to
+     * flag the rest inactive and clear their alerting. The first sync (nothing tracked
+     * yet) is always plausible; the threshold scales with the estate via change_ratio.
+     */
+    private function responseIsPlausible(int $fetched, int $knownActive): bool
+    {
+        if ($knownActive === 0) {
+            return true;
+        }
+
+        return $fetched >= (float) config('patchmon.netbox.change_ratio') * $knownActive;
     }
 
     private function key(int $netboxId, bool $isVirtual): string

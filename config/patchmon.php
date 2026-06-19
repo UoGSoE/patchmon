@@ -20,6 +20,8 @@ return [
         'verify_tls' => env('NETBOX_VERIFY_TLS', true),
         'timeout' => env('NETBOX_TIMEOUT', 10),
 
+        'change_ratio' => env('NETBOX_CHANGE_RATIO', 0.5),
+
         'default_interval_months' => env('NETBOX_DEFAULT_INTERVAL_MONTHS', 1),
         'default_grace_value' => env('NETBOX_DEFAULT_GRACE_VALUE', 7),
         'default_grace_units' => env('NETBOX_DEFAULT_GRACE_UNITS', 'days'),
