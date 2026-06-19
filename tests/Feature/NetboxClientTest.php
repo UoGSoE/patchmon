@@ -8,6 +8,7 @@ it('maps netbox platform names to os types', function () {
     expect(NetboxClient::osTypeForPlatform('Windows Server 2019'))->toBe(OsType::Windows)
         ->and(NetboxClient::osTypeForPlatform('ubuntu-22-04'))->toBe(OsType::Linux)
         ->and(NetboxClient::osTypeForPlatform('Red Hat Enterprise Linux 9'))->toBe(OsType::Linux)
+        ->and(NetboxClient::osTypeForPlatform('Proxmox 8'))->toBe(OsType::Linux)
         ->and(NetboxClient::osTypeForPlatform('Cisco IOS'))->toBe(OsType::Other)
         ->and(NetboxClient::osTypeForPlatform(null))->toBe(OsType::Other);
 });
@@ -40,7 +41,7 @@ it('fetches active devices and virtual machines across pages and normalises them
         'netbox.test/api/virtualization/virtual-machines/*' => Http::response($vms),
     ]);
 
-    $servers = collect((new NetboxClient('https://netbox.test', 'token123'))->activeServers());
+    $servers = collect((new NetboxClient('https://netbox.test', 'key123', 'token123'))->activeServers());
 
     $device5 = $servers->firstWhere(fn ($s) => ! $s->isVirtual && $s->netboxId === 5);
     $vm5 = $servers->firstWhere(fn ($s) => $s->isVirtual && $s->netboxId === 5);
@@ -52,6 +53,27 @@ it('fetches active devices and virtual machines across pages and normalises them
         ->and($vm5->osType)->toBe(OsType::Linux)
         ->and($servers->firstWhere(fn ($s) => $s->netboxId === 6)->osType)->toBe(OsType::Windows)
         ->and($servers->firstWhere(fn ($s) => $s->isVirtual && $s->netboxId === 9)->osType)->toBe(OsType::Other);
+});
+
+it('authenticates with a Bearer key.token header', function () {
+    Http::fake([
+        'netbox.test/*' => Http::response(['results' => [], 'next' => null]),
+    ]);
+
+    (new NetboxClient('https://netbox.test', 'keyprefix', 'secrettoken'))->activeServers();
+
+    Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer keyprefix.secrettoken'));
+});
+
+it('asks NetBox only for servers, filtering devices and VMs by role=server', function () {
+    Http::fake([
+        'netbox.test/*' => Http::response(['results' => [], 'next' => null]),
+    ]);
+
+    (new NetboxClient('https://netbox.test', 'key', 'token'))->activeServers();
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/api/dcim/devices/') && str_contains($request->url(), 'role=server'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/api/virtualization/virtual-machines/') && str_contains($request->url(), 'role=server'));
 });
 
 // REMINDER — our pagination handling (NetboxClient::fetch follows `next` until null)
@@ -68,11 +90,13 @@ it('handles real-world netbox pagination quirks', function () {
 it('builds a client from config, trimming a trailing slash off the base url', function () {
     config([
         'patchmon.netbox.base_url' => 'https://netbox.example.test/',
+        'patchmon.netbox.key' => 'secret-key',
         'patchmon.netbox.token' => 'secret-token',
     ]);
 
     $client = NetboxClient::make();
 
     expect($client->baseUrl)->toBe('https://netbox.example.test')
+        ->and($client->key)->toBe('secret-key')
         ->and($client->token)->toBe('secret-token');
 });

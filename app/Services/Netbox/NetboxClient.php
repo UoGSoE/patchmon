@@ -9,6 +9,7 @@ class NetboxClient
 {
     public function __construct(
         public string $baseUrl,
+        public string $key,
         public string $token,
         public bool $verifyTls = true,
         public int $timeout = 10,
@@ -18,6 +19,7 @@ class NetboxClient
     {
         return new self(
             rtrim((string) config('patchmon.netbox.base_url'), '/'),
+            (string) config('patchmon.netbox.key'),
             (string) config('patchmon.netbox.token'),
             (bool) config('patchmon.netbox.verify_tls', true),
             (int) config('patchmon.netbox.timeout', 10),
@@ -33,8 +35,8 @@ class NetboxClient
     public function activeServers(): array
     {
         return [
-            ...$this->fetch($this->baseUrl.'/api/dcim/devices/?status=active', isVirtual: false),
-            ...$this->fetch($this->baseUrl.'/api/virtualization/virtual-machines/?status=active', isVirtual: true),
+            ...$this->fetch($this->baseUrl.'/api/dcim/devices/?status=active&role=server', isVirtual: false),
+            ...$this->fetch($this->baseUrl.'/api/virtualization/virtual-machines/?status=active&role=server', isVirtual: true),
         ];
     }
 
@@ -48,7 +50,7 @@ class NetboxClient
         $servers = [];
 
         while ($url !== null) {
-            $body = Http::withHeaders(['Authorization' => 'Token '.$this->token])
+            $body = Http::withHeaders(['Authorization' => 'Bearer '.$this->key.'.'.$this->token])
                 ->withOptions(['verify' => $this->verifyTls])
                 ->timeout($this->timeout)
                 ->acceptJson()
@@ -88,7 +90,7 @@ class NetboxClient
             return OsType::Windows;
         }
 
-        $linuxMarkers = ['linux', 'ubuntu', 'debian', 'centos', 'rhel', 'red hat', 'redhat', 'rocky', 'alma', 'suse', 'sles', 'fedora'];
+        $linuxMarkers = ['linux', 'ubuntu', 'debian', 'centos', 'rhel', 'red hat', 'redhat', 'rocky', 'alma', 'suse', 'sles', 'fedora', 'proxmox'];
 
         foreach ($linuxMarkers as $marker) {
             if (str_contains($platform, $marker)) {

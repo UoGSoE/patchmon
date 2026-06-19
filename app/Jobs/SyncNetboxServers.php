@@ -3,12 +3,14 @@
 namespace App\Jobs;
 
 use App\Models\Server;
+use App\Rules\Fqdn;
 use App\Services\Netbox\NetboxClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class SyncNetboxServers implements ShouldQueue
 {
@@ -33,6 +35,7 @@ class SyncNetboxServers implements ShouldQueue
             'reactivated' => 0,
             'inactive' => 0,
             'conflicts' => [],
+            'invalid' => [],
         ];
 
         $seen = [];
@@ -56,6 +59,12 @@ class SyncNetboxServers implements ShouldQueue
                 ]);
 
                 $wasInactive ? $summary['reactivated']++ : $summary['updated']++;
+
+                continue;
+            }
+
+            if (! $this->isValidHostname($netboxServer->name)) {
+                $summary['invalid'][] = $netboxServer->name;
 
                 continue;
             }
@@ -118,6 +127,16 @@ class SyncNetboxServers implements ShouldQueue
             });
 
         return $count;
+    }
+
+    /**
+     * NetBox names are free-text and often aren't valid hostnames — bare labels,
+     * rack placeholders, embedded notes. We import the clean ones verbatim and
+     * report the rest for NetBox-side cleanup rather than storing junk.
+     */
+    private function isValidHostname(string $name): bool
+    {
+        return Validator::make(['name' => $name], ['name' => [new Fqdn]])->passes();
     }
 
     private function key(int $netboxId, bool $isVirtual): string

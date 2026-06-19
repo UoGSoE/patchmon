@@ -22,7 +22,7 @@ function runNetboxSync(array $devices = [], array $vms = []): void
         'netbox.test/api/virtualization/virtual-machines/*' => Http::response(['results' => $vms, 'next' => null]),
     ]);
 
-    (new SyncNetboxServers)->handle(new NetboxClient('https://netbox.test', 'token'));
+    (new SyncNetboxServers)->handle(new NetboxClient('https://netbox.test', 'key', 'token'));
 }
 
 /**
@@ -108,6 +108,33 @@ it('skips a netbox object whose name collides with a manual server', function ()
         ->and(Server::count())->toBe(1);
 
     expect(Cache::get('netbox.last_sync_summary')['conflicts'])->toBe(['SHARED.example.com']);
+});
+
+it('skips and reports a netbox server whose name is not a valid hostname', function () {
+    runNetboxSync(devices: [
+        netboxRecord(5, 'good.example.com', 'Ubuntu 22.04'),
+        netboxRecord(6, 'jim.compsci (matlab server)', 'Ubuntu 22.04'),
+    ]);
+
+    expect(Server::where('netbox_id', 5)->exists())->toBeTrue()
+        ->and(Server::where('netbox_id', 6)->exists())->toBeFalse()
+        ->and(Cache::get('netbox.last_sync_summary')['invalid'])->toBe(['jim.compsci (matlab server)'])
+        ->and(Cache::get('netbox.last_sync_summary')['created'])->toBe(1);
+});
+
+it('keeps the first server and reports the second when a netbox device and VM share a name', function () {
+    runNetboxSync(
+        devices: [netboxRecord(5, 'blitzen.physics', 'Ubuntu 22.04')],
+        vms: [netboxRecord(7, 'blitzen.physics', 'Debian 12')],
+    );
+
+    // devices are fetched before VMs, so the device is kept and the VM is reported
+    $kept = Server::where('name', 'blitzen.physics')->get();
+
+    expect($kept)->toHaveCount(1)
+        ->and($kept->first()->is_virtual)->toBeFalse()
+        ->and($kept->first()->netbox_id)->toBe(5)
+        ->and(Cache::get('netbox.last_sync_summary')['conflicts'])->toBe(['blitzen.physics']);
 });
 
 it('flags a synced server that has dropped out of the active set and clears its alerting', function () {

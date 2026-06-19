@@ -15,6 +15,7 @@ return [
 
     'netbox' => [
         'base_url' => env('NETBOX_BASE_URL'),
+        'key' => env('NETBOX_API_KEY'),
         'token' => env('NETBOX_API_TOKEN'),
         'verify_tls' => env('NETBOX_VERIFY_TLS', true),
         'timeout' => env('NETBOX_TIMEOUT', 10),
