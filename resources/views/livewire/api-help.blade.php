@@ -101,7 +101,7 @@ PATCHMON_TOKEN="filled-in-on-first-run"</pre>
   -H "Content-Type: application/json" \
   -X POST \
   -d '{
-    "name": "fileserver-prod-02",
+    "name": "fileserver-prod-02.chem.example.ac.uk",
     "team_id": 1,
     "os_type": "linux",
     "interval_months": 1,
@@ -121,9 +121,14 @@ PATCHMON_TOKEN="filled-in-on-first-run"</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">Get a server's patch event history</flux:heading>
-                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
-  "{{ $baseUrl }}/api/v1/servers/42/patch-events"</pre>
+                    <flux:heading size="sm">Get this server's patch history</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800"># 1. Find this machine — the "id" is in the JSON that comes back
+curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
+  "{{ $baseUrl }}/api/v1/servers?filter[name]=$(hostname -f)"
+
+# 2. Use that id to fetch the patch history
+curl -H "Authorization: Bearer $PATCHMON_API_TOKEN" \
+  "{{ $baseUrl }}/api/v1/servers/&lt;id-from-step-1&gt;/patch-events"</pre>
                 </div>
 
                 <div>
@@ -191,7 +196,7 @@ r.raise_for_status()</pre>
                 <div>
                     <flux:heading size="sm">Create a server (team-owned, monthly patching, 7 days grace)</flux:heading>
                     <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.post(f"{BASE}/servers", headers=HEADERS, json={
-    "name": "fileserver-prod-02",
+    "name": "fileserver-prod-02.chem.example.ac.uk",
     "team_id": 1,
     "os_type": "linux",
     "interval_months": 1,
@@ -212,8 +217,18 @@ r.raise_for_status()</pre>
                 </div>
 
                 <div>
-                    <flux:heading size="sm">Get a server's patch event history</flux:heading>
-                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">r = requests.get(f"{BASE}/servers/42/patch-events", headers=HEADERS)
+                    <flux:heading size="sm">Get this server's patch history</flux:heading>
+                    <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">import socket
+
+# Find this machine by its hostname (filter[name] is a partial match)
+r = requests.get(f"{BASE}/servers", headers=HEADERS, params={
+    "filter[name]": socket.getfqdn(),
+})
+r.raise_for_status()
+server = r.json()["servers"]["data"][0]
+
+# Now fetch its patch history
+r = requests.get(f"{BASE}/servers/{server['id']}/patch-events", headers=HEADERS)
 r.raise_for_status()
 for pe in r.json()["patch_events"]["data"]:
     print(pe["patched_at"], pe["source_ip"])</pre>
