@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DownloadRecordPatchScript;
 use App\Http\Controllers\PatchEventController;
 use App\Http\Controllers\ProvisionPatchTokenController;
 use App\Livewire\Admin\ApiTokens as AdminApiTokens;
@@ -31,6 +32,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/settings', MySettings::class)->name('settings');
     Route::get('/api/help', ApiHelp::class)->name('api.help');
+    Route::get('/scripts/record_patched.sh', DownloadRecordPatchScript::class)->name('scripts.record-patch');
 
     // The dashboard is the estate overview — admins and oversight admins (the
     // chase-up folk) can see it. Everything else under /admin stays admin-only.

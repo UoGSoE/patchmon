@@ -25,6 +25,32 @@
         </flux:callout.text>
     </flux:callout>
 
+    <flux:card class="mt-6">
+        <flux:heading size="lg">First-run helper script</flux:heading>
+        <flux:text class="mt-2">
+            For freshly-built servers, <code>record_patched.sh</code> is the no-faff option: run it when you patch and
+            it sorts itself out. On first run it claims this machine's patch token by hostname, saves it to
+            <code>/etc/patchmon.env</code>, and records the patch. Every run after that just records the patch.
+            The copy below already points at this Patchmon install.
+        </flux:text>
+
+        <flux:button class="mt-4" icon="arrow-down-tray" :href="route('scripts.record-patch')">
+            Download record_patched.sh
+        </flux:button>
+
+        <flux:text size="sm" class="mt-4">
+            It keeps its settings in <code>/etc/patchmon.env</code> (root-only). Puppet or a build profile can drop this
+            in ahead of time; the token line is filled in automatically on first run:
+        </flux:text>
+        <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">PATCHMON_URL="{{ $baseUrl }}"
+PATCHMON_TOKEN="filled-in-on-first-run"</pre>
+
+        <flux:text size="sm" class="mt-4">
+            Each server's token is a one-time claim. If a machine is rebuilt, or you think a token has been exposed,
+            regenerate it from the server's page in Patchmon and the script will re-enrol on its next run.
+        </flux:text>
+    </flux:card>
+
     <flux:tab.group class="mt-6">
         <flux:tabs>
             <flux:tab name="curl">curl</flux:tab>
