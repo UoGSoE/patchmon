@@ -70,6 +70,16 @@
                 <flux:heading size="sm">Record-patch URL</flux:heading>
                 <flux:text size="sm">Curl this URL when you patch the server. Treat it like a webhook URL.</flux:text>
                 <flux:input class="mt-2 font-mono" readonly :value="$recordPatchUrl" copyable />
+                <div class="mt-2 flex items-center justify-between gap-2">
+                    @if ($server->patch_token_provisioned_at)
+                        <flux:text size="sm">Token provisioned {{ $server->patch_token_provisioned_at->format('j M Y') }}</flux:text>
+                    @else
+                        <flux:text size="sm">Regenerate if the URL may have been exposed.</flux:text>
+                    @endif
+                    <flux:modal.trigger name="regenerate-token">
+                        <flux:button size="sm" variant="subtle" icon="arrow-path">Regenerate</flux:button>
+                    </flux:modal.trigger>
+                </div>
             </div>
         </div>
     </div>
@@ -163,6 +173,28 @@
             <div class="flex justify-end gap-2">
                 <flux:button x-on:click="$flux.modal('delete-server').close()">Cancel</flux:button>
                 <flux:button wire:click="delete" variant="danger">Yes, delete</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal name="regenerate-token" variant="flyout" class="max-w-md">
+        <div class="space-y-6">
+            <flux:heading size="lg">Regenerate the patch token?</flux:heading>
+            <flux:text>
+                This issues a new record-patch URL for <strong>{{ $server->name }}</strong> and the current
+                one stops working. Use it if the token may have been exposed, or after a rebuild so the
+                machine can provision a fresh token.
+            </flux:text>
+            <flux:callout icon="information-circle" variant="secondary">
+                <flux:callout.text>
+                    A machine running our <code>record_patched.sh</code> will pick up the new token automatically on
+                    its next run. Running a custom script? Copy the new record-patch URL afterwards and update it
+                    wherever you keep it.
+                </flux:callout.text>
+            </flux:callout>
+            <div class="flex justify-end gap-2">
+                <flux:button x-on:click="$flux.modal('regenerate-token').close()">Cancel</flux:button>
+                <flux:button wire:click="regenerateToken" variant="danger">Regenerate</flux:button>
             </div>
         </div>
     </flux:modal>

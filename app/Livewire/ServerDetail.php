@@ -137,6 +137,18 @@ class ServerDetail extends Component
         return $this->redirectRoute('home', navigate: true);
     }
 
+    public function regenerateToken(): void
+    {
+        $this->authorize('update', $this->server);
+
+        $this->server->regenerateToken();
+
+        $this->server = $this->server->fresh();
+
+        Flux::modal('regenerate-token')->close();
+        Flux::toast('Patch token regenerated.', variant: 'success');
+    }
+
     /**
      * @return array{0: Carbon, 1: Carbon}
      */

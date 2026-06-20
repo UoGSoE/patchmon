@@ -156,6 +156,16 @@ class Server extends Model
         return $patchEvent;
     }
 
+    public function regenerateToken(): void
+    {
+        // Issues a fresh record-patch token (the old URL stops working) and clears any
+        // provisioning claim, so a rebuilt machine can provision a new token on its next run.
+        $this->update([
+            'patch_token' => (string) Str::uuid(),
+            'patch_token_provisioned_at' => null,
+        ]);
+    }
+
     public function silenceBetween(Carbon $from, Carbon $until, ?string $reason = null): void
     {
         $this->update([

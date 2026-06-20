@@ -102,6 +102,46 @@ it('saves changes to until and reason while already silenced', function () {
         ->and($server->silence_reason)->toBe('Extended works');
 });
 
+it('regenerating the token rotates it, clears the provisioning stamp, and leaves the server and its patches intact', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->provisioned()->create();
+    $server->recordPatch($owner, 'patched before regenerating');
+    $originalToken = $server->patch_token;
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('regenerateToken')
+        ->assertHasNoErrors();
+
+    $server->refresh();
+    expect($server->patch_token)->not->toBe($originalToken)
+        ->and($server->patch_token_provisioned_at)->toBeNull()
+        ->and(Server::find($server->id))->not->toBeNull()
+        ->and($server->patchEvents)->toHaveCount(1);
+});
+
+it('offers the regenerate control on every server, but only shows the provisioning date when provisioned', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $provisioned = Server::factory()->forTeam($team, $owner)->provisioned()->create();
+    $plain = Server::factory()->forTeam($team, $owner)->create();
+
+    $this->actingAs($owner)
+        ->get(route('servers.show', $provisioned))
+        ->assertOk()
+        ->assertSee('Regenerate')
+        ->assertSee('Token provisioned');
+
+    $this->actingAs($owner)
+        ->get(route('servers.show', $plain))
+        ->assertOk()
+        ->assertSee('Regenerate')
+        ->assertDontSee('Token provisioned');
+});
+
 it('deletes the server when a team member confirms and redirects to home', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create();
