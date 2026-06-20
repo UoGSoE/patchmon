@@ -26,8 +26,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', MySettings::class)->name('settings');
     Route::get('/api/help', ApiHelp::class)->name('api.help');
 
+    // The dashboard is the estate overview — admins and oversight admins (the
+    // chase-up folk) can see it. Everything else under /admin stays admin-only.
+    Route::get('/admin', AdminDashboard::class)
+        ->middleware('can:viewDashboard')
+        ->name('admin.dashboard');
+
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', AdminDashboard::class)->name('dashboard');
         Route::get('/teams', AdminTeams::class)->name('teams.index');
         Route::get('/teams/{team}', AdminTeamDetail::class)->name('teams.show');
         Route::get('/users', AdminUsers::class)->name('users.index');

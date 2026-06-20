@@ -1,4 +1,5 @@
 <div class="max-w-5xl">
+    @if (auth()->user()->is_admin)
     <flux:heading size="lg">Manage</flux:heading>
 
     <div class="mt-4 grid gap-4 sm:grid-cols-3">
@@ -25,6 +26,7 @@
     </div>
 
     <flux:separator class="my-8" />
+    @endif
 
     <flux:heading size="xl">Patching overview</flux:heading>
     <flux:text class="mt-2">A quick read on where the estate is.</flux:text>

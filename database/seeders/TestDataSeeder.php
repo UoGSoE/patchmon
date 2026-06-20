@@ -558,7 +558,7 @@ class TestDataSeeder extends Seeder
         // Freshly synced from NetBox, awaiting allocation to a team (team_id null) —
         // populates the triage tab. A mix of physical and virtual, default cadence.
         for ($i = 1; $i <= 12; $i++) {
-            Server::factory()
+            $server = Server::factory()
                 ->unassigned()
                 ->fromNetbox(1000 + $i, isVirtual: $i % 3 === 0)
                 ->create([
@@ -569,6 +569,13 @@ class TestDataSeeder extends Seeder
                     'grace_value' => 7,
                     'grace_units' => GraceUnit::Days,
                 ]);
+
+            // The first few have languished in triage for weeks — these are what the
+            // weekly oversight digest (patchmon:alert-unassigned) chases up.
+            if ($i <= 3) {
+                $server->created_at = now()->subWeeks($i + 1);
+                $server->save();
+            }
         }
 
         // Two NetBox-sourced servers that have dropped out of NetBox's active set —

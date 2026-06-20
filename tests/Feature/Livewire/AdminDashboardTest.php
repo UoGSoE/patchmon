@@ -18,6 +18,39 @@ it('shows the admin dashboard to admin users', function () {
     $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
 });
 
+it('shows the admin dashboard to oversight admins who are not full admins', function () {
+    $oversightAdmin = User::factory()->oversightAdmin()->create(['is_admin' => false]);
+
+    $this->actingAs($oversightAdmin)->get(route('admin.dashboard'))->assertOk();
+});
+
+it('still forbids oversight admins from the other admin pages', function () {
+    $oversightAdmin = User::factory()->oversightAdmin()->create(['is_admin' => false]);
+
+    $this->actingAs($oversightAdmin)->get(route('admin.users.index'))->assertForbidden();
+    $this->actingAs($oversightAdmin)->get(route('admin.teams.index'))->assertForbidden();
+});
+
+it('shows the dashboard nav link to oversight admins, labelled Dashboard, but not to plain users', function () {
+    $oversightAdmin = User::factory()->oversightAdmin()->create(['is_admin' => false]);
+    $plainUser = User::factory()->create(['is_admin' => false]);
+
+    $this->actingAs($oversightAdmin)->get(route('home'))->assertSee('Dashboard');
+    $this->actingAs($plainUser)->get(route('home'))->assertDontSee('Dashboard');
+});
+
+it('hides the admin-only Manage cards from oversight admins but shows them to admins', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $oversightAdmin = User::factory()->oversightAdmin()->create(['is_admin' => false]);
+
+    $this->actingAs($admin)->get(route('admin.dashboard'))
+        ->assertSee('Edit, promote and remove user accounts.');
+
+    $this->actingAs($oversightAdmin)->get(route('admin.dashboard'))
+        ->assertDontSee('Edit, promote and remove user accounts.')
+        ->assertSee('Patching overview');
+});
+
 it('computes the four summary card numbers', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();

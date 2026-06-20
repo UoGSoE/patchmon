@@ -25,9 +25,9 @@
                 <flux:sidebar.nav>
                     <flux:sidebar.item icon="home" :href="route('home')" wire:navigate>Home</flux:sidebar.item>
                     <flux:sidebar.item icon="arrow-up-tray" :href="route('import')" wire:navigate>Bulk import</flux:sidebar.item>
-                    @if (auth()->user()->is_admin)
+                    @if (auth()->user()->is_admin || auth()->user()->is_oversight_admin)
                         <flux:separator class="my-2" />
-                        <flux:sidebar.item icon="shield-check" :href="route('admin.dashboard')" wire:navigate>Admin</flux:sidebar.item>
+                        <flux:sidebar.item icon="shield-check" :href="route('admin.dashboard')" wire:navigate>{{ auth()->user()->is_admin ? 'Admin' : 'Dashboard' }}</flux:sidebar.item>
                     @endif
                 </flux:sidebar.nav>
                 <flux:sidebar.spacer />

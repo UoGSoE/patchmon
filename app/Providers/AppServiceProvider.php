@@ -17,5 +17,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::define('viewApiDocs', fn (?User $user) => $user !== null);
+        Gate::define('viewDashboard', fn (User $user) => $user->is_admin || $user->is_oversight_admin);
     }
 }
