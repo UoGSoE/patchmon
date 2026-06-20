@@ -37,9 +37,9 @@ function netboxRecord(int $id, string $name, ?string $platform = null): array
 
 it('creates a new netbox device in triage with the configured default cadence', function () {
     config([
-        'patchmon.netbox.default_interval_months' => 3,
-        'patchmon.netbox.default_grace_value' => 2,
-        'patchmon.netbox.default_grace_units' => 'weeks',
+        'patchmon.triage_defaults.interval_months' => 3,
+        'patchmon.triage_defaults.grace_value' => 2,
+        'patchmon.triage_defaults.grace_units' => 'weeks',
     ]);
 
     runNetboxSync(devices: [netboxRecord(5, 'WEB01.example.com', 'Ubuntu 22.04')]);

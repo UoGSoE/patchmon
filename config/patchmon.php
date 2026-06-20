@@ -8,8 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Connection details for the NetBox install that acts as the canonical
-    | inventory of the server estate, plus the default patching cadence applied
-    | to servers created by the sync (they land in triage for a human to refine).
+    | inventory of the server estate.
     |
     */
 
@@ -21,10 +20,24 @@ return [
         'timeout' => env('NETBOX_TIMEOUT', 10),
 
         'change_ratio' => env('NETBOX_CHANGE_RATIO', 0.5),
+    ],
 
-        'default_interval_months' => env('NETBOX_DEFAULT_INTERVAL_MONTHS', 1),
-        'default_grace_value' => env('NETBOX_DEFAULT_GRACE_VALUE', 7),
-        'default_grace_units' => env('NETBOX_DEFAULT_GRACE_UNITS', 'days'),
+    /*
+    |--------------------------------------------------------------------------
+    | Triage defaults
+    |--------------------------------------------------------------------------
+    |
+    | The default patching cadence applied to servers created automatically
+    | with no team yet — both the NetBox sync and the record_patched.sh
+    | first-run provision endpoint land servers in triage for a human to
+    | refine, so they share these conservative defaults.
+    |
+    */
+
+    'triage_defaults' => [
+        'interval_months' => env('TRIAGE_DEFAULT_INTERVAL_MONTHS', 1),
+        'grace_value' => env('TRIAGE_DEFAULT_GRACE_VALUE', 7),
+        'grace_units' => env('TRIAGE_DEFAULT_GRACE_UNITS', 'days'),
     ],
 
 ];

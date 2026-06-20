@@ -91,6 +91,13 @@ class ServerFactory extends Factory
         ]);
     }
 
+    public function provisioned(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'patch_token_provisioned_at' => now(),
+        ]);
+    }
+
     public function silenced(): static
     {
         return $this->state(fn (array $attributes) => [

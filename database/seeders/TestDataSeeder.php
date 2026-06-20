@@ -595,6 +595,25 @@ class TestDataSeeder extends Seeder
                     'last_patched_at' => now()->subMonths(4),
                 ]);
         }
+
+        // Two servers that a rack-room sysadmin enrolled via record_patched.sh —
+        // unknown FQDN, so they self-created in triage and had their patch token
+        // revealed once (patch_token_provisioned_at stamped). Gives the web UI
+        // reset action something to act on.
+        for ($i = 1; $i <= 2; $i++) {
+            Server::factory()
+                ->unassigned()
+                ->provisioned()
+                ->create([
+                    'name' => sprintf('rack-build-%02d.infra.example.test', $i),
+                    'description' => 'First patch recorded via record_patched.sh — awaiting team allocation.',
+                    'os_type' => OsType::Linux,
+                    'interval_months' => 1,
+                    'grace_value' => 7,
+                    'grace_units' => GraceUnit::Days,
+                    'last_patched_at' => now()->subDays($i),
+                ]);
+        }
     }
 
     private function backfillPatchEvents(): void

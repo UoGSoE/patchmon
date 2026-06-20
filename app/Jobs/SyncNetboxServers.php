@@ -89,9 +89,9 @@ class SyncNetboxServers implements ShouldQueue
                 'is_virtual' => $netboxServer->isVirtual,
                 'name' => $netboxServer->name,
                 'os_type' => $netboxServer->osType,
-                'interval_months' => config('patchmon.netbox.default_interval_months'),
-                'grace_value' => config('patchmon.netbox.default_grace_value'),
-                'grace_units' => config('patchmon.netbox.default_grace_units'),
+                'interval_months' => config('patchmon.triage_defaults.interval_months'),
+                'grace_value' => config('patchmon.triage_defaults.grace_value'),
+                'grace_units' => config('patchmon.triage_defaults.grace_units'),
             ]);
 
             $summary['created']++;

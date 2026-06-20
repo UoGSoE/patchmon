@@ -115,6 +115,14 @@ it('provides factory states for the netbox sync lifecycle', function () {
         ->and($unassigned->created_by_user_id)->toBeNull();
 });
 
+it('stores and casts the provisioning timestamp, defaulting to null with a provisioned factory state', function () {
+    $plain = Server::factory()->create();
+    $provisioned = Server::factory()->provisioned()->create();
+
+    expect($plain->patch_token_provisioned_at)->toBeNull()
+        ->and($provisioned->fresh()->patch_token_provisioned_at)->toBeInstanceOf(Carbon::class);
+});
+
 it('treats a netbox device and vm with the same id as distinct, but rejects a duplicate', function () {
     Server::factory()->fromNetbox(5, isVirtual: false)->create();
     Server::factory()->fromNetbox(5, isVirtual: true)->create();

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PatchEventController;
+use App\Http\Controllers\ProvisionPatchTokenController;
 use App\Livewire\Admin\ApiTokens as AdminApiTokens;
 use App\Livewire\Admin\TeamDetail as AdminTeamDetail;
 use App\Livewire\Admin\Teams as AdminTeams;
@@ -14,6 +15,11 @@ use App\Livewire\ServerDetail;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/sso-auth.php';
+
+// Declared before the {token} route below — otherwise "provision" is matched as a
+// {token} value and 404s.
+Route::post('/record-patch/provision', ProvisionPatchTokenController::class)
+    ->name('record-patch.provision');
 
 Route::post('/record-patch/{token}', PatchEventController::class)
     ->name('record-patch');
