@@ -58,6 +58,38 @@ it('creates an unknown fqdn as a triage server with default cadence and reveals 
         ->and($response->json('patch_token'))->toBe($server->patch_token);
 });
 
+it('applies an os_type hint when creating a triage server from an unknown fqdn', function () {
+    $this->postJson('/record-patch/provision', [
+        'fqdn' => 'winbox01.example.com',
+        'os_type' => 'windows',
+    ])->assertOk();
+
+    expect(Server::firstOrFail()->os_type)->toBe(OsType::Windows);
+});
+
+it('falls back to Other and still provisions when the os_type hint is unrecognised', function () {
+    $this->postJson('/record-patch/provision', [
+        'fqdn' => 'mystery01.example.com',
+        'os_type' => 'plan9',
+    ])->assertOk();
+
+    expect(Server::firstOrFail()->os_type)->toBe(OsType::Other);
+});
+
+it('does not clobber an existing server os_type with a provision hint', function () {
+    $server = Server::factory()->create([
+        'name' => 'known01.example.com',
+        'os_type' => OsType::Linux,
+    ]);
+
+    $this->postJson('/record-patch/provision', [
+        'fqdn' => 'known01.example.com',
+        'os_type' => 'windows',
+    ])->assertOk();
+
+    expect($server->fresh()->os_type)->toBe(OsType::Linux);
+});
+
 it('rejects an invalid fqdn with a 422 and creates no server', function () {
     $response = $this->postJson('/record-patch/provision', ['fqdn' => 'not-a-hostname']);
 

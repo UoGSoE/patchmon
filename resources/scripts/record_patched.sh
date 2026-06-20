@@ -17,7 +17,8 @@
 #                                       → 409 message, exits non-zero.
 #   4. Run as a non-root user           → prints the token instead of writing the
 #                                         file, still records the patch.
-#   5. Wrong/rotated token (HTTP 404)   → see the note in record_patch() below.
+#   5. Token regenerated in the UI      → next run gets a 404, discards the stale
+#                                         token, re-enrols, and records again.
 #
 set -euo pipefail
 
@@ -46,7 +47,21 @@ post_status() {
     curl -sS -o "${body_file}" -w '%{http_code}' -X POST "$@"
 }
 
+# Best-effort OS hint sent only on first-run provision, to save a triage click.
+# Linux only; anything else is left to Patchmon's default (Windows boxes use a
+# different recorder, not this script).
+os_hint() {
+    case "$(uname -s 2>/dev/null)" in
+        Linux) printf 'linux' ;;
+        *) printf '' ;;
+    esac
+}
+
+# record_patch [allow_reenrol]
+# allow_reenrol defaults to "yes". The retry after re-enrolling passes "no" so a
+# fresh token that is somehow still rejected fails loudly instead of looping.
 record_patch() {
+    local allow_reenrol="${1:-yes}"
     local code
     code="$(post_status /dev/null "${PATCHMON_URL}/record-patch/${PATCHMON_TOKEN}")" \
         || die "could not reach Patchmon at ${PATCHMON_URL}"
@@ -56,12 +71,15 @@ record_patch() {
             log "recorded patch for ${FQDN}"
             ;;
         404)
-            # The saved token was not recognised — most likely it was regenerated
-            # in Patchmon's web UI while this box kept the old one.
-            #
-            # NOTE (parked decision): we deliberately do NOT auto-re-provision here.
-            # To re-enrol, clear PATCHMON_TOKEN from ${CONFIG_FILE} and run again.
-            die "this server's token was not recognised. It may have been regenerated in Patchmon's web UI — clear PATCHMON_TOKEN from ${CONFIG_FILE} and re-run to re-enrol."
+            # Saved token rejected — most likely regenerated in Patchmon's web UI.
+            # Discard it, claim a fresh one by FQDN, and record once more.
+            if [ "${allow_reenrol}" != "yes" ]; then
+                die "token still rejected after re-enrolling ${FQDN}"
+            fi
+            log "saved token was rejected — re-enrolling ${FQDN}"
+            PATCHMON_TOKEN=""
+            provision
+            record_patch "no"
             ;;
         *)
             die "unexpected response (${code}) recording patch for ${FQDN}"
@@ -70,14 +88,20 @@ record_patch() {
 }
 
 provision() {
-    log "no PATCHMON_TOKEN found in ${CONFIG_FILE}"
-    log "requesting first-run token for ${FQDN}"
+    log "requesting a token for ${FQDN}"
 
-    local body_file code body token
+    local body_file code body token os payload
+    os="$(os_hint)"
+    if [ -n "${os}" ]; then
+        payload="{\"fqdn\":\"${FQDN}\",\"os_type\":\"${os}\"}"
+    else
+        payload="{\"fqdn\":\"${FQDN}\"}"
+    fi
+
     body_file="$(mktemp)"
     code="$(post_status "${body_file}" \
         -H 'Content-Type: application/json' \
-        -d "{\"fqdn\":\"${FQDN}\"}" \
+        -d "${payload}" \
         "${PATCHMON_URL}/record-patch/provision")" \
         || { rm -f "${body_file}"; die "could not reach Patchmon at ${PATCHMON_URL}"; }
     body="$(cat "${body_file}")"
@@ -134,6 +158,7 @@ esac
 if [ -n "${PATCHMON_TOKEN:-}" ]; then
     record_patch
 else
+    log "no saved token in ${CONFIG_FILE}"
     provision
     record_patch
 fi

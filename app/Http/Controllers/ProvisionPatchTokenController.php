@@ -40,13 +40,15 @@ class ProvisionPatchTokenController extends Controller
 
         // Unknown FQDN: the FQDN tells us nothing about which team owns the box,
         // so it self-creates in triage with conservative defaults for a human to refine.
+        // The script may pass an os_type hint to save a triage click; anything missing
+        // or unrecognised falls back to Other rather than failing the provision.
         if (! $server) {
             $server = Server::create([
                 'team_id' => null,
                 'created_by_user_id' => null,
                 'netbox_id' => null,
                 'name' => $name,
-                'os_type' => OsType::Other,
+                'os_type' => OsType::tryFrom((string) $request->input('os_type')) ?? OsType::Other,
                 'interval_months' => config('patchmon.triage_defaults.interval_months'),
                 'grace_value' => config('patchmon.triage_defaults.grace_value'),
                 'grace_units' => config('patchmon.triage_defaults.grace_units'),
