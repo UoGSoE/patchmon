@@ -1,55 +1,53 @@
-<div class="max-w-4xl">
-    <flux:heading size="xl">API examples</flux:heading>
+<div>
+    <flux:heading size="xl">API and CLI stuff</flux:heading>
     <flux:text class="mt-2">
         Common things you can do from a terminal or a script, with a personal access token from your
         <flux:link :href="route('settings')" wire:navigate>settings page</flux:link>.
     </flux:text>
 
-    <flux:callout class="mt-6" icon="key" variant="secondary">
-        <flux:callout.heading>Two tokens, two purposes</flux:callout.heading>
-        <flux:callout.text>
-            Your <strong>personal access token</strong> (<code>PATCHMON_API_TOKEN</code>) authenticates you against the JSON API: listing servers, silencing, etc.
-        </flux:callout.text>
-        <flux:callout.text>
-            Each server also has its own <strong>patch token</strong> — a UUID baked into a per-server <code>/record-patch/&lt;token&gt;</code> URL. That endpoint is unauthenticated by design so Puppet, SCCM or a one-liner cron job can ping it. Adding your personal access token as a bearer is optional and only attributes the patch event to you.
-        </flux:callout.text>
-    </flux:callout>
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <div>
+        <flux:callout icon="key" variant="secondary">
+            <flux:callout.heading>Two tokens, two purposes</flux:callout.heading>
+            <flux:callout.text>
+                Your <strong>personal access token</strong> (<code>PATCHMON_API_TOKEN</code>) authenticates you against the JSON API: listing servers, silencing, etc.
+                Each server also has its own <strong>patch token</strong> — a UUID baked into a per-server <code>/record-patch/&lt;token&gt;</code> URL. That endpoint is unauthenticated by design so Puppet, SCCM or a one-liner cron job can ping it. Adding your personal access token as a bearer is optional and only attributes the patch event to you.
+            </flux:callout.text>
+            <flux:callout.text>
+                All the API examples assume you've set the <code>PATCHMON_API_TOKEN</code> environment variable, eg:
+                <pre class="mt-2 text-sm">export PATCHMON_API_TOKEN=&quot;paste-the-token-from-settings-here&quot;</pre>
+            </flux:callout.text>
+        </flux:callout>
+        </div>
+        <div>
+        <flux:card>
+            <flux:heading size="lg">First-run helper script</flux:heading>
+            <flux:text class="mt-2">
+                For freshly-built servers, <code>record_patched.sh</code> is the no-faff option: run it when you patch and
+                it sorts itself out. On first run it claims this machine's patch token by hostname, saves it to
+                <code>/etc/patchmon.env</code>, and records the patch. Every run after that just records the patch.
+                The copy below already points at this Patchmon install.
+            </flux:text>
 
-    <flux:callout class="mt-4" icon="key" variant="secondary">
-        <flux:callout.heading>Set your token once</flux:callout.heading>
-        <flux:callout.text>
-            Examples below use the environment variable <code>PATCHMON_API_TOKEN</code>. Put this in your shell rc file so every example below works as-is:
-        </flux:callout.text>
-        <flux:callout.text>
-            <pre class="mt-2 text-sm">export PATCHMON_API_TOKEN=&quot;paste-the-token-from-settings-here&quot;</pre>
-        </flux:callout.text>
-    </flux:callout>
+            <flux:button class="mt-4" icon="arrow-down-tray" :href="route('scripts.record-patch')">
+                Download record_patched.sh
+            </flux:button>
 
-    <flux:card class="mt-6">
-        <flux:heading size="lg">First-run helper script</flux:heading>
-        <flux:text class="mt-2">
-            For freshly-built servers, <code>record_patched.sh</code> is the no-faff option: run it when you patch and
-            it sorts itself out. On first run it claims this machine's patch token by hostname, saves it to
-            <code>/etc/patchmon.env</code>, and records the patch. Every run after that just records the patch.
-            The copy below already points at this Patchmon install.
-        </flux:text>
-
-        <flux:button class="mt-4" icon="arrow-down-tray" :href="route('scripts.record-patch')">
-            Download record_patched.sh
-        </flux:button>
-
-        <flux:text size="sm" class="mt-4">
-            It keeps its settings in <code>/etc/patchmon.env</code> (root-only). Puppet or a build profile can drop this
-            in ahead of time; the token line is filled in automatically on first run:
-        </flux:text>
-        <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">PATCHMON_URL="{{ $baseUrl }}"
+            <flux:text size="sm" class="mt-4">
+                It keeps its settings in <code>/etc/patchmon.env</code> (root-only). Puppet or a build profile can drop this
+                in ahead of time; the token line is filled in automatically on first run:
+            </flux:text>
+            <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">
+PATCHMON_URL="{{ $baseUrl }}"
 PATCHMON_TOKEN="filled-in-on-first-run"</pre>
 
-        <flux:text size="sm" class="mt-4">
-            Each server's token is a one-time claim. If a machine is rebuilt, or you think a token has been exposed,
-            regenerate it from the server's page in Patchmon and the script will re-enrol on its next run.
-        </flux:text>
-    </flux:card>
+            <flux:text size="sm" class="mt-4">
+                Each server's token is a one-time claim. If a machine is rebuilt, or you think a token has been exposed,
+                regenerate it from the server's page in Patchmon and the script will re-enrol on its next run.
+            </flux:text>
+        </flux:card>
+        </div>
+    </div>
 
     <flux:tab.group class="mt-6">
         <flux:tabs>
