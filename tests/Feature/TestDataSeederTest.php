@@ -10,6 +10,7 @@ it('runs the TestDataSeeder cleanly and produces a usable local dataset', functi
     $this->seed(TestDataSeeder::class);
 
     expect(User::count())->toBeGreaterThanOrEqual(2)
+        ->and(User::oversightAdmins()->count())->toBeGreaterThan(0)
         ->and(Team::count())->toBeGreaterThanOrEqual(2)
         ->and(Server::count())->toBeGreaterThan(0)
         ->and(PatchEvent::count())->toBeGreaterThan(0)

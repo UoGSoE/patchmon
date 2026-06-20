@@ -12,6 +12,17 @@
             <flux:table.column>Name</flux:table.column>
             <flux:table.column>Email</flux:table.column>
             <flux:table.column>Admin</flux:table.column>
+            <flux:table.column>
+                <span class="flex items-center gap-1">
+                    Oversight
+                    <flux:tooltip toggleable>
+                        <flux:button icon="information-circle" size="sm" variant="ghost" />
+                        <flux:tooltip.content>
+                            Receives the oversight summary and escalation emails.
+                        </flux:tooltip.content>
+                    </flux:tooltip>
+                </span>
+            </flux:table.column>
             <flux:table.column></flux:table.column>
         </flux:table.columns>
         <flux:table.rows>
@@ -25,6 +36,9 @@
                         @else
                             <flux:switch :checked="$user->is_admin" wire:click="toggleAdmin({{ $user->id }})" />
                         @endif
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        <flux:switch :checked="$user->is_oversight_admin" wire:click="toggleOversightAdmin({{ $user->id }})" />
                     </flux:table.cell>
                     <flux:table.cell align="end">
                         <div class="flex justify-end gap-1">
@@ -56,7 +70,7 @@
             <flux:input
                 wire:model="form.username"
                 label="Username"
-                description="SSO username, e.g. kmc2y"
+                description="SSO username, e.g. mrc2y"
                 required
             />
             <flux:input wire:model="form.forenames" label="Forenames" required />

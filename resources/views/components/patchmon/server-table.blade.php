@@ -27,9 +27,6 @@
                     @endif
                     <flux:table.cell variant="strong">
                         <flux:link :href="route('servers.show', $server)" wire:navigate>{{ $server->name }}</flux:link>
-                        @if ($server->location)
-                            <flux:text size="sm" class="mt-0.5">{{ $server->location }}</flux:text>
-                        @endif
                     </flux:table.cell>
                     <flux:table.cell>
                         <flux:badge size="sm" color="{{ $server->os_type->colour() }}">{{ $server->os_type->label() }}</flux:badge>

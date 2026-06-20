@@ -24,6 +24,19 @@ it('toggles the admin flag on a user', function () {
     expect($target->fresh()->is_admin)->toBeTrue();
 });
 
+it('toggles the oversight-admin flag on a user', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $target = User::factory()->create(['is_oversight_admin' => false]);
+    $bystander = User::factory()->create(['is_oversight_admin' => false]);
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->call('toggleOversightAdmin', $target->id);
+
+    expect($target->fresh()->is_oversight_admin)->toBeTrue()
+        ->and($bystander->fresh()->is_oversight_admin)->toBeFalse();
+});
+
 it('does not let an admin demote themselves via toggleAdmin', function () {
     $admin = User::factory()->create(['is_admin' => true]);
 
@@ -42,6 +55,15 @@ it('does not render an admin toggle for the current user', function () {
         ->test(Users::class)
         ->assertDontSeeHtml("toggleAdmin({$admin->id})")
         ->assertSeeHtml("toggleAdmin({$other->id})");
+});
+
+it('renders an oversight-admin toggle for each user', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $other = User::factory()->create();
+
+    Livewire::actingAs($admin)
+        ->test(Users::class)
+        ->assertSeeHtml("toggleOversightAdmin({$other->id})");
 });
 
 it('does not render a staff toggle anywhere on the page', function () {

@@ -67,11 +67,14 @@ class TestDataSeeder extends Seeder
             'surname' => 'McUser',
         ]);
 
+        // Designated as an oversight-email recipient despite not being an admin —
+        // exercises the "chaser needn't be an admin" path.
         $extraUser = User::factory()->create([
             'username' => 'user3x',
             'email' => 'user3x@example.test',
             'password' => bcrypt('secret'),
             'is_admin' => false,
+            'is_oversight_admin' => true,
             'forenames' => 'Sam',
             'surname' => 'McTechnician',
         ]);

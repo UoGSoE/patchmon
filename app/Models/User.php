@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -24,6 +25,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_staff' => 'boolean',
+            'is_oversight_admin' => 'boolean',
         ];
     }
 
@@ -35,6 +37,7 @@ class User extends Authenticatable
         'password',
         'is_admin',
         'is_staff',
+        'is_oversight_admin',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -42,6 +45,11 @@ class User extends Authenticatable
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class);
+    }
+
+    public function scopeOversightAdmins(Builder $query): void
+    {
+        $query->where('is_oversight_admin', true);
     }
 
     public function getFullNameAttribute(): string

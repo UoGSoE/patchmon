@@ -39,6 +39,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function oversightAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_oversight_admin' => true,
+        ]);
+    }
+
     public function staff(): static
     {
         return $this->state(fn (array $attributes) => [

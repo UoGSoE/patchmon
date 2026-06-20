@@ -43,6 +43,17 @@ class Users extends Component
         );
     }
 
+    public function toggleOversightAdmin(int $id): void
+    {
+        $user = User::findOrFail($id);
+        $user->update(['is_oversight_admin' => ! $user->is_oversight_admin]);
+
+        Flux::toast(
+            $user->is_oversight_admin ? "{$user->email} now receives oversight emails." : "{$user->email} no longer receives oversight emails.",
+            variant: 'success',
+        );
+    }
+
     public function openCreate(): void
     {
         $this->editingUserId = null;
