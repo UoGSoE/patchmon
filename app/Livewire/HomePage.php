@@ -16,6 +16,8 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 
 class HomePage extends Component
 {
@@ -174,6 +176,14 @@ class HomePage extends Component
         Flux::modal('bulk-allocate')->close();
         unset($this->unassignedServers, $this->teamServers, $this->allServers);
         Flux::toast($count.' '.str('server')->plural($count).' allocated.', variant: 'success');
+    }
+
+    public function export()
+    {
+        $path = $this->writeWorkbook($this->exportSheets());
+
+        return response()->download($path, 'patchmon-servers-'.now()->format('Y-m-d').'.xlsx')
+            ->deleteFileAfterSend();
     }
 
     #[Computed]
@@ -349,5 +359,120 @@ class HomePage extends Component
     private function effectivePerPage(): int
     {
         return $this->perPage === 'all' ? 10000 : (int) $this->perPage;
+    }
+
+    /**
+     * One entry per visible tab, keyed by the sheet name. The base queries
+     * mirror the tab computed properties above so the export matches what the
+     * user is looking at; the current filters apply, but pagination does not.
+     *
+     * @return array<string, Collection<int, Server>>
+     */
+    private function exportSheets(): array
+    {
+        $user = auth()->user();
+        $teamIds = $user->teams()->pluck('teams.id');
+
+        $alerting = Server::query()->whereNotNull('alerting_since');
+
+        if (! $user->is_admin) {
+            $alerting->whereIn('team_id', $teamIds);
+        }
+
+        $sheets = [
+            'Team servers' => $this->collectForExport(Server::query()->whereIn('team_id', $teamIds)),
+            'All servers' => $this->collectForExport(Server::query()),
+            'Alerting servers' => $this->collectForExport($alerting),
+            'Silenced servers' => $this->collectForExport(
+                Server::query()->where('silenced_from', '<=', now())->where('silenced_until', '>=', now())
+            ),
+        ];
+
+        if ($user->is_staff) {
+            $sheets['Unassigned servers'] = $this->collectForExport(Server::query()->whereNull('team_id'));
+        }
+
+        return $sheets;
+    }
+
+    /**
+     * @return Collection<int, Server>
+     */
+    private function collectForExport(Builder $query): Collection
+    {
+        return $this->applyFilter($query->with('team'))
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * @param  array<string, Collection<int, Server>>  $sheets
+     */
+    private function writeWorkbook(array $sheets): string
+    {
+        // simple-spout only writes a single sheet, so we drive OpenSpout directly
+        // here to get one sheet per tab.
+        $path = tempnam(sys_get_temp_dir(), 'patchmon-export');
+
+        $writer = new Writer;
+        $writer->openToFile($path);
+
+        $first = true;
+
+        foreach ($sheets as $name => $servers) {
+            $sheet = $first ? $writer->getCurrentSheet() : $writer->addNewSheetAndMakeItCurrent();
+            $sheet->setName($name);
+            $first = false;
+
+            $writer->addRow(Row::fromValues($this->exportHeader()));
+
+            foreach ($servers as $server) {
+                $writer->addRow(Row::fromValues($this->serverToRow($server)));
+            }
+        }
+
+        $writer->close();
+
+        return $path;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function exportHeader(): array
+    {
+        return ['Name', 'Description', 'Location', 'OS', 'Team', 'Schedule', 'Grace',
+            'Last patched', 'Next due', 'Status', 'Alerting since', 'Silenced until', 'Silence reason'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function serverToRow(Server $server): array
+    {
+        return [
+            $server->name,
+            $server->description ?? '',
+            $server->location ?? '',
+            $server->os_type->label(),
+            $server->team?->name ?? 'Unassigned',
+            $server->intervalLabel(),
+            $server->grace_value.' '.strtolower($server->grace_units->label()),
+            $server->last_patched_at?->format('Y-m-d H:i') ?? '',
+            $server->deadline()->format('Y-m-d H:i'),
+            $this->exportStatus($server),
+            $server->alerting_since?->format('Y-m-d H:i') ?? '',
+            $server->silenced_until?->format('Y-m-d H:i') ?? '',
+            $server->silence_reason ?? '',
+        ];
+    }
+
+    private function exportStatus(Server $server): string
+    {
+        return match (true) {
+            $server->isInactive() => 'Inactive',
+            $server->alerting_since !== null => 'Overdue',
+            default => 'OK',
+        };
     }
 }

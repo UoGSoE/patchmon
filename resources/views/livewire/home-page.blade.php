@@ -5,6 +5,7 @@
             <flux:text class="mt-2">Overdue servers come to the top so you can see them at a glance.</flux:text>
         </div>
         <div class="flex items-center gap-2">
+            <flux:button wire:click="export" icon="table-cells">Export</flux:button>
             <flux:dropdown>
                 <flux:button icon="arrow-down-tray" icon:trailing="chevron-down">Patch script</flux:button>
                 <flux:navmenu>
