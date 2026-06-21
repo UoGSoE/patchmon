@@ -21,5 +21,9 @@ it('runs the TestDataSeeder cleanly and produces a usable local dataset', functi
         ->and(Server::whereNotNull('netbox_id')->count())->toBeGreaterThan(0)
         ->and(Server::where('is_virtual', true)->count())->toBeGreaterThan(0)
         ->and(Server::whereNotNull('inactive_since')->count())->toBeGreaterThan(0)
-        ->and(Server::whereNotNull('patch_token_provisioned_at')->count())->toBeGreaterThan(0);
+        ->and(Server::whereNotNull('patch_token_provisioned_at')->count())->toBeGreaterThan(0)
+        // The never-checked-in signal exists (the NetBox triage imports)...
+        ->and(Server::neverCheckedIn()->count())->toBeGreaterThan(0)
+        // ...but silenced servers carry a patch history, so they don't pollute it.
+        ->and(Server::neverCheckedIn()->whereNotNull('silenced_until')->count())->toBe(0);
 });

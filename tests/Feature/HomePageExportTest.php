@@ -63,8 +63,28 @@ it('exports each visible tab as its own sheet with the current filters applied',
     // The header row carries the richer columns.
     expect(readDownloadedSheet($component, 0)[0])->toBe([
         'Name', 'Description', 'Location', 'OS', 'Team', 'Schedule', 'Grace',
-        'Last patched', 'Next due', 'Status', 'Alerting since', 'Silenced until', 'Silence reason',
+        'Created', 'Last patched', 'Next due', 'Status', 'Alerting since', 'Silenced until', 'Silence reason',
     ]);
+});
+
+it('adds a Created column carrying the server creation date to the export', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $user->teams()->attach($team);
+
+    $server = Server::factory()->forTeam($team)->create([
+        'name' => 'created-col.example.test',
+        'created_at' => now()->subDays(10),
+    ]);
+
+    $component = Livewire::actingAs($user)
+        ->test(HomePage::class)
+        ->call('export');
+
+    $rows = readDownloadedSheet($component, 0);
+
+    expect($rows[0][7])->toBe('Created')
+        ->and($rows[1][7])->toBe($server->created_at->format('Y-m-d H:i'));
 });
 
 it('exports every matching server, ignoring the per-page limit', function () {
@@ -94,6 +114,31 @@ it('includes the Unassigned servers sheet', function () {
 
     // The Unassigned servers sheet (index 4) is always present, header row and all.
     expect(readDownloadedSheet($component, 4))->not->toBeEmpty();
+});
+
+it('includes a Never checked in sheet listing never-patched servers with a blank Last patched', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $user->teams()->attach($team);
+
+    Server::factory()->forTeam($team)->create(['name' => 'never-here.example.test', 'last_patched_at' => null]);
+    Server::factory()->forTeam($team)->create(['name' => 'patched-here.example.test', 'last_patched_at' => now()->subDays(2)]);
+
+    $component = Livewire::actingAs($user)
+        ->test(HomePage::class)
+        ->call('export');
+
+    // Sheet 5 is "Never checked in" (after Team/All/Alerting/Silenced/Unassigned).
+    $rows = readDownloadedSheet($component, 5);
+    $names = collect($rows)->skip(1)->pluck(0);
+
+    expect($names)->toContain('never-here.example.test')
+        ->not->toContain('patched-here.example.test');
+
+    // The motivating detail: Created (index 7) is populated, Last patched (index 8) is blank.
+    $neverRow = collect($rows)->firstWhere(0, 'never-here.example.test');
+    expect($neverRow[7])->not->toBe('')
+        ->and($neverRow[8])->toBe('');
 });
 
 it('offers an export button on the home page', function () {

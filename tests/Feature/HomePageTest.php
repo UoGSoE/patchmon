@@ -58,10 +58,45 @@ it('lists only unassigned servers on the Unassigned tab', function () {
         ->not->toContain('owned-box.example.test');
 });
 
+it('lists never-checked-in servers across every team to any staff user, excluding inactive and patched', function () {
+    $user = User::factory()->create();
+    $myTeam = Team::factory()->create();
+    $otherTeam = Team::factory()->create();
+    $user->teams()->attach($myTeam);
+
+    // Never patched, another team — included (this tab is deliberately not team-scoped).
+    Server::factory()->forTeam($otherTeam)->create(['name' => 'other-never.example.test', 'last_patched_at' => null]);
+    // Never patched, in triage (no team) — included.
+    Server::factory()->unassigned()->create(['name' => 'triage-never.example.test', 'last_patched_at' => null]);
+    // Never patched but decommissioned — excluded.
+    Server::factory()->forTeam($myTeam)->inactive()->create(['name' => 'inactive-never.example.test', 'last_patched_at' => null]);
+    // Has checked in — excluded.
+    Server::factory()->forTeam($myTeam)->create(['name' => 'patched.example.test', 'last_patched_at' => now()->subDays(3)]);
+
+    $component = Livewire::actingAs($user)->test(HomePage::class);
+
+    expect($component->instance()->neverCheckedInServers->pluck('name')->all())
+        ->toContain('other-never.example.test')
+        ->toContain('triage-never.example.test')
+        ->not->toContain('inactive-never.example.test')
+        ->not->toContain('patched.example.test');
+});
+
 it('shows the Unassigned tab', function () {
     $user = User::factory()->create();
 
     Livewire::actingAs($user)->test(HomePage::class)->assertSee('Unassigned servers');
+});
+
+it('shows the Never checked in tab and lists never-patched servers to any user', function () {
+    $user = User::factory()->create();
+
+    Server::factory()->unassigned()->create(['name' => 'triage-never.example.test', 'last_patched_at' => null]);
+
+    Livewire::actingAs($user)
+        ->test(HomePage::class)
+        ->assertSee('Never checked in')
+        ->assertSee('triage-never.example.test');
 });
 
 it('flags inactive servers in the listing', function () {

@@ -23,7 +23,7 @@ class HomePage extends Component
 {
     use WithPagination;
 
-    private const PAGE_NAMES = ['teamPage', 'allPage', 'alertingPage', 'silencedPage', 'unassignedPage'];
+    private const PAGE_NAMES = ['teamPage', 'allPage', 'alertingPage', 'silencedPage', 'unassignedPage', 'neverCheckedInPage'];
 
     #[Url(as: 'tab')]
     public $tab = 'teams';
@@ -253,6 +253,17 @@ class HomePage extends Component
     }
 
     #[Computed]
+    public function neverCheckedInServers(): LengthAwarePaginator
+    {
+        return $this->applySortAndPaginate(
+            $this->applyFilter(
+                Server::neverCheckedIn()->with('team')
+            ),
+            'neverCheckedInPage'
+        );
+    }
+
+    #[Computed]
     public function selectedCount(): int
     {
         return count($this->selected);
@@ -385,6 +396,7 @@ class HomePage extends Component
                 Server::query()->where('silenced_from', '<=', now())->where('silenced_until', '>=', now())
             ),
             'Unassigned servers' => $this->collectForExport(Server::query()->whereNull('team_id')),
+            'Never checked in' => $this->collectForExport(Server::neverCheckedIn()),
         ];
     }
 
@@ -435,7 +447,7 @@ class HomePage extends Component
     private function exportHeader(): array
     {
         return ['Name', 'Description', 'Location', 'OS', 'Team', 'Schedule', 'Grace',
-            'Last patched', 'Next due', 'Status', 'Alerting since', 'Silenced until', 'Silence reason'];
+            'Created', 'Last patched', 'Next due', 'Status', 'Alerting since', 'Silenced until', 'Silence reason'];
     }
 
     /**
@@ -451,6 +463,7 @@ class HomePage extends Component
             $server->team?->name ?? 'Unassigned',
             $server->intervalLabel(),
             $server->grace_value.' '.strtolower($server->grace_units->label()),
+            $server->created_at->format('Y-m-d H:i'),
             $server->last_patched_at?->format('Y-m-d H:i') ?? '',
             $server->deadline()->format('Y-m-d H:i'),
             $this->exportStatus($server),

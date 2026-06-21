@@ -10,5 +10,6 @@ Artisan::command('inspire', function () {
 
 Schedule::command('patchmon:sync-netbox')->dailyAt('08:10')->withoutOverlapping();
 Schedule::command('patchmon:evaluate')->dailyAt('08:40')->withoutOverlapping();
+Schedule::command('patchmon:snapshot')->dailyAt('08:50')->withoutOverlapping();
 Schedule::command('patchmon:alert-unassigned')->weeklyOn(1, '08:00')->withoutOverlapping();
 Schedule::command('patchmon:weekly-overview')->weeklyOn(1, '08:00')->withoutOverlapping();

@@ -219,6 +219,7 @@ class TestDataSeeder extends Seeder
             'interval_months' => 3,
             'grace_value' => 2,
             'grace_units' => GraceUnit::Weeks,
+            'last_patched_at' => now()->subWeeks(rand(2, 10)),
             'silenced_until' => now()->addWeeks(3),
             'silence_reason' => 'Held during exam diet — no schema or GPO changes',
         ]);
@@ -257,6 +258,7 @@ class TestDataSeeder extends Seeder
             'interval_months' => 3,
             'grace_value' => 2,
             'grace_units' => GraceUnit::Weeks,
+            'last_patched_at' => now()->subWeeks(rand(2, 10)),
             'silenced_until' => now()->addWeeks(2),
             'silence_reason' => 'Awaiting infosec sign-off after term-end audit',
         ]);
@@ -270,6 +272,7 @@ class TestDataSeeder extends Seeder
             'interval_months' => 1,
             'grace_value' => 7,
             'grace_units' => GraceUnit::Days,
+            'last_patched_at' => now()->subDays(rand(5, 25)),
             'silence_reason' => 'Decommissioning at month-end',
         ]);
     }
@@ -348,6 +351,7 @@ class TestDataSeeder extends Seeder
             'interval_months' => 1,
             'grace_value' => 7,
             'grace_units' => GraceUnit::Days,
+            'last_patched_at' => now()->subDays(rand(5, 25)),
             'silence_reason' => 'Change freeze until term-end',
         ]);
 
@@ -360,6 +364,7 @@ class TestDataSeeder extends Seeder
             'interval_months' => 1,
             'grace_value' => 5,
             'grace_units' => GraceUnit::Days,
+            'last_patched_at' => now()->subDays(rand(5, 20)),
             'silenced_until' => now()->addWeeks(3),
             'silence_reason' => 'Exam period — no changes or patches until results are released',
         ]);
@@ -433,6 +438,7 @@ class TestDataSeeder extends Seeder
             'interval_months' => 6,
             'grace_value' => 1,
             'grace_units' => GraceUnit::Months,
+            'last_patched_at' => now()->subMonths(rand(1, 5)),
             'silence_reason' => 'Vendor firmware window — alerts off till Monday',
         ]);
 
@@ -445,6 +451,7 @@ class TestDataSeeder extends Seeder
             'interval_months' => 6,
             'grace_value' => 1,
             'grace_units' => GraceUnit::Months,
+            'last_patched_at' => now()->subMonths(rand(1, 5)),
             'silenced_until' => now()->addWeeks(2),
             'silence_reason' => 'Lab busy with conference paper submission — no reboots until camera-ready',
         ]);

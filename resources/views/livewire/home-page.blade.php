@@ -24,6 +24,7 @@
             <flux:tab name="alerting">Alerting servers</flux:tab>
             <flux:tab name="silenced">Silenced servers</flux:tab>
             <flux:tab name="unassigned">Unassigned servers</flux:tab>
+            <flux:tab name="neverCheckedIn">Never checked in</flux:tab>
         </flux:tabs>
 
         <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] md:items-end">
@@ -118,6 +119,14 @@
             >
                 <x-slot:empty>
                     <flux:text>No servers are awaiting allocation.</flux:text>
+                </x-slot:empty>
+            </x-patchmon.server-table>
+        </flux:tab.panel>
+
+        <flux:tab.panel name="neverCheckedIn">
+            <x-patchmon.server-table :servers="$this->neverCheckedInServers">
+                <x-slot:empty>
+                    <flux:text>Every server has reported a patch at least once.</flux:text>
                 </x-slot:empty>
             </x-patchmon.server-table>
         </flux:tab.panel>
