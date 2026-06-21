@@ -21,6 +21,7 @@ class AdminDashboard extends Component
         return view('livewire.admin-dashboard', [
             'totalCount' => $stats->totalCount(),
             'overdueCount' => $stats->overdueCount(),
+            'overdueSeverityBands' => $stats->overdueSeverityBands(),
             'silencedCount' => $stats->silencedCount(),
             'patchedRecentlyCount' => $stats->patchedRecentlyCount(),
             'neverCheckedInCount' => $stats->neverCheckedInCount(),

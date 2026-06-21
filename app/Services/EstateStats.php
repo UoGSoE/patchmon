@@ -75,6 +75,29 @@ class EstateStats
     }
 
     /**
+     * Overdue (non-silenced) servers bucketed by how far past their deadline,
+     * so management can tell a couple of days late from a month-plus late at a
+     * glance. The bands sum to overdueCount(); a server that has only just
+     * crossed its deadline (daysOverdue 0) falls into the first band.
+     *
+     * @return array<string, int>
+     */
+    public function overdueSeverityBands(): array
+    {
+        $bands = ['mild' => 0, 'moderate' => 0, 'severe' => 0];
+
+        foreach ($this->overdueServers() as $server) {
+            $bands[match (true) {
+                $server->daysOverdue() <= 7 => 'mild',
+                $server->daysOverdue() <= 30 => 'moderate',
+                default => 'severe',
+            }]++;
+        }
+
+        return $bands;
+    }
+
+    /**
      * Monitored servers bucketed by how long since their last patch.
      *
      * @return array<string, int>

@@ -33,27 +33,34 @@
 
     <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <div class="rounded-lg bg-zinc-100 p-4 dark:bg-zinc-800">
-            <div class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total servers</div>
+            <div class="flex h-8 items-center text-sm font-medium text-zinc-600 dark:text-zinc-400">Total servers</div>
             <div class="text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ $totalCount }}</div>
         </div>
 
         <div class="rounded-lg bg-red-100 p-4 dark:bg-red-900/40">
-            <div class="text-sm font-medium text-red-800 dark:text-red-300">Overdue</div>
+            <div class="flex h-8 items-center text-sm font-medium text-red-800 dark:text-red-300">Overdue</div>
             <div class="text-4xl font-bold text-red-900 dark:text-red-100">{{ $overdueCount }}</div>
+            @if ($overdueCount > 0)
+                <div class="mt-2 flex flex-wrap justify-between gap-x-2 text-xs text-red-800 dark:text-red-300">
+                    <span><span class="font-semibold">1–7d:</span> {{ $overdueSeverityBands['mild'] }}</span>
+                    <span><span class="font-semibold">8–30d:</span> {{ $overdueSeverityBands['moderate'] }}</span>
+                    <span><span class="font-semibold">30+d:</span> {{ $overdueSeverityBands['severe'] }}</span>
+                </div>
+            @endif
         </div>
 
         <div class="rounded-lg bg-amber-100 p-4 dark:bg-amber-900/40">
-            <div class="text-sm font-medium text-amber-800 dark:text-amber-300">Silenced</div>
+            <div class="flex h-8 items-center text-sm font-medium text-amber-800 dark:text-amber-300">Silenced</div>
             <div class="text-4xl font-bold text-amber-900 dark:text-amber-100">{{ $silencedCount }}</div>
         </div>
 
         <div class="rounded-lg bg-green-100 p-4 dark:bg-green-900/40">
-            <div class="text-sm font-medium text-green-800 dark:text-green-300">Patched in 30 days</div>
+            <div class="flex h-8 items-center text-sm font-medium text-green-800 dark:text-green-300">Patched in 30 days</div>
             <div class="text-4xl font-bold text-green-900 dark:text-green-100">{{ $patchedRecentlyCount }}</div>
         </div>
 
         <div class="rounded-lg bg-zinc-100 p-4 dark:bg-zinc-800">
-            <div class="flex items-center gap-1 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            <div class="flex h-8 items-center gap-1 text-sm font-medium text-zinc-600 dark:text-zinc-400">
                 Never checked in
                 <flux:tooltip toggleable>
                     <flux:button icon="information-circle" size="sm" variant="ghost" />

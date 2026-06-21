@@ -1,9 +1,11 @@
 <?php
 
+use App\Enums\GraceUnit;
 use App\Livewire\AdminDashboard;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 
 it('forbids non-admins from the admin dashboard', function () {
@@ -173,6 +175,31 @@ it('shows a reassuring empty state when nothing is overdue', function () {
     Livewire::actingAs($admin)
         ->test(AdminDashboard::class)
         ->assertSee('Nothing overdue');
+});
+
+it('breaks the overdue total into 1–7 / 8–30 / 30+ day severity bands on the card', function () {
+    $this->travelTo(Carbon::parse('2026-06-15 12:00:00'));
+
+    $admin = User::factory()->create(['is_admin' => true]);
+    $team = Team::factory()->create();
+
+    // One mildly overdue (3 days) and one severely overdue (60 days). Zero grace
+    // so the deadline is exactly last_patched + 1 month.
+    Server::factory()->forTeam($team)->withGrace(0, GraceUnit::Days)
+        ->create(['last_patched_at' => now()->subDays(3)->subMonthsNoOverflow(1)]);
+    Server::factory()->forTeam($team)->withGrace(0, GraceUnit::Days)
+        ->create(['last_patched_at' => now()->subDays(60)->subMonthsNoOverflow(1)]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertViewHas('overdueSeverityBands', [
+            'mild' => 1,
+            'moderate' => 0,
+            'severe' => 1,
+        ])
+        ->assertSee('1–7')
+        ->assertSee('8–30')
+        ->assertSee('30+');
 });
 
 it('builds a per-team breakdown row for each team that has servers', function () {

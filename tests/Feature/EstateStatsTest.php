@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\GraceUnit;
 use App\Models\Server;
 use App\Models\Team;
 use App\Services\EstateStats;
+use Illuminate\Support\Carbon;
 
 it('summarises the monitored-estate counts', function () {
     $team = Team::factory()->create();
@@ -67,6 +69,38 @@ it('buckets monitored servers by time since last patch', function () {
         'old' => 3,
         'never' => 1,
     ]);
+});
+
+it('splits overdue servers into 1–7 / 8–30 / 30+ day severity bands, excluding silenced ones', function () {
+    // Freeze mid-month so the deadline arithmetic can't drift across a month boundary.
+    $this->travelTo(Carbon::parse('2026-06-15 12:00:00'));
+
+    $team = Team::factory()->create();
+
+    // A server whose deadline lands exactly $days in the past: monthly cadence,
+    // zero grace, so deadline = last_patched + 1 month.
+    $overdueByDays = fn (int $days) => Server::factory()
+        ->forTeam($team)
+        ->withGrace(0, GraceUnit::Days)
+        ->create(['last_patched_at' => now()->subDays($days)->subMonthsNoOverflow(1)]);
+
+    $overdueByDays(0);   // only just crossed the deadline → first band
+    $overdueByDays(7);   // boundary → 1–7
+    $overdueByDays(8);   // boundary → 8–30
+    $overdueByDays(30);  // boundary → 8–30
+    $overdueByDays(31);  // boundary → 30+
+
+    // Silenced and severely overdue — must not appear in the bands at all.
+    Server::factory()->forTeam($team)->overdue()->silenced()->create();
+
+    $stats = new EstateStats;
+    $bands = $stats->overdueSeverityBands();
+
+    expect($bands)->toBe([
+        'mild' => 2,     // 0 and 7 days
+        'moderate' => 2, // 8 and 30 days
+        'severe' => 1,   // 31 days
+    ])->and(array_sum($bands))->toBe($stats->overdueCount());
 });
 
 it('builds raw per-team rows (counts and percentages) only for teams with servers', function () {
