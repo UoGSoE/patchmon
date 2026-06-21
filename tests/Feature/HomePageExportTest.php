@@ -83,18 +83,17 @@ it('exports every matching server, ignoring the per-page limit', function () {
     expect(collect(readDownloadedSheet($component, 1))->skip(1))->toHaveCount(30);
 });
 
-it('only includes the Unassigned servers sheet for staff', function () {
-    $student = User::factory()->student()->create();
+it('includes the Unassigned servers sheet', function () {
+    $user = User::factory()->create();
     $team = Team::factory()->create();
-    $student->teams()->attach($team);
+    $user->teams()->attach($team);
 
-    $component = Livewire::actingAs($student)
+    $component = Livewire::actingAs($user)
         ->test(HomePage::class)
         ->call('export');
 
-    // Sheets 0-3 are the always-visible tabs; there is no fifth sheet for a non-staff user.
-    expect(readDownloadedSheet($component, 3))->not->toBeEmpty()
-        ->and(readDownloadedSheet($component, 4))->toBeEmpty();
+    // The Unassigned servers sheet (index 4) is always present, header row and all.
+    expect(readDownloadedSheet($component, 4))->not->toBeEmpty();
 });
 
 it('offers an export button on the home page', function () {

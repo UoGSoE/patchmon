@@ -58,12 +58,10 @@ it('lists only unassigned servers on the Unassigned tab', function () {
         ->not->toContain('owned-box.example.test');
 });
 
-it('shows the Unassigned tab to staff but hides it from non-staff', function () {
-    $staff = User::factory()->staff()->create();
-    $student = User::factory()->student()->create();
+it('shows the Unassigned tab', function () {
+    $user = User::factory()->create();
 
-    Livewire::actingAs($staff)->test(HomePage::class)->assertSee('Unassigned servers');
-    Livewire::actingAs($student)->test(HomePage::class)->assertDontSee('Unassigned servers');
+    Livewire::actingAs($user)->test(HomePage::class)->assertSee('Unassigned servers');
 });
 
 it('flags inactive servers in the listing', function () {
@@ -198,22 +196,6 @@ it('limits select-all-matching to servers passing the active filter', function (
 
     expect($linux->fresh()->team_id)->toBe($team->id);
     expect($windows->fresh()->team_id)->toBeNull();
-});
-
-it('forbids a non-staff user from bulk-allocating', function () {
-    $student = User::factory()->student()->create();
-    $team = Team::factory()->create();
-    $server = Server::factory()->unassigned()->create(['name' => 'triage.example.test']);
-
-    Livewire::actingAs($student)
-        ->test(HomePage::class)
-        ->set('selected', [$server->id])
-        ->set('allocateTeamId', $team->id)
-        ->set('allocateGraceUnits', GraceUnit::Days->value)
-        ->call('bulkAllocate')
-        ->assertForbidden();
-
-    expect($server->fresh()->team_id)->toBeNull();
 });
 
 it('rejects bulk-allocate with no team or cadence and changes nothing', function () {

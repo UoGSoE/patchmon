@@ -47,8 +47,6 @@ class ImportServers extends Component
 
     public function mount(): void
     {
-        abort_unless(auth()->user()->is_staff, 403);
-
         $this->grace_units = GraceUnit::Days->value;
     }
 

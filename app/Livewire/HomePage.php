@@ -136,8 +136,6 @@ class HomePage extends Component
 
     public function bulkAllocate(): void
     {
-        abort_unless(auth()->user()->is_staff, 403);
-
         $this->validate([
             'allocateTeamId' => ['required', Rule::exists('teams', 'id')],
             'allocateIntervalMonths' => ['required', 'integer', 'min:1'],
@@ -379,20 +377,15 @@ class HomePage extends Component
             $alerting->whereIn('team_id', $teamIds);
         }
 
-        $sheets = [
+        return [
             'Team servers' => $this->collectForExport(Server::query()->whereIn('team_id', $teamIds)),
             'All servers' => $this->collectForExport(Server::query()),
             'Alerting servers' => $this->collectForExport($alerting),
             'Silenced servers' => $this->collectForExport(
                 Server::query()->where('silenced_from', '<=', now())->where('silenced_until', '>=', now())
             ),
+            'Unassigned servers' => $this->collectForExport(Server::query()->whereNull('team_id')),
         ];
-
-        if ($user->is_staff) {
-            $sheets['Unassigned servers'] = $this->collectForExport(Server::query()->whereNull('team_id'));
-        }
-
-        return $sheets;
     }
 
     /**

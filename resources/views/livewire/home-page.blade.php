@@ -23,9 +23,7 @@
             <flux:tab name="all">All servers</flux:tab>
             <flux:tab name="alerting">Alerting servers</flux:tab>
             <flux:tab name="silenced">Silenced servers</flux:tab>
-            @if (auth()->user()->is_staff)
-                <flux:tab name="unassigned">Unassigned servers</flux:tab>
-            @endif
+            <flux:tab name="unassigned">Unassigned servers</flux:tab>
         </flux:tabs>
 
         <div class="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] md:items-end">
@@ -96,35 +94,33 @@
             </x-patchmon.server-table>
         </flux:tab.panel>
 
-        @if (auth()->user()->is_staff)
-            <flux:tab.panel name="unassigned">
-                @if (! $this->unassignedServers->isEmpty())
-                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-                        <flux:checkbox
-                            wire:model.live="selectAllMatching"
-                            label="Select all {{ $this->unassignedServers->total() }} matching this filter"
-                        />
-                        <flux:button
-                            wire:click="openAllocate"
-                            variant="primary"
-                            icon="user-group"
-                            :disabled="$this->selectedCount === 0"
-                        >
-                            Allocate {{ $this->selectedCount }} {{ str('server')->plural($this->selectedCount) }}…
-                        </flux:button>
-                    </div>
-                @endif
+        <flux:tab.panel name="unassigned">
+            @if (! $this->unassignedServers->isEmpty())
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <flux:checkbox
+                        wire:model.live="selectAllMatching"
+                        label="Select all {{ $this->unassignedServers->total() }} matching this filter"
+                    />
+                    <flux:button
+                        wire:click="openAllocate"
+                        variant="primary"
+                        icon="user-group"
+                        :disabled="$this->selectedCount === 0"
+                    >
+                        Allocate {{ $this->selectedCount }} {{ str('server')->plural($this->selectedCount) }}…
+                    </flux:button>
+                </div>
+            @endif
 
-                <x-patchmon.server-table
-                    :servers="$this->unassignedServers"
-                    :selectable="true"
-                >
-                    <x-slot:empty>
-                        <flux:text>No servers are awaiting allocation.</flux:text>
-                    </x-slot:empty>
-                </x-patchmon.server-table>
-            </flux:tab.panel>
-        @endif
+            <x-patchmon.server-table
+                :servers="$this->unassignedServers"
+                :selectable="true"
+            >
+                <x-slot:empty>
+                    <flux:text>No servers are awaiting allocation.</flux:text>
+                </x-slot:empty>
+            </x-patchmon.server-table>
+        </flux:tab.panel>
     </flux:tab.group>
 
     <flux:modal name="bulk-allocate" variant="flyout" class="max-w-lg">

@@ -3,6 +3,7 @@
 use App\Http\Controllers\DownloadRecordPatchScript;
 use App\Http\Controllers\PatchEventController;
 use App\Http\Controllers\ProvisionPatchTokenController;
+use App\Http\Middleware\AuthenticatedStaff;
 use App\Livewire\Admin\ApiTokens as AdminApiTokens;
 use App\Livewire\Admin\TeamDetail as AdminTeamDetail;
 use App\Livewire\Admin\Teams as AdminTeams;
@@ -25,7 +26,7 @@ Route::post('/record-patch/provision', ProvisionPatchTokenController::class)
 Route::post('/record-patch/{token}', PatchEventController::class)
     ->name('record-patch');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(AuthenticatedStaff::class)->group(function () {
     Route::get('/', HomePage::class)->name('home');
     Route::get('/servers/{server}', ServerDetail::class)->name('servers.show');
     Route::get('/import', ImportServers::class)->name('import');
