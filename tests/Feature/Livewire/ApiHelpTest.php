@@ -23,5 +23,6 @@ it('offers the record_patched.sh helper script download on /api/help', function 
         ->get(route('api.help'))
         ->assertOk()
         ->assertSee('First-run helper script')
-        ->assertSee(route('scripts.record-patch'));
+        ->assertSee(route('scripts.record-patch'))
+        ->assertSee(route('scripts.record-patch-ps'));
 });

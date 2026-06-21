@@ -32,7 +32,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/settings', MySettings::class)->name('settings');
     Route::get('/api/help', ApiHelp::class)->name('api.help');
-    Route::get('/scripts/record_patched.sh', DownloadRecordPatchScript::class)->name('scripts.record-patch');
+    Route::get('/scripts/record_patched.sh', DownloadRecordPatchScript::class)
+        ->defaults('filename', 'record_patched.sh')
+        ->name('scripts.record-patch');
+    Route::get('/scripts/record_patched.ps1', DownloadRecordPatchScript::class)
+        ->defaults('filename', 'record_patched.ps1')
+        ->name('scripts.record-patch-ps');
 
     // The dashboard is the estate overview — admins and oversight admins (the
     // chase-up folk) can see it. Everything else under /admin stays admin-only.

@@ -23,19 +23,25 @@
         <flux:card>
             <flux:heading size="lg">First-run helper script</flux:heading>
             <flux:text class="mt-2">
-                For freshly-built servers, <code>record_patched.sh</code> is the no-faff option: run it when you patch and
-                it sorts itself out. On first run it claims this machine's patch token by hostname, saves it to
-                <code>/etc/patchmon.env</code>, and records the patch. Every run after that just records the patch.
-                The copy below already points at this Patchmon install.
+                For freshly-built servers, the helper scripts are the no-faff option: run one when you patch and
+                it sorts itself out. On first run it claims this machine's patch token by hostname, saves it locally,
+                and records the patch. Every run after that just records the patch. The copies below already point at
+                this Patchmon install.
             </flux:text>
 
-            <flux:button class="mt-4" icon="arrow-down-tray" :href="route('scripts.record-patch')">
-                Download record_patched.sh
-            </flux:button>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <flux:button icon="arrow-down-tray" :href="route('scripts.record-patch')">
+                    Linux
+                </flux:button>
+                <flux:button icon="arrow-down-tray" :href="route('scripts.record-patch-ps')">
+                    Windows
+                </flux:button>
+            </div>
 
             <flux:text size="sm" class="mt-4">
-                It keeps its settings in <code>/etc/patchmon.env</code> (root-only). Puppet or a build profile can drop this
-                in ahead of time; the token line is filled in automatically on first run:
+                It keeps its settings in <code>/etc/patchmon.env</code> on Linux (root-only) or
+                <code>C:\ProgramData\Patchmon\patchmon.env</code> on Windows (Administrators only). Puppet, SCCM or a
+                build profile can drop this in ahead of time; the token line is filled in automatically on first run:
             </flux:text>
             <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">
 PATCHMON_URL="{{ $baseUrl }}"
