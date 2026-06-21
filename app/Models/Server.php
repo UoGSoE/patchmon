@@ -88,6 +88,15 @@ class Server extends Model
     }
 
     /**
+     * The live, monitored estate: servers that belong to a team and are not
+     * decommissioned. Exactly the set the alert evaluator acts on.
+     */
+    public function scopeMonitored(Builder $query): void
+    {
+        $query->whereNull('inactive_since')->whereNotNull('team_id');
+    }
+
+    /**
      * Servers that exist but have never reported a patch, across the whole live
      * estate — any team or none. Deliberately wider than the monitored estate so
      * that half-set-up triage servers are caught; decommissioned servers are

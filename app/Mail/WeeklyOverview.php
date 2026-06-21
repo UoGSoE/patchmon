@@ -2,8 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\PatchEvent;
-use App\Models\Server;
+use App\Services\EstateStats;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -24,36 +23,20 @@ class WeeklyOverview extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
-        // The monitored estate, defined exactly as the dashboard and evaluator see it:
-        // live (not decommissioned) servers that belong to a team.
-        $servers = Server::query()
-            ->whereNull('inactive_since')
-            ->whereNotNull('team_id')
-            ->with('team')
-            ->get();
+        // The monitored estate, defined exactly as the dashboard and evaluator see it,
+        // via the shared EstateStats service (see ADR patchmon-uqwCr).
+        $stats = new EstateStats;
 
-        $overdueServers = $servers
-            ->filter(fn (Server $server) => $server->isOverdue() && ! $server->isCurrentlySilenced())
-            ->sortBy(fn (Server $server) => $server->deadline()->timestamp)
-            ->values();
-
-        $silencedCount = $servers->filter(
-            fn (Server $server) => $server->isCurrentlySilenced()
-        )->count();
-
-        $patchedRecentlyCount = PatchEvent::query()
-            ->where('patched_at', '>=', now()->subDays(30))
-            ->distinct()
-            ->count('server_id');
+        $overdueServers = $stats->overdueServers();
 
         return new Content(
             markdown: 'emails.weekly-overview',
             with: [
-                'totalCount' => $servers->count(),
+                'totalCount' => $stats->totalCount(),
                 'overdueServers' => $overdueServers,
                 'overdueCount' => $overdueServers->count(),
-                'silencedCount' => $silencedCount,
-                'patchedRecentlyCount' => $patchedRecentlyCount,
+                'silencedCount' => $stats->silencedCount(),
+                'patchedRecentlyCount' => $stats->patchedRecentlyCount(),
             ],
         );
     }
