@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Models\EstateSnapshot;
 use App\Models\PatchEvent;
 use App\Models\Server;
 use App\Models\Team;
@@ -42,6 +43,7 @@ class TestDataSeeder extends Seeder
         $this->createNetboxSyncedServers($teams['infra']);
 
         $this->backfillPatchEvents();
+        $this->seedEstateSnapshotHistory();
     }
 
     /**
@@ -656,5 +658,32 @@ class TestDataSeeder extends Seeder
                     ]);
                 }
             });
+    }
+
+    /**
+     * Just over a year of daily estate snapshots, so the in-app trend line and
+     * the period-comparison bars have history to draw on. Synthetic but
+     * plausible: a gently growing estate whose overdue percentage drifts down
+     * over time.
+     */
+    private function seedEstateSnapshotHistory(): void
+    {
+        $days = 400;
+
+        for ($daysAgo = $days; $daysAgo >= 0; $daysAgo--) {
+            $progress = ($days - $daysAgo) / $days; // 0 (oldest) → 1 (today)
+
+            $total = (int) round(260 + $progress * 110);
+            $overduePct = max(0.02, 0.18 - $progress * 0.12 + rand(-20, 20) / 1000);
+
+            EstateSnapshot::create([
+                'snapshot_date' => today()->subDays($daysAgo),
+                'total' => $total,
+                'overdue' => (int) round($total * $overduePct),
+                'silenced' => (int) round($total * (0.03 + rand(0, 15) / 1000)),
+                'patched_30d' => (int) round($total * (0.7 + $progress * 0.15)),
+                'never_checked_in' => rand(8, 18),
+            ]);
+        }
     }
 }

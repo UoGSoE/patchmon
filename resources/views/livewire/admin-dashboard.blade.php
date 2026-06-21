@@ -187,5 +187,64 @@
         </div>
     @endif
 
+    <div class="mt-8">
+        <flux:heading size="lg">Overdue trend</flux:heading>
+        <flux:text class="mt-2">The percentage of the monitored estate overdue, over time.</flux:text>
 
+        @if (count($trendSeries) >= 2)
+            <flux:chart :value="$trendSeries" class="mt-4 aspect-[3/1]">
+                <flux:chart.svg>
+                    <flux:chart.line field="overdue_pct" class="text-red-500" curve="none" />
+                    <flux:chart.point field="overdue_pct" class="text-red-500" />
+                    <flux:chart.axis axis="x" field="date">
+                        <flux:chart.axis.tick />
+                        <flux:chart.axis.line />
+                    </flux:chart.axis>
+                    <flux:chart.axis axis="y" tick-start="0" :format="['style' => 'percent', 'maximumFractionDigits' => 0]">
+                        <flux:chart.axis.grid />
+                        <flux:chart.axis.tick />
+                    </flux:chart.axis>
+                    <flux:chart.cursor />
+                </flux:chart.svg>
+                <flux:chart.tooltip>
+                    <flux:chart.tooltip.heading field="date" />
+                    <flux:chart.tooltip.value field="overdue_pct" label="Overdue" :format="['style' => 'percent', 'maximumFractionDigits' => 1]" />
+                </flux:chart.tooltip>
+            </flux:chart>
+        @else
+            <flux:text class="mt-4">Not enough history yet — the trend appears once a few daily snapshots have been collected.</flux:text>
+        @endif
+    </div>
+
+    <div class="mt-8">
+        <flux:heading size="lg">Overdue: now vs the past</flux:heading>
+        <flux:text class="mt-2">Today's overdue percentage next to a month, quarter and year ago.</flux:text>
+
+        @if (count($comparisonBars) > 0)
+            <flux:chart :value="$comparisonBars" class="mt-4 aspect-[3/1]">
+                <flux:chart.svg>
+                    <flux:chart.bar field="overdue_pct" class="text-red-500" />
+                    <flux:chart.axis axis="x" field="period">
+                        <flux:chart.axis.tick />
+                        <flux:chart.axis.line />
+                    </flux:chart.axis>
+                    <flux:chart.axis axis="y" tick-start="0" :format="['style' => 'percent', 'maximumFractionDigits' => 0]">
+                        <flux:chart.axis.grid />
+                        <flux:chart.axis.tick />
+                    </flux:chart.axis>
+                    <flux:chart.cursor type="area" />
+                </flux:chart.svg>
+                <flux:chart.tooltip>
+                    <flux:chart.tooltip.heading field="period" />
+                    <flux:chart.tooltip.value field="overdue_pct" label="Overdue" :format="['style' => 'percent', 'maximumFractionDigits' => 1]" />
+                </flux:chart.tooltip>
+            </flux:chart>
+
+            @if (count($comparisonMissing) > 0)
+                <flux:text size="sm" class="mt-2">No baseline yet for: {{ implode(', ', $comparisonMissing) }}.</flux:text>
+            @endif
+        @else
+            <flux:text class="mt-4">Not enough history yet — comparisons appear once daily snapshots have been collected.</flux:text>
+        @endif
+    </div>
 </div>

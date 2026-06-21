@@ -2,6 +2,7 @@
 
 use App\Enums\GraceUnit;
 use App\Livewire\AdminDashboard;
+use App\Models\EstateSnapshot;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
@@ -200,6 +201,64 @@ it('breaks the overdue total into 1–7 / 8–30 / 30+ day severity bands on the
         ->assertSee('1–7')
         ->assertSee('8–30')
         ->assertSee('30+');
+});
+
+it('feeds the overdue-percentage trend series to the chart from daily snapshots, oldest first', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    EstateSnapshot::factory()->create(['snapshot_date' => '2026-06-03', 'total' => 200, 'overdue' => 20]);
+    EstateSnapshot::factory()->create(['snapshot_date' => '2026-06-01', 'total' => 100, 'overdue' => 10]);
+    EstateSnapshot::factory()->create(['snapshot_date' => '2026-06-02', 'total' => 100, 'overdue' => 20]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertViewHas('trendSeries', [
+            ['date' => '2026-06-01', 'overdue_pct' => 0.1],
+            ['date' => '2026-06-02', 'overdue_pct' => 0.2],
+            ['date' => '2026-06-03', 'overdue_pct' => 0.1],
+        ])
+        ->assertSee('Overdue trend');
+});
+
+it('compares overdue % now against a month, quarter and year ago from snapshots, flagging a missing baseline', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    EstateSnapshot::factory()->create(['snapshot_date' => today(), 'total' => 100, 'overdue' => 5]);
+    EstateSnapshot::factory()->create(['snapshot_date' => today()->subMonthsNoOverflow(1), 'total' => 100, 'overdue' => 10]);
+    EstateSnapshot::factory()->create(['snapshot_date' => today()->subMonthsNoOverflow(3), 'total' => 100, 'overdue' => 20]);
+    // Nothing reaches back ~1 year — that baseline should be null.
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertViewHas('comparisonBars', [
+            ['period' => 'Now', 'overdue_pct' => 0.05],
+            ['period' => '1 month ago', 'overdue_pct' => 0.1],
+            ['period' => '1 quarter ago', 'overdue_pct' => 0.2],
+        ])
+        ->assertViewHas('comparisonMissing', ['1 year ago'])
+        ->assertSee('Overdue: now vs the past');
+});
+
+it('notes which comparison baselines are not available yet', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    // Only today's snapshot exists, so every past baseline is missing.
+    EstateSnapshot::factory()->create(['snapshot_date' => today(), 'total' => 100, 'overdue' => 5]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertSee('No baseline yet for: 1 month ago, 1 quarter ago, 1 year ago');
+});
+
+it('shows a friendly message instead of the trend chart until there are at least two snapshots', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    EstateSnapshot::factory()->create(['snapshot_date' => today(), 'total' => 100, 'overdue' => 10]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertSee('Overdue trend')
+        ->assertSee('Not enough history yet');
 });
 
 it('builds a per-team breakdown row for each team that has servers', function () {

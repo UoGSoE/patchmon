@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\EstateSnapshot;
 use App\Models\PatchEvent;
 use App\Models\Server;
 use App\Models\Team;
@@ -25,5 +26,7 @@ it('runs the TestDataSeeder cleanly and produces a usable local dataset', functi
         // The never-checked-in signal exists (the NetBox triage imports)...
         ->and(Server::neverCheckedIn()->count())->toBeGreaterThan(0)
         // ...but silenced servers carry a patch history, so they don't pollute it.
-        ->and(Server::neverCheckedIn()->whereNotNull('silenced_until')->count())->toBe(0);
+        ->and(Server::neverCheckedIn()->whereNotNull('silenced_until')->count())->toBe(0)
+        // Over a year of daily snapshots, so the trend and year-ago comparison have data.
+        ->and(EstateSnapshot::count())->toBeGreaterThan(365);
 });
