@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DownloadRecordPatchScript;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PatchEventController;
 use App\Http\Controllers\ProvisionPatchTokenController;
 use App\Http\Middleware\AuthenticatedStaff;
@@ -25,6 +26,9 @@ Route::post('/record-patch/provision', ProvisionPatchTokenController::class)
 
 Route::post('/record-patch/{token}', PatchEventController::class)
     ->name('record-patch');
+
+// Scraped by Prometheus with a static bearer token — no SSO, guarded in the controller.
+Route::get('/metrics', MetricsController::class)->name('metrics');
 
 Route::middleware(AuthenticatedStaff::class)->group(function () {
     Route::get('/', HomePage::class)->name('home');

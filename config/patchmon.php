@@ -40,4 +40,18 @@ return [
         'grace_units' => env('TRIAGE_DEFAULT_GRACE_UNITS', 'days'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Prometheus metrics endpoint
+    |--------------------------------------------------------------------------
+    |
+    | Static bearer token Prometheus presents to scrape /metrics. Leave unset
+    | to disable the endpoint — it returns 503 until a token is configured.
+    |
+    */
+
+    'metrics' => [
+        'token' => env('PATCHMON_METRICS_TOKEN'),
+    ],
+
 ];

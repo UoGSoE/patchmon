@@ -11,9 +11,13 @@ class ApiHelp extends Component
 {
     public function render()
     {
+        $baseUrl = rtrim(config('app.url'), '/');
+
         return view('livewire.api-help', [
-            'baseUrl' => rtrim(config('app.url'), '/'),
+            'baseUrl' => $baseUrl,
             'docsUrl' => URL::to('/docs/api'),
+            'metricsScheme' => parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https',
+            'metricsHost' => parse_url($baseUrl, PHP_URL_HOST) ?: $baseUrl,
         ]);
     }
 }

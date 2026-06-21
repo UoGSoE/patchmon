@@ -1,0 +1,19 @@
+# HELP patchmon_servers_total Monitored servers per team.
+# TYPE patchmon_servers_total gauge
+patchmon_servers_total{team="Alpha"} 2
+patchmon_servers_total{team="Beta"} 1
+# HELP patchmon_servers_overdue Overdue (non-silenced) servers per team.
+# TYPE patchmon_servers_overdue gauge
+patchmon_servers_overdue{team="Alpha"} 1
+patchmon_servers_overdue{team="Beta"} 0
+# HELP patchmon_servers_silenced Currently silenced servers per team.
+# TYPE patchmon_servers_silenced gauge
+patchmon_servers_silenced{team="Alpha"} 0
+patchmon_servers_silenced{team="Beta"} 1
+# HELP patchmon_servers_patched_recently Servers patched in the last 30 days, per team.
+# TYPE patchmon_servers_patched_recently gauge
+patchmon_servers_patched_recently{team="Alpha"} 1
+patchmon_servers_patched_recently{team="Beta"} 0
+# HELP patchmon_servers_never_checked_in Live servers (any team) that have never reported a patch.
+# TYPE patchmon_servers_never_checked_in gauge
+patchmon_servers_never_checked_in 1

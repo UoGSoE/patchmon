@@ -249,6 +249,43 @@ r.raise_for_status()</pre>
         </flux:tab.panel>
     </flux:tab.group>
 
+    <flux:separator class="my-8" />
+
+    <flux:heading size="lg">Prometheus metrics</flux:heading>
+    <flux:text class="mt-2">
+        Current estate figures are exposed at <code>{{ $baseUrl }}/metrics</code> in Prometheus text format, for
+        scraping into Grafana. The endpoint needs a static bearer token: set <code>PATCHMON_METRICS_TOKEN</code> in the
+        environment and have Prometheus present it as the scrape credential. Until a token is set the endpoint returns
+        <code>503</code>; a missing or wrong token gets <code>403</code>.
+    </flux:text>
+
+    <div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div>
+            <flux:heading size="sm">Prometheus scrape config</flux:heading>
+            <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">scrape_configs:
+  - job_name: patchmon
+    scheme: {{ $metricsScheme }}
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials: "your-PATCHMON_METRICS_TOKEN"
+    static_configs:
+      - targets: ["{{ $metricsHost }}"]</pre>
+        </div>
+
+        <div>
+            <flux:heading size="sm">Metrics exposed</flux:heading>
+            <flux:text size="sm" class="mt-1">
+                All gauges. The per-team ones carry a <code>team</code> label — sum them in Grafana for an estate total.
+            </flux:text>
+            <pre class="mt-2 overflow-x-auto rounded bg-zinc-100 p-3 text-xs dark:bg-zinc-800">patchmon_servers_total{team="…"}              # monitored servers
+patchmon_servers_overdue{team="…"}            # overdue, not silenced
+patchmon_servers_silenced{team="…"}           # currently silenced
+patchmon_servers_patched_recently{team="…"}   # patched in the last 30 days
+patchmon_servers_never_checked_in             # live servers (any team) never patched</pre>
+        </div>
+    </div>
+
     <flux:callout class="mt-8" icon="book-open" variant="secondary">
         <flux:callout.heading>Looking for the full reference?</flux:callout.heading>
         <flux:callout.text>

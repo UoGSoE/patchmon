@@ -16,6 +16,19 @@ it('renders /api/help for an authenticated user', function () {
         ->assertSee('curl');
 });
 
+it('documents the Prometheus metrics endpoint on /api/help', function () {
+    $alice = User::factory()->create();
+
+    $this->actingAs($alice)
+        ->get(route('api.help'))
+        ->assertOk()
+        ->assertSee('Prometheus')
+        ->assertSee('/metrics')
+        ->assertSee('job_name: patchmon')
+        ->assertSee('patchmon_servers_overdue')
+        ->assertSee('PATCHMON_METRICS_TOKEN');
+});
+
 it('offers the record_patched.sh helper script download on /api/help', function () {
     $alice = User::factory()->create();
 
