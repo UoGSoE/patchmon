@@ -1,21 +1,15 @@
 <div class="max-w-2xl">
-    <flux:heading size="xl">My settings</flux:heading>
-    <flux:text class="mt-2">Manage API tokens you use to script against Patchmon.</flux:text>
-
-    <div class="mt-10">
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <flux:heading size="sm">API tokens</flux:heading>
-                <flux:text size="sm">
-                    Mint a token to script against Patchmon from a terminal. Tokens act as you, scoped to read / write on servers.
-                </flux:text>
-                <flux:link :href="route('api.help')" wire:navigate class="mt-1 inline-block text-sm">
-                    API examples &amp; docs →
-                </flux:link>
-            </div>
+    <div class="flex flex-col md:flex-row items-start justify-between gap-4">
+        <div>
+            <flux:heading size="xl">My settings</flux:heading>
+            <flux:text class="mt-2">Manage API tokens you use to script against Patchmon. <flux:link :href="route('api.help')">Examples &amp; docs.</flux:link></flux:text>
+        </div>
+        <div>
             <flux:button wire:click="openCreateToken" icon="plus" variant="primary">New token</flux:button>
         </div>
+    </div>
 
+    <div class="mt-10">
         @if ($apiTokens->isEmpty())
             <flux:text class="mt-4" size="sm">You haven't created any API tokens yet.</flux:text>
         @else
