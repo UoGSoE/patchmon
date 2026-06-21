@@ -47,6 +47,7 @@ class AdminDashboard extends Component
             'overdueCount' => $overdueServers->count(),
             'silencedCount' => $silencedCount,
             'patchedRecentlyCount' => count($recentlyPatchedServerIds),
+            'neverCheckedInCount' => Server::neverCheckedIn()->count(),
             'overdueServers' => $overdueServers,
             'teamRows' => $this->buildTeamRows($servers, $recentlyPatchedServerIds),
             'postureBuckets' => $this->buildPostureBuckets($servers),

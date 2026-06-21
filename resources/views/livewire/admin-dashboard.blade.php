@@ -31,7 +31,7 @@
     <flux:heading size="xl">Patching overview</flux:heading>
     <flux:text class="mt-2">A quick read on where the estate is.</flux:text>
 
-    <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <div class="rounded-lg bg-zinc-100 p-4 dark:bg-zinc-800">
             <div class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total servers</div>
             <div class="text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ $totalCount }}</div>
@@ -50,6 +50,20 @@
         <div class="rounded-lg bg-green-100 p-4 dark:bg-green-900/40">
             <div class="text-sm font-medium text-green-800 dark:text-green-300">Patched in 30 days</div>
             <div class="text-4xl font-bold text-green-900 dark:text-green-100">{{ $patchedRecentlyCount }}</div>
+        </div>
+
+        <div class="rounded-lg bg-zinc-100 p-4 dark:bg-zinc-800">
+            <div class="flex items-center gap-1 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                Never checked in
+                <flux:tooltip toggleable>
+                    <flux:button icon="information-circle" size="sm" variant="ghost" />
+                    <flux:tooltip.content class="max-w-[20rem] space-y-2">
+                        <p>Servers that exist in Patchmon but have never reported being patched — including ones still being set up and not yet assigned to a team.</p>
+                        <p>This can be higher than the "Never" slice of the freshness chart below, which only counts servers already assigned to a team.</p>
+                    </flux:tooltip.content>
+                </flux:tooltip>
+            </div>
+            <div class="text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ $neverCheckedInCount }}</div>
         </div>
     </div>
 

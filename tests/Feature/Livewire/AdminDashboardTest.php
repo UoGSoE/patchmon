@@ -76,6 +76,38 @@ it('computes the four summary card numbers', function () {
         ->assertViewHas('patchedRecentlyCount', 1);
 });
 
+it('counts servers that have never checked in, across all live servers regardless of team', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $team = Team::factory()->create();
+
+    // Never patched, owned — counts.
+    Server::factory()->forTeam($team)->create(['last_patched_at' => null]);
+
+    // Never patched, in triage (no team) — counts: deliberately wider than the
+    // monitored estate, because a half-set-up triage server is exactly the kind
+    // of "something's wrong here" case this card is meant to surface.
+    Server::factory()->unassigned()->create(['last_patched_at' => null]);
+
+    // Never patched but decommissioned — excluded (a retired box that never
+    // reported is expected, not a problem).
+    Server::factory()->forTeam($team)->inactive()->create(['last_patched_at' => null]);
+
+    // Has checked in — excluded.
+    Server::factory()->forTeam($team)->create(['last_patched_at' => now()->subDays(10)]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertViewHas('neverCheckedInCount', 2);
+});
+
+it('explains the never-checked-in figure in plain English for senior management', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertSee('never reported being patched');
+});
+
 it('excludes inactive and unassigned servers from the dashboard figures', function () {
     $admin = User::factory()->create(['is_admin' => true]);
     $team = Team::factory()->create();

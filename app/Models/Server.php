@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use Database\Factories\ServerFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -84,6 +85,17 @@ class Server extends Model
     public function patchEvents(): HasMany
     {
         return $this->hasMany(PatchEvent::class);
+    }
+
+    /**
+     * Servers that exist but have never reported a patch, across the whole live
+     * estate — any team or none. Deliberately wider than the monitored estate so
+     * that half-set-up triage servers are caught; decommissioned servers are
+     * excluded, as a retired box that never reported is expected, not a problem.
+     */
+    public function scopeNeverCheckedIn(Builder $query): void
+    {
+        $query->whereNull('last_patched_at')->whereNull('inactive_since');
     }
 
     protected function name(): Attribute
