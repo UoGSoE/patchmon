@@ -8,6 +8,15 @@ use App\Models\Team;
 use App\Models\User;
 use Livewire\Livewire;
 
+it('offers the helper script downloads from the home page', function () {
+    $alice = User::factory()->create();
+
+    Livewire::actingAs($alice)
+        ->test(HomePage::class)
+        ->assertSee(route('scripts.record-patch'))
+        ->assertSee(route('scripts.record-patch-ps'));
+});
+
 it('shows every server on the All servers tab regardless of team membership', function () {
     $alice = User::factory()->create();
     $myTeam = Team::factory()->create();

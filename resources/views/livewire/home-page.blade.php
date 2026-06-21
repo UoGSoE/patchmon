@@ -4,7 +4,16 @@
             <flux:heading size="xl">Servers</flux:heading>
             <flux:text class="mt-2">Overdue servers come to the top so you can see them at a glance.</flux:text>
         </div>
-        <flux:button wire:click="openCreate" icon="plus">New server</flux:button>
+        <div class="flex items-center gap-2">
+            <flux:dropdown>
+                <flux:button icon="arrow-down-tray" icon:trailing="chevron-down">Patch script</flux:button>
+                <flux:navmenu>
+                    <flux:navmenu.item :href="route('scripts.record-patch')">Linux</flux:navmenu.item>
+                    <flux:navmenu.item :href="route('scripts.record-patch-ps')">Windows</flux:navmenu.item>
+                </flux:navmenu>
+            </flux:dropdown>
+            <flux:button wire:click="openCreate" icon="plus">New server</flux:button>
+        </div>
     </div>
 
     <flux:tab.group class="mt-6">
