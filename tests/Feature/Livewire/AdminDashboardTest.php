@@ -261,6 +261,58 @@ it('shows a friendly message instead of the trend chart until there are at least
         ->assertSee('Not enough history yet');
 });
 
+it('limits the trend chart to the selected time range', function () {
+    $this->travelTo(Carbon::parse('2026-06-22'));
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    // Both within the last month.
+    EstateSnapshot::factory()->create(['snapshot_date' => '2026-06-10', 'total' => 100, 'overdue' => 10]);
+    EstateSnapshot::factory()->create(['snapshot_date' => '2026-06-20', 'total' => 100, 'overdue' => 8]);
+    // Five months back — in range for a year, but not for a month.
+    EstateSnapshot::factory()->create(['snapshot_date' => '2026-01-15', 'total' => 100, 'overdue' => 30]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->set('trendRange', 'month')
+        ->assertViewHas('trendSeries', [
+            ['date' => '2026-06-10', 'overdue_pct' => 0.1],
+            ['date' => '2026-06-20', 'overdue_pct' => 0.08],
+        ]);
+});
+
+it('thins out a long, noisy trend so the line stays readable, keeping both ends', function () {
+    $this->travelTo(Carbon::parse('2026-06-22'));
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    // 100 daily snapshots, all within the default year range.
+    foreach (range(1, 100) as $daysAgo) {
+        EstateSnapshot::factory()->create([
+            'snapshot_date' => today()->subDays($daysAgo),
+            'total' => 100,
+            'overdue' => 10,
+        ]);
+    }
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertViewHas('trendSeries', function (array $series) {
+            return count($series) >= 2
+                && count($series) <= 30
+                && $series[0]['date'] === today()->subDays(100)->format('Y-m-d')
+                && end($series)['date'] === today()->subDays(1)->format('Y-m-d');
+        });
+});
+
+it('defaults the trend to a year and offers shorter ranges to choose from', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(AdminDashboard::class)
+        ->assertSet('trendRange', 'year')
+        ->assertSee('6 months')
+        ->assertSee('Quarter');
+});
+
 it('builds a per-team breakdown row for each team that has servers', function () {
     $admin = User::factory()->create(['is_admin' => true]);
 

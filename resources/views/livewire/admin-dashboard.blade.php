@@ -188,14 +188,22 @@
     @endif
 
     <div class="mt-8">
-        <flux:heading size="lg">Overdue trend</flux:heading>
+        <div class="flex items-center justify-between">
+            <flux:heading size="lg">Overdue trend</flux:heading>
+            <flux:radio.group wire:model.live="trendRange" variant="segmented" size="sm">
+                <flux:radio value="year" label="Year" />
+                <flux:radio value="6months" label="6 months" />
+                <flux:radio value="quarter" label="Quarter" />
+                <flux:radio value="month" label="Month" />
+            </flux:radio.group>
+        </div>
         <flux:text class="mt-2">The percentage of the monitored estate overdue, over time.</flux:text>
 
         @if (count($trendSeries) >= 2)
             <flux:chart :value="$trendSeries" class="mt-4 aspect-[3/1]">
                 <flux:chart.svg>
-                    <flux:chart.line field="overdue_pct" class="text-red-500" curve="none" />
-                    <flux:chart.point field="overdue_pct" class="text-red-500" />
+                    <flux:chart.line field="overdue_pct" class="text-sky-500" curve="none" />
+                    <flux:chart.point field="overdue_pct" class="text-sky-500" />
                     <flux:chart.axis axis="x" field="date">
                         <flux:chart.axis.tick />
                         <flux:chart.axis.line />
@@ -223,12 +231,13 @@
         @if (count($comparisonBars) > 0)
             <flux:chart :value="$comparisonBars" class="mt-4 aspect-[3/1]">
                 <flux:chart.svg>
-                    <flux:chart.bar field="overdue_pct" class="text-red-500" />
+                    <flux:chart.bar field="overdue_pct" class="text-sky-500" />
                     <flux:chart.axis axis="x" field="period">
                         <flux:chart.axis.tick />
                         <flux:chart.axis.line />
                     </flux:chart.axis>
-                    <flux:chart.axis axis="y" tick-start="0" :format="['style' => 'percent', 'maximumFractionDigits' => 0]">
+                    {{-- No tick-start="0" on purpose: for bars the default "auto" anchors the domain at zero, whereas tick-start="0" leaves the floor at the lowest value and the bars overflow below it. --}}
+                    <flux:chart.axis axis="y" :format="['style' => 'percent', 'maximumFractionDigits' => 0]">
                         <flux:chart.axis.grid />
                         <flux:chart.axis.tick />
                     </flux:chart.axis>

@@ -16,6 +16,9 @@ class AdminDashboard extends Component
     #[Url(as: 'mode')]
     public $mode = 'percent';
 
+    #[Url(as: 'range')]
+    public $trendRange = 'year';
+
     public function render()
     {
         $stats = new EstateStats;
@@ -52,14 +55,55 @@ class AdminDashboard extends Component
      */
     private function trendSeries(): array
     {
-        return EstateSnapshot::query()
+        $snapshots = EstateSnapshot::query()
+            ->where('snapshot_date', '>=', $this->trendCutoff())
             ->orderBy('snapshot_date')
-            ->get()
+            ->get();
+
+        return $this->thinForReadability($snapshots)
             ->map(fn (EstateSnapshot $snapshot) => [
                 'date' => $snapshot->snapshot_date->format('Y-m-d'),
                 'overdue_pct' => $snapshot->total > 0 ? round($snapshot->overdue / $snapshot->total, 4) : 0.0,
             ])
             ->all();
+    }
+
+    /**
+     * The oldest snapshot date to show on the trend, based on the selected range.
+     * The default covers any unexpected value, so a tampered URL just shows a year.
+     */
+    private function trendCutoff(): Carbon
+    {
+        return match ($this->trendRange) {
+            'month' => today()->subMonthsNoOverflow(1),
+            'quarter' => today()->subMonthsNoOverflow(3),
+            '6months' => today()->subMonthsNoOverflow(6),
+            default => today()->subYearsNoOverflow(1),
+        };
+    }
+
+    /**
+     * Drop intermediate snapshots so a long range reads as a digestible trend
+     * rather than a daily jagged mess. Always keeps the first and last points.
+     *
+     * @param  Collection<int, EstateSnapshot>  $snapshots
+     * @return Collection<int, EstateSnapshot>
+     */
+    private function thinForReadability(Collection $snapshots): Collection
+    {
+        $target = 30;
+        $count = $snapshots->count();
+
+        if ($count <= $target) {
+            return $snapshots;
+        }
+
+        $stride = (int) ceil($count / $target);
+
+        return $snapshots
+            ->values()
+            ->filter(fn (EstateSnapshot $snapshot, int $index) => $index % $stride === 0 || $index === $count - 1)
+            ->values();
     }
 
     /**
