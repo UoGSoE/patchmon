@@ -202,6 +202,7 @@
         @if (count($trendSeries) >= 2)
             <flux:chart :value="$trendSeries" class="mt-4 aspect-[3/1]">
                 <flux:chart.svg>
+                    <flux:chart.area field="overdue_pct" class="text-sky-200/50 dark:text-sky-400/20" curve="none" />
                     <flux:chart.line field="overdue_pct" class="text-sky-500" curve="none" />
                     <flux:chart.point field="overdue_pct" class="text-sky-500" />
                     <flux:chart.axis axis="x" field="date">
