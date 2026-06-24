@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\PatchEvent;
+use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
@@ -34,6 +36,22 @@ it('deletes a team', function () {
 
     expect(Team::find($team->id))->toBeNull()
         ->and(Team::find($bystander->id))->not->toBeNull();
+});
+
+it('rejects deleting a team that still owns servers', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $team = Team::factory()->create();
+    $server = Server::factory()->forTeam($team)->create();
+    $patchEvent = $server->recordPatch($admin, 'Routine patch.');
+    Sanctum::actingAs($admin, ['admin:write']);
+
+    $this->deleteJson("/api/v1/admin/teams/{$team->id}")
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'Transfer or delete this team\'s servers before deleting the team.');
+
+    expect(Team::find($team->id))->not->toBeNull()
+        ->and(Server::find($server->id))->not->toBeNull()
+        ->and(PatchEvent::find($patchEvent->id))->not->toBeNull();
 });
 
 it('creates a team', function () {

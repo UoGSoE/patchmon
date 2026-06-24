@@ -20,6 +20,20 @@ it('belongs to a team and has its creator tracked separately', function () {
         ->and($server->createdBy->is($creator))->toBeTrue();
 });
 
+it('keeps a server when its creator user is deleted directly', function () {
+    $creator = User::factory()->create();
+    $server = Server::factory()->create([
+        'created_by_user_id' => $creator->id,
+    ]);
+
+    $creator->delete();
+
+    $found = Server::find($server->id);
+
+    expect($found)->not->toBeNull()
+        ->and($found->created_by_user_id)->toBeNull();
+});
+
 it('auto-generates a unique patch_token when one is not provided', function () {
     $serverA = Server::factory()->create();
     $serverB = Server::factory()->create();

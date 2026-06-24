@@ -55,6 +55,18 @@ class SyncNetboxServers implements ShouldQueue
                 ->where('is_virtual', $netboxServer->isVirtual)
                 ->first();
 
+            if (! $this->isValidHostname($netboxServer->name)) {
+                $summary['invalid'][] = $netboxServer->name;
+
+                continue;
+            }
+
+            if ($this->hasNameConflict($netboxServer->name, $existing)) {
+                $summary['conflicts'][] = $netboxServer->name;
+
+                continue;
+            }
+
             if ($existing) {
                 $wasInactive = $existing->isInactive();
 
@@ -66,18 +78,6 @@ class SyncNetboxServers implements ShouldQueue
                 ]);
 
                 $wasInactive ? $summary['reactivated']++ : $summary['updated']++;
-
-                continue;
-            }
-
-            if (! $this->isValidHostname($netboxServer->name)) {
-                $summary['invalid'][] = $netboxServer->name;
-
-                continue;
-            }
-
-            if (Server::query()->where('name', strtolower($netboxServer->name))->exists()) {
-                $summary['conflicts'][] = $netboxServer->name;
 
                 continue;
             }
@@ -154,6 +154,22 @@ class SyncNetboxServers implements ShouldQueue
     private function isValidHostname(string $name): bool
     {
         return Validator::make(['name' => $name], ['name' => [new Fqdn]])->passes();
+    }
+
+    /**
+     * Names are stored lower-cased, so compare case-insensitively. When refreshing an
+     * existing synced server we exclude its own row, so a server keeps its current name
+     * without colliding with itself.
+     */
+    private function hasNameConflict(string $name, ?Server $existing = null): bool
+    {
+        $query = Server::query()->where('name', strtolower($name));
+
+        if ($existing) {
+            $query->whereKeyNot($existing->id);
+        }
+
+        return $query->exists();
     }
 
     /**

@@ -26,8 +26,8 @@ class MetricsController extends Controller
 
     /**
      * Hand-rolled Prometheus text exposition, reusing the same EstateStats the
-     * dashboard and weekly overview use so the numbers always agree. Team names
-     * are admin-set and quote-free, so label values need no escaping.
+     * dashboard and weekly overview use so the numbers always agree. Label values
+     * are escaped according to Prometheus text exposition rules.
      */
     private function exposition(EstateStats $stats): string
     {
@@ -46,7 +46,7 @@ class MetricsController extends Controller
             $lines[] = "# TYPE {$name} gauge";
 
             foreach ($teamRows as $row) {
-                $lines[] = sprintf('%s{team="%s"} %d', $name, $row['team']->name, $row[$key]);
+                $lines[] = sprintf('%s{team="%s"} %d', $name, $this->labelValue($row['team']->name), $row[$key]);
             }
         }
 
@@ -55,5 +55,18 @@ class MetricsController extends Controller
         $lines[] = sprintf('patchmon_servers_never_checked_in %d', $stats->neverCheckedInCount());
 
         return implode("\n", $lines)."\n";
+    }
+
+    /**
+     * Escape a Prometheus label value. Backslashes are escaped first so the
+     * backslashes added for quotes and newlines are not escaped again.
+     */
+    private function labelValue(string $value): string
+    {
+        return str_replace(
+            ['\\', "\n", '"'],
+            ['\\\\', '\\n', '\\"'],
+            $value,
+        );
     }
 }

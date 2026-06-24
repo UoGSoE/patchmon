@@ -39,3 +39,17 @@ it('exposes the estate metrics in Prometheus exposition format for a valid token
     expect($response->headers->get('Content-Type'))->toContain('text/plain')
         ->and($response->getContent())->toBe(file_get_contents(base_path('tests/fixtures/metrics.txt')));
 });
+
+it('escapes quotes, backslashes and newlines in team label values', function () {
+    $team = Team::factory()->create([
+        'name' => "Ops \"Core\" \\ North\nFloor",
+    ]);
+
+    Server::factory()->forTeam($team)->create();
+
+    $response = $this->withToken('super-secret')->get('/metrics');
+
+    $response->assertOk();
+    expect($response->getContent())
+        ->toContain('patchmon_servers_total{team="Ops \\"Core\\" \\\\ North\\nFloor"} 1');
+});

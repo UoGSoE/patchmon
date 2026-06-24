@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\Admin\UpdateTeamRequest;
 use App\Http\Resources\Api\V1\TeamResource;
 use App\Models\Team;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class TeamsController extends Controller
 {
@@ -39,8 +40,14 @@ class TeamsController extends Controller
 
     public function destroy(Team $team): JsonResponse
     {
+        if ($team->servers()->exists()) {
+            return response()->json([
+                'message' => 'Transfer or delete this team\'s servers before deleting the team.',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
         $team->delete();
 
-        return response()->json(null, 204);
+        return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 }

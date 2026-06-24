@@ -14,7 +14,11 @@ class PatchEventController extends Controller
     {
         $server = Server::where('patch_token', $token)->firstOrFail();
 
-        $notes = $request->input('notes');
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $notes = $validated['notes'] ?? null;
         $patchedBy = null;
 
         if ($bearerToken = $request->bearerToken()) {

@@ -111,3 +111,18 @@ it('records anonymously with no notes marker when no bearer token is supplied', 
         fn (RecordPatchEvent $queued) => $queued->patchedBy === null && $queued->notes === 'From SCCM',
     );
 });
+
+it('rejects non-string patch notes before queueing a check-in job', function () {
+    Queue::fake();
+
+    $server = Server::factory()->create();
+
+    $this->postJson('/record-patch/'.$server->patch_token, [
+        'notes' => ['not' => 'a string'],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('notes');
+
+    Queue::assertNothingPushed();
+    expect($server->patchEvents()->count())->toBe(0);
+});

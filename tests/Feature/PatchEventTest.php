@@ -4,6 +4,7 @@ use App\Models\PatchEvent;
 use App\Models\Server;
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Event;
 
 it('recordPatch stamps the patch event with an explicit timestamp when one is provided', function () {
     $server = Server::factory()->create();
@@ -64,4 +65,20 @@ it('exposes patch events via the server relation', function () {
         ->and($patchEvent->patched_at)->toBeInstanceOf(CarbonInterface::class)
         ->and($patchEvent->source_ip)->toBe('10.0.0.42')
         ->and($server->fresh()->patchEvents->pluck('id'))->toContain($patchEvent->id);
+});
+
+it('rolls back the patch event when updating the server fails', function () {
+    $server = Server::factory()->create([
+        'last_patched_at' => null,
+    ]);
+
+    Event::listen('eloquent.saving: '.Server::class, function (): void {
+        throw new RuntimeException('Simulated server save failure.');
+    });
+
+    expect(fn () => $server->recordPatch(null, 'Rebooted.', '203.0.113.5'))
+        ->toThrow(RuntimeException::class);
+
+    expect($server->patchEvents()->count())->toBe(0)
+        ->and($server->fresh()->last_patched_at)->toBeNull();
 });

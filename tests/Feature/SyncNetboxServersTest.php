@@ -92,6 +92,49 @@ it('refreshes name and os on an existing synced server without touching team or 
     expect(Server::count())->toBe(1);
 });
 
+it('skips updating an existing synced server when netbox sends an invalid hostname', function () {
+    $server = Server::factory()->fromNetbox(5)->create([
+        'name' => 'old-name.example.com',
+        'os_type' => OsType::Linux,
+    ]);
+
+    runNetboxSync(devices: [netboxRecord(5, 'not a valid hostname', 'Windows Server 2022')]);
+
+    $server->refresh();
+    $summary = Cache::get('netbox.last_sync_summary');
+
+    expect($server->name)->toBe('old-name.example.com')
+        ->and($server->os_type)->toBe(OsType::Linux)
+        ->and(Server::count())->toBe(1)
+        ->and($summary['invalid'])->toBe(['not a valid hostname'])
+        ->and($summary['updated'])->toBe(0);
+});
+
+it('skips updating an existing synced server when the new netbox name collides with another server', function () {
+    $manual = Server::factory()->create([
+        'name' => 'shared.example.com',
+        'os_type' => OsType::Linux,
+    ]);
+    $synced = Server::factory()->fromNetbox(7)->create([
+        'name' => 'old-name.example.com',
+        'os_type' => OsType::Other,
+    ]);
+
+    runNetboxSync(devices: [netboxRecord(7, 'SHARED.example.com', 'Windows Server 2022')]);
+
+    $manual->refresh();
+    $synced->refresh();
+    $summary = Cache::get('netbox.last_sync_summary');
+
+    expect($manual->netbox_id)->toBeNull()
+        ->and($manual->name)->toBe('shared.example.com')
+        ->and($synced->name)->toBe('old-name.example.com')
+        ->and($synced->os_type)->toBe(OsType::Other)
+        ->and(Server::count())->toBe(2)
+        ->and($summary['conflicts'])->toBe(['SHARED.example.com'])
+        ->and($summary['updated'])->toBe(0);
+});
+
 it('skips a netbox object whose name collides with a manual server', function () {
     $manual = Server::factory()->create([
         'name' => 'shared.example.com',

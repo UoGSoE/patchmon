@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -161,20 +162,22 @@ class Server extends Model
     ): PatchEvent {
         $at ??= now();
 
-        /** @var PatchEvent $patchEvent */
-        $patchEvent = $this->patchEvents()->create([
-            'patched_by' => $patchedBy?->id,
-            'patched_at' => $at,
-            'source_ip' => $sourceIp,
-            'notes' => $notes,
-        ]);
+        return DB::transaction(function () use ($patchedBy, $notes, $sourceIp, $at): PatchEvent {
+            /** @var PatchEvent $patchEvent */
+            $patchEvent = $this->patchEvents()->create([
+                'patched_by' => $patchedBy?->id,
+                'patched_at' => $at,
+                'source_ip' => $sourceIp,
+                'notes' => $notes,
+            ]);
 
-        $this->last_patched_at = $at;
-        $this->alerting_since = null;
-        $this->last_alerted_at = null;
-        $this->save();
+            $this->last_patched_at = $at;
+            $this->alerting_since = null;
+            $this->last_alerted_at = null;
+            $this->save();
 
-        return $patchEvent;
+            return $patchEvent;
+        });
     }
 
     public function regenerateToken(): void
