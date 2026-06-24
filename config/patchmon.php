@@ -20,6 +20,7 @@ return [
         'timeout' => env('NETBOX_TIMEOUT', 10),
 
         'change_ratio' => env('NETBOX_CHANGE_RATIO', 0.5),
+        'default_domain' => env('NETBOX_DEFAULT_DOMAIN', 'example.ac.uk'),
     ],
 
     /*
