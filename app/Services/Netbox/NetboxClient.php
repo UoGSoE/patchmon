@@ -41,13 +41,48 @@ class NetboxClient
     }
 
     /**
-     * Walk a paginated NetBox list endpoint, following `next` until it runs out.
+     * Raw, untouched device + VM payloads for every active server, grouped by
+     * which NetBox list each came from. The cleanup pass needs fields the
+     * normalised activeServers() discards — display, platform, description,
+     * comments, primary_ip and any custom fields.
+     *
+     * @return array{devices: array<int, array<string, mixed>>, virtual_machines: array<int, array<string, mixed>>}
+     */
+    public function rawActiveServers(): array
+    {
+        return [
+            'devices' => $this->fetchRaw($this->baseUrl.'/api/dcim/devices/?status=active&role=server'),
+            'virtual_machines' => $this->fetchRaw($this->baseUrl.'/api/virtualization/virtual-machines/?status=active&role=server'),
+        ];
+    }
+
+    /**
+     * Fetch a NetBox list endpoint and normalise each record into our own shape.
      *
      * @return array<int, NetboxServer>
      */
     private function fetch(string $url, bool $isVirtual): array
     {
-        $servers = [];
+        return array_map(
+            fn (array $result) => new NetboxServer(
+                netboxId: (int) $result['id'],
+                isVirtual: $isVirtual,
+                name: (string) $result['name'],
+                osType: self::osTypeForPlatform(data_get($result, 'platform.name') ?? data_get($result, 'platform.slug')),
+            ),
+            $this->fetchRaw($url),
+        );
+    }
+
+    /**
+     * Walk a paginated NetBox list endpoint, following `next` until it runs out,
+     * returning the untouched result records.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchRaw(string $url): array
+    {
+        $results = [];
 
         while ($url !== null) {
             $body = Http::withHeaders(['Authorization' => 'Bearer '.$this->key.'.'.$this->token])
@@ -58,19 +93,12 @@ class NetboxClient
                 ->throw()
                 ->json();
 
-            foreach ($body['results'] ?? [] as $result) {
-                $servers[] = new NetboxServer(
-                    netboxId: (int) $result['id'],
-                    isVirtual: $isVirtual,
-                    name: (string) $result['name'],
-                    osType: self::osTypeForPlatform(data_get($result, 'platform.name') ?? data_get($result, 'platform.slug')),
-                );
-            }
+            $results = [...$results, ...($body['results'] ?? [])];
 
             $url = $body['next'] ?? null;
         }
 
-        return $servers;
+        return $results;
     }
 
     /**

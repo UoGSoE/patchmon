@@ -47,6 +47,16 @@ return [
             'report' => false,
         ],
 
+        // Local, gitignored cache of the raw NetBox inventory for offline
+        // data-cleanliness work. Holds staff names in description/comments,
+        // so it must never be committed or served.
+        'netbox' => [
+            'driver' => 'local',
+            'root' => storage_path('app/netbox'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

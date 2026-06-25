@@ -55,6 +55,23 @@ it('fetches active devices and virtual machines across pages and normalises them
         ->and($servers->firstWhere(fn ($s) => $s->isVirtual && $s->netboxId === 9)->osType)->toBe(OsType::Other);
 });
 
+it('returns raw untouched device and VM payloads, grouped and following pagination', function () {
+    Http::fake([
+        'netbox.test/api/dcim/devices/*' => Http::sequence()
+            ->push(['results' => [['id' => 5, 'name' => 'dc1.example.com', 'description' => 'a host', 'platform' => ['name' => 'Ubuntu 22.04']]], 'next' => 'https://netbox.test/api/dcim/devices/?status=active&role=server&offset=1'])
+            ->push(['results' => [['id' => 6, 'name' => 'dc2.example.com']], 'next' => null]),
+        'netbox.test/api/virtualization/virtual-machines/*' => Http::response(['results' => [['id' => 9, 'name' => 'vm-01.example.com', 'comments' => 'notes']], 'next' => null]),
+    ]);
+
+    $raw = (new NetboxClient('https://netbox.test', 'key', 'token'))->rawActiveServers();
+
+    expect($raw)->toHaveKeys(['devices', 'virtual_machines'])
+        ->and($raw['devices'])->toHaveCount(2)
+        ->and($raw['virtual_machines'])->toHaveCount(1)
+        ->and($raw['devices'][0])->toBe(['id' => 5, 'name' => 'dc1.example.com', 'description' => 'a host', 'platform' => ['name' => 'Ubuntu 22.04']])
+        ->and($raw['virtual_machines'][0])->toBe(['id' => 9, 'name' => 'vm-01.example.com', 'comments' => 'notes']);
+});
+
 it('authenticates with a Bearer key.token header', function () {
     Http::fake([
         'netbox.test/*' => Http::response(['results' => [], 'next' => null]),
