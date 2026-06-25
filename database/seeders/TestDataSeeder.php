@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Models\ActivityLog;
 use App\Models\EstateSnapshot;
 use App\Models\PatchEvent;
 use App\Models\Server;
@@ -43,6 +44,7 @@ class TestDataSeeder extends Seeder
         $this->createNetboxSyncedServers($teams['infra']);
 
         $this->backfillPatchEvents();
+        $this->seedActivityLog($admin);
         $this->seedEstateSnapshotHistory();
     }
 
@@ -658,6 +660,47 @@ class TestDataSeeder extends Seeder
                     ]);
                 }
             });
+    }
+
+    /**
+     * A spread of activity rows so the global activity log and the per-server
+     * deep-link have something to show: patches (attributed and automated),
+     * silences, and a couple of admin-status toggles (user-only, no server).
+     */
+    private function seedActivityLog(User $admin): void
+    {
+        $actors = User::query()->where('is_staff', true)->where('is_admin', false)->take(5)->get();
+        $servers = Server::query()->whereNotNull('team_id')->inRandomOrder()->take(40)->get();
+
+        foreach ($servers as $server) {
+            $actor = rand(1, 100) <= 60 ? $actors->random() : null;
+
+            $entry = ActivityLog::factory()->forServer($server);
+
+            if ($actor) {
+                $entry = $entry->forUser($actor);
+            }
+
+            $entry->create([
+                'description' => 'Recorded a patch',
+                'source_ip' => $actor ? fake()->ipv4() : null,
+                'created_at' => now()->subDays(rand(0, 30))->subMinutes(rand(0, 1440)),
+            ]);
+        }
+
+        foreach ($servers->take(6) as $server) {
+            ActivityLog::factory()->forServer($server)->forUser($admin)->create([
+                'description' => 'Silenced the server',
+                'created_at' => now()->subDays(rand(0, 20)),
+            ]);
+        }
+
+        foreach ($actors->take(2) as $target) {
+            ActivityLog::factory()->forUser($admin)->create([
+                'description' => "Toggled the admin status of {$target->full_name}",
+                'created_at' => now()->subDays(rand(0, 25)),
+            ]);
+        }
     }
 
     /**

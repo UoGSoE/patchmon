@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Events\ActivityOccurred;
 use Database\Factories\ServerFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -162,7 +163,7 @@ class Server extends Model
     ): PatchEvent {
         $at ??= now();
 
-        return DB::transaction(function () use ($patchedBy, $notes, $sourceIp, $at): PatchEvent {
+        $patchEvent = DB::transaction(function () use ($patchedBy, $notes, $sourceIp, $at): PatchEvent {
             /** @var PatchEvent $patchEvent */
             $patchEvent = $this->patchEvents()->create([
                 'patched_by' => $patchedBy?->id,
@@ -178,6 +179,10 @@ class Server extends Model
 
             return $patchEvent;
         });
+
+        ActivityOccurred::dispatch($patchedBy?->id, $this->id, 'Recorded a patch', $sourceIp);
+
+        return $patchEvent;
     }
 
     public function regenerateToken(): void

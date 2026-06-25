@@ -6,6 +6,26 @@ use App\Models\Team;
 use App\Models\User;
 use Livewire\Livewire;
 
+it('shows an admin a link to the activity log filtered to this server', function () {
+    $admin = User::factory()->create(['is_admin' => true]);
+    $server = Server::factory()->create();
+
+    Livewire::actingAs($admin)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->assertSee(route('admin.activity.index', ['server' => $server->id]), escape: false);
+});
+
+it('does not show a non-admin the activity log link', function () {
+    $owner = User::factory()->create(['is_admin' => false]);
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create();
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->assertDontSee(route('admin.activity.index', ['server' => $server->id]), escape: false);
+});
+
 it('unsilences the server when a team member flips the toggle off', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create();

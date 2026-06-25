@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\V1\Admin\ApiTokensController as AdminApiTokensController;
 use App\Http\Controllers\Api\V1\Admin\TeamMembersController as AdminTeamMembersController;
 use App\Http\Controllers\Api\V1\Admin\TeamsController as AdminTeamsController;
@@ -34,6 +35,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
             Route::get('/users', [AdminUsersController::class, 'index'])->name('api.v1.admin.users.index');
             Route::get('/users/{user}', [AdminUsersController::class, 'show'])->name('api.v1.admin.users.show');
             Route::get('/api-tokens', [AdminApiTokensController::class, 'index'])->name('api.v1.admin.api-tokens.index');
+            Route::get('/activity', [AdminActivityLogController::class, 'index'])->name('api.v1.admin.activity.index');
         });
         Route::middleware('ability:admin:write')->group(function () {
             Route::post('/teams', [AdminTeamsController::class, 'store'])->name('api.v1.admin.teams.store');

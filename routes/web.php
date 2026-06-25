@@ -5,6 +5,7 @@ use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PatchEventController;
 use App\Http\Controllers\ProvisionPatchTokenController;
 use App\Http\Middleware\AuthenticatedStaff;
+use App\Livewire\Admin\Activity as AdminActivity;
 use App\Livewire\Admin\ApiTokens as AdminApiTokens;
 use App\Livewire\Admin\TeamDetail as AdminTeamDetail;
 use App\Livewire\Admin\Teams as AdminTeams;
@@ -55,5 +56,6 @@ Route::middleware(AuthenticatedStaff::class)->group(function () {
         Route::get('/teams/{team}', AdminTeamDetail::class)->name('teams.show');
         Route::get('/users', AdminUsers::class)->name('users.index');
         Route::get('/api-tokens', AdminApiTokens::class)->name('api-tokens.index');
+        Route::get('/activity', AdminActivity::class)->name('activity.index');
     });
 });

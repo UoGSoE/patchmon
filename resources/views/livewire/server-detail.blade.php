@@ -19,6 +19,14 @@
         </div>
 
         <div class="flex gap-2">
+            @if (auth()->user()->is_admin)
+                <flux:button
+                    :href="route('admin.activity.index', ['server' => $server->id])"
+                    icon="clock"
+                    tooltip="View activity log"
+                />
+            @endif
+
             <flux:button wire:click="openEdit" icon="pencil-square" tooltip="Edit" />
 
             <flux:modal.trigger name="delete-server">
