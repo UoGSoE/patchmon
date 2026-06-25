@@ -91,3 +91,7 @@ Interface uncertainty - When I write code first, I discover the shape of the API
 
 Honestly, TDD would probably make me better - Writing tests first would force me to think more carefully about edge cases, keep interfaces clean, and avoid over-engineering. All things I sometimes fumble when I dive straight into code.
 """
+
+## Finally
+
+You will be tempted to write the code first and retrofit the tests, because that's your default groove. That pull is precisely why this rule is non-negotiable. Notice the urge, and write the failing test anyway.
