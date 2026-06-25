@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\ActivityOccurred;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
@@ -64,6 +65,8 @@ class AddUser extends Command
             'is_admin' => $isAdmin,
             'password' => bcrypt(Str::random(64)),
         ]);
+
+        ActivityOccurred::dispatch(null, null, "Created the user {$user->full_name} via console command");
 
         $this->info("Created {$user->email} ({$user->username})".($user->is_admin ? ' as an admin.' : '.'));
 

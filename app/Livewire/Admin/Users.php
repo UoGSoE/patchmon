@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Events\ActivityOccurred;
 use App\Models\Server;
 use App\Models\User;
 use Flux\Flux;
@@ -37,6 +38,13 @@ class Users extends Component
         $user = User::findOrFail($id);
         $user->update(['is_admin' => ! $user->is_admin]);
 
+        ActivityOccurred::dispatch(
+            auth()->id(),
+            null,
+            $user->is_admin ? "Granted admin to {$user->full_name}" : "Revoked admin from {$user->full_name}",
+            request()->ip(),
+        );
+
         Flux::toast(
             $user->is_admin ? "{$user->email} is now an admin." : "{$user->email} is no longer an admin.",
             variant: 'success',
@@ -47,6 +55,13 @@ class Users extends Component
     {
         $user = User::findOrFail($id);
         $user->update(['is_oversight_admin' => ! $user->is_oversight_admin]);
+
+        ActivityOccurred::dispatch(
+            auth()->id(),
+            null,
+            $user->is_oversight_admin ? "Enabled oversight emails for {$user->full_name}" : "Disabled oversight emails for {$user->full_name}",
+            request()->ip(),
+        );
 
         Flux::toast(
             $user->is_oversight_admin ? "{$user->email} now receives oversight emails." : "{$user->email} no longer receives oversight emails.",
@@ -102,15 +117,19 @@ class Users extends Component
             $user = User::findOrFail($this->editingUserId);
             $user->update($this->form);
             $message = 'User updated.';
+            $activity = "Updated the user {$user->full_name}";
         } else {
-            User::create([
+            $user = User::create([
                 ...$this->form,
                 'is_staff' => true,
                 'is_admin' => false,
                 'password' => bcrypt(Str::random(64)),
             ]);
             $message = 'User created.';
+            $activity = "Created the user {$user->full_name}";
         }
+
+        ActivityOccurred::dispatch(auth()->id(), null, $activity, request()->ip());
 
         Flux::modal('user-form')->close();
         Flux::toast($message, variant: 'success');
@@ -142,7 +161,10 @@ class Users extends Component
             'typedConfirmation' => ['required', Rule::in([$user->full_name ?: $user->email])],
         ]);
 
+        $name = $user->full_name;
         $this->reassignAuthorshipAndDelete($user);
+
+        ActivityOccurred::dispatch(auth()->id(), null, "Deleted the user {$name}", request()->ip());
 
         Flux::modal('delete-user')->close();
         Flux::toast('User deleted.', variant: 'success');

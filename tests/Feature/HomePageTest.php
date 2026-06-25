@@ -3,6 +3,7 @@
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use App\Livewire\HomePage;
+use App\Models\ActivityLog;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
@@ -139,6 +140,31 @@ it('bulk-allocates selected unassigned servers to a team and cadence', function 
     expect($b->fresh()->team_id)->toBe($team->id);
     expect($untouched->fresh()->team_id)->toBeNull()
         ->and($untouched->fresh()->created_by_user_id)->toBeNull();
+});
+
+it('logs an activity row per server when bulk-allocating', function () {
+    $staff = User::factory()->staff()->create();
+    $team = Team::factory()->create(['name' => 'Networks']);
+    $a = Server::factory()->unassigned()->create();
+    $b = Server::factory()->unassigned()->create();
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->set('selected', [$a->id, $b->id])
+        ->set('allocateTeamId', $team->id)
+        ->set('allocateGraceUnits', GraceUnit::Days->value)
+        ->call('bulkAllocate')
+        ->assertHasNoErrors();
+
+    $logs = ActivityLog::all();
+    expect($logs)->toHaveCount(2);
+    expect($logs->pluck('server_id')->sort()->values()->all())
+        ->toBe(collect([$a->id, $b->id])->sort()->values()->all());
+    $logs->each(function ($log) use ($staff) {
+        expect($log->user_id)->toBe($staff->id);
+        expect($log->description)->toContain('Networks');
+        expect($log->description)->toContain('Allocated');
+    });
 });
 
 it('does not overwrite created_by on an allocated server that already has one', function () {

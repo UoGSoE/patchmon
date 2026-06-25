@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\ServerDetail;
+use App\Models\ActivityLog;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
@@ -24,6 +25,25 @@ it('does not show a non-admin the activity log link', function () {
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])
         ->assertDontSee(route('admin.activity.index', ['server' => $server->id]), escape: false);
+});
+
+it('logs the acting user when a server is silenced from the detail page', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create();
+    $start = now();
+    $end = now()->addWeek();
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->set('silenceUntil', $start->format('Y-m-d').'/'.$end->format('Y-m-d'))
+        ->set('silenced', true);
+
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBe($owner->id);
+    expect($log->server_id)->toBe($server->id);
+    expect($log->description)->toStartWith('Silenced the server');
 });
 
 it('unsilences the server when a team member flips the toggle off', function () {

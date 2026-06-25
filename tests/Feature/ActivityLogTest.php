@@ -46,3 +46,30 @@ it('writes an activity row when a patch is recorded', function () {
     expect($log->source_ip)->toBe('10.0.0.5');
     expect($log->description)->toBe('Recorded a patch');
 });
+
+it('writes an activity row when a server is silenced', function () {
+    $user = User::factory()->create();
+    $server = Server::factory()->create();
+
+    $server->silenceBetween(now(), now()->addWeek(), 'maintenance window', $user, '10.0.0.9');
+
+    $log = ActivityLog::sole();
+
+    expect($log->user_id)->toBe($user->id);
+    expect($log->server_id)->toBe($server->id);
+    expect($log->source_ip)->toBe('10.0.0.9');
+    expect($log->description)->toStartWith('Silenced the server');
+});
+
+it('writes an activity row when a server is unsilenced', function () {
+    $user = User::factory()->create();
+    $server = Server::factory()->silenced()->create();
+
+    $server->unsilence($user, '10.0.0.9');
+
+    $log = ActivityLog::sole();
+
+    expect($log->user_id)->toBe($user->id);
+    expect($log->server_id)->toBe($server->id);
+    expect($log->description)->toBe('Unsilenced the server');
+});

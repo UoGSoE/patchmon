@@ -195,22 +195,26 @@ class Server extends Model
         ]);
     }
 
-    public function silenceBetween(Carbon $from, Carbon $until, ?string $reason = null): void
+    public function silenceBetween(Carbon $from, Carbon $until, ?string $reason = null, ?User $actor = null, ?string $sourceIp = null): void
     {
         $this->update([
             'silenced_from' => $from,
             'silenced_until' => $until,
             'silence_reason' => $reason,
         ]);
+
+        ActivityOccurred::dispatch($actor?->id, $this->id, 'Silenced the server until '.$until->format('j M Y'), $sourceIp);
     }
 
-    public function unsilence(): void
+    public function unsilence(?User $actor = null, ?string $sourceIp = null): void
     {
         $this->update([
             'silenced_from' => null,
             'silenced_until' => null,
             'silence_reason' => null,
         ]);
+
+        ActivityOccurred::dispatch($actor?->id, $this->id, 'Unsilenced the server', $sourceIp);
     }
 
     public function isCurrentlySilenced(): bool

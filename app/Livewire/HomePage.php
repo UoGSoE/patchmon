@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Events\ActivityOccurred;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
 use App\Models\Team;
@@ -167,6 +168,12 @@ class HomePage extends Component
         Server::query()->whereIn('id', $targetIds)
             ->whereNull('created_by_user_id')
             ->update(['created_by_user_id' => auth()->id()]);
+
+        $team = Team::findOrFail($this->allocateTeamId);
+
+        foreach ($targetIds as $serverId) {
+            ActivityOccurred::dispatch(auth()->id(), $serverId, "Allocated the server to {$team->name}", request()->ip());
+        }
 
         $count = $targetIds->count();
 

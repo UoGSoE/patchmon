@@ -1,9 +1,30 @@
 <?php
 
+use App\Models\ActivityLog;
 use App\Models\Server;
 use App\Models\Team;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
+
+it('logs the acting user and source ip when silencing via the API', function () {
+    $alice = User::factory()->create();
+    $team = Team::factory()->create();
+    $alice->teams()->attach($team);
+    $server = Server::factory()->forTeam($team)->create();
+    Sanctum::actingAs($alice, ['servers:write']);
+
+    $this->postJson("/api/v1/servers/{$server->id}/silence", [
+        'silenced_from' => now()->toIso8601String(),
+        'silenced_until' => now()->addWeek()->toIso8601String(),
+        'silence_reason' => 'patch freeze',
+    ])->assertOk();
+
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBe($alice->id);
+    expect($log->server_id)->toBe($server->id);
+    expect($log->source_ip)->not->toBeNull();
+    expect($log->description)->toStartWith('Silenced the server');
+});
 
 it('unsilences a previously silenced server', function () {
     $alice = User::factory()->create();

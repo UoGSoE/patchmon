@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\StoreUserRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateUserRequest;
@@ -29,6 +30,8 @@ class UsersController extends Controller
             'password' => bcrypt(Str::random(64)),
         ]);
 
+        ActivityOccurred::dispatch($request->user()->id, null, "Created the user {$user->full_name}", $request->ip());
+
         return (new UserResource($user))->response()->setStatusCode(201);
     }
 
@@ -40,6 +43,8 @@ class UsersController extends Controller
     public function update(UpdateUserRequest $request, User $user): UserResource
     {
         $user->update($request->validated());
+
+        ActivityOccurred::dispatch($request->user()->id, null, "Updated the user {$user->full_name}", $request->ip());
 
         return new UserResource($user->fresh());
     }
@@ -53,7 +58,10 @@ class UsersController extends Controller
         Server::where('created_by_user_id', $user->id)
             ->update(['created_by_user_id' => $request->user()->id]);
 
+        $name = $user->full_name;
         $user->delete();
+
+        ActivityOccurred::dispatch($request->user()->id, null, "Deleted the user {$name}", $request->ip());
 
         return response()->json(null, 204);
     }

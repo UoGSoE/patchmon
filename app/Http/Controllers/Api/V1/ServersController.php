@@ -69,6 +69,8 @@ class ServersController extends Controller
             Carbon::parse($data['silenced_from']),
             Carbon::parse($data['silenced_until']),
             $data['silence_reason'] ?? null,
+            $request->user(),
+            $request->ip(),
         );
 
         return new ServerResource($server->fresh());
@@ -83,7 +85,7 @@ class ServersController extends Controller
             abort(404);
         }
 
-        $server->unsilence();
+        $server->unsilence($request->user(), $request->ip());
 
         return new ServerResource($server->fresh());
     }

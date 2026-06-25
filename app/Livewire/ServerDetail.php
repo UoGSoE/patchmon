@@ -93,12 +93,12 @@ class ServerDetail extends Component
         if ($value) {
             $this->validateSilenceWindow();
             [$from, $until] = $this->silenceWindowFromPickedRange();
-            $this->server->silenceBetween($from, $until, $this->silenceReason);
+            $this->server->silenceBetween($from, $until, $this->silenceReason, auth()->user(), request()->ip());
             Flux::toast('Server silenced.', variant: 'success');
 
             return;
         }
-        $this->server->unsilence();
+        $this->server->unsilence(auth()->user(), request()->ip());
         $this->silenceReason = null;
         $this->silenceUntil = now()->format('Y-m-d').'/'.now()->addDay()->format('Y-m-d');
         Flux::toast('Server unsilenced.', variant: 'success');
@@ -112,7 +112,7 @@ class ServerDetail extends Component
         $this->authorize('update', $this->server);
         $this->validateSilenceWindow();
         [$from, $until] = $this->silenceWindowFromPickedRange();
-        $this->server->silenceBetween($from, $until, $this->silenceReason);
+        $this->server->silenceBetween($from, $until, $this->silenceReason, auth()->user(), request()->ip());
     }
 
     public function updatedSilenceReason(): void
@@ -123,7 +123,7 @@ class ServerDetail extends Component
         $this->authorize('update', $this->server);
         $this->validate(['silenceReason' => ['nullable', 'string', 'max:255']]);
         [$from, $until] = $this->silenceWindowFromPickedRange();
-        $this->server->silenceBetween($from, $until, $this->silenceReason);
+        $this->server->silenceBetween($from, $until, $this->silenceReason, auth()->user(), request()->ip());
     }
 
     public function delete()
