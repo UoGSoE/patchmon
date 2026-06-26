@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Events\ActivityOccurred;
 use App\Jobs\RecordPatchEvent;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
@@ -130,7 +131,10 @@ class ServerDetail extends Component
     {
         $this->authorize('delete', $this->server);
 
+        $name = $this->server->name;
         $this->server->delete();
+
+        ActivityOccurred::dispatch(auth()->id(), null, "Deleted the server {$name}", request()->ip());
 
         Flux::toast('Server deleted.', variant: 'success');
 
@@ -141,7 +145,7 @@ class ServerDetail extends Component
     {
         $this->authorize('update', $this->server);
 
-        $this->server->regenerateToken();
+        $this->server->regenerateToken(auth()->user(), request()->ip());
 
         $this->server = $this->server->fresh();
 

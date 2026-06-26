@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Events\ActivityOccurred;
 use App\Models\Team;
 use App\Models\User;
 use Flux\Flux;
@@ -32,6 +33,9 @@ class TeamDetail extends Component
 
         $this->team->users()->syncWithoutDetaching($this->userToAddId);
 
+        $member = User::findOrFail($this->userToAddId);
+        ActivityOccurred::dispatch(auth()->id(), null, "Added {$member->full_name} to {$this->team->name}", request()->ip());
+
         $this->userToAddId = null;
         Flux::toast('User added to team.', variant: 'success');
     }
@@ -48,7 +52,10 @@ class TeamDetail extends Component
 
     public function removeUser(int $userId): void
     {
+        $member = User::findOrFail($userId);
         $this->team->users()->detach($userId);
+
+        ActivityOccurred::dispatch(auth()->id(), null, "Removed {$member->full_name} from {$this->team->name}", request()->ip());
 
         $this->removingMemberId = null;
         $this->removingMemberName = null;

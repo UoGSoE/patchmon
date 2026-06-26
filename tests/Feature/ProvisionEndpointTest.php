@@ -2,6 +2,7 @@
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Models\ActivityLog;
 use App\Models\Server;
 
 it('reveals an existing server patch token once and stamps it, without recording a patch', function () {
@@ -15,6 +16,31 @@ it('reveals an existing server patch token once and stamps it, without recording
     $server->refresh();
     expect($server->patch_token_provisioned_at)->not->toBeNull()
         ->and($server->patchEvents)->toHaveCount(0);
+});
+
+it('logs an automated activity row when an existing server is provisioned', function () {
+    $server = Server::factory()->create(['name' => 'prov01.example.com']);
+
+    $this->postJson('/record-patch/provision', ['fqdn' => 'prov01.example.com'])->assertOk();
+
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBeNull();
+    expect($log->actorLabel())->toBe('Automated');
+    expect($log->server_id)->toBe($server->id);
+    expect($log->description)->toContain('provisioned');
+});
+
+it('logs both auto-create and provision when an unknown fqdn provisions', function () {
+    $this->postJson('/record-patch/provision', ['fqdn' => 'fresh01.example.com'])->assertOk();
+
+    $server = Server::firstWhere('name', 'fresh01.example.com');
+    $logs = ActivityLog::orderBy('id')->get();
+
+    expect($logs)->toHaveCount(2);
+    expect($logs->every(fn ($log) => $log->user_id === null))->toBeTrue();
+    expect($logs->every(fn ($log) => $log->server_id === $server->id))->toBeTrue();
+    expect($logs[0]->description)->toContain('auto-created');
+    expect($logs[1]->description)->toContain('provisioned');
 });
 
 it('refuses a second provision for the same fqdn with a 409, leaving the token and stamp untouched', function () {

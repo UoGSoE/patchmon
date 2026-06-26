@@ -2,6 +2,7 @@
 
 use App\Jobs\SyncNetboxServers;
 use App\Livewire\ImportServers;
+use App\Models\ActivityLog;
 use App\Models\PatchEvent;
 use App\Models\Server;
 use App\Models\Team;
@@ -202,6 +203,36 @@ it('commits valid rows as servers in the chosen team with the chosen schedule', 
         ->and($one->created_by_user_id)->toBe($alice->id);
 });
 
+it('logs a create activity row for each imported server', function () {
+    $alice = User::factory()->create(['is_staff' => true]);
+    $team = Team::factory()->create();
+    $team->users()->attach($alice);
+
+    $file = makeXlsxUpload([
+        ['server name', 'os', 'last patched'],
+        ['imp-one.example.test', 'linux', ''],
+        ['imp-two.example.test', 'linux', ''],
+    ]);
+
+    Livewire::actingAs($alice)
+        ->test(ImportServers::class)
+        ->set('team_id', $team->id)
+        ->set('interval_months', 1)
+        ->set('grace_value', 7)
+        ->set('grace_units', 'days')
+        ->set('file', $file)
+        ->call('confirm')
+        ->assertHasNoErrors();
+
+    $logs = ActivityLog::all();
+    expect($logs)->toHaveCount(2);
+    $logs->each(function ($log) use ($alice) {
+        expect($log->user_id)->toBe($alice->id);
+        expect($log->server_id)->not->toBeNull();
+        expect($log->description)->toContain('imported');
+    });
+});
+
 it('records a PatchEvent for each imported server with a last-patched date', function () {
     $alice = User::factory()->create(['is_staff' => true]);
     $team = Team::factory()->create();
@@ -344,6 +375,19 @@ it('queues a netbox sync when a staff user refreshes', function () {
         ->call('refreshFromNetbox');
 
     Bus::assertDispatched(SyncNetboxServers::class);
+});
+
+it('logs the user who triggers a netbox sync', function () {
+    Bus::fake([SyncNetboxServers::class]);
+    $alice = User::factory()->create(['is_staff' => true]);
+
+    Livewire::actingAs($alice)
+        ->test(ImportServers::class)
+        ->call('refreshFromNetbox');
+
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBe($alice->id);
+    expect($log->description)->toBe('Started a NetBox sync');
 });
 
 it('does not let a non-staff user reach the refresh action', function () {

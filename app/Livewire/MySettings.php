@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Events\ActivityOccurred;
 use App\Models\User;
 use Flux\Flux;
 use Illuminate\Validation\Rule;
@@ -49,6 +50,8 @@ class MySettings extends Component
 
         $token = auth()->user()->createToken($this->tokenName, $this->tokenAbilities);
 
+        ActivityOccurred::dispatch(auth()->id(), null, "Created the API token '{$this->tokenName}'", request()->ip());
+
         $this->lastCreatedToken = $token->plainTextToken;
     }
 
@@ -69,6 +72,8 @@ class MySettings extends Component
         }
 
         auth()->user()->tokens()->where('id', $this->revokingTokenId)->delete();
+
+        ActivityOccurred::dispatch(auth()->id(), null, "Revoked the API token '{$this->revokingTokenName}'", request()->ip());
 
         Flux::modal('revoke-api-token')->close();
         Flux::toast("Token '{$this->revokingTokenName}' revoked.", variant: 'success');

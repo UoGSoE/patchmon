@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreServerRequest;
 use App\Http\Requests\Api\V1\UpdateServerRequest;
@@ -99,7 +100,10 @@ class ServersController extends Controller
             abort(404);
         }
 
+        $name = $server->name;
         $server->delete();
+
+        ActivityOccurred::dispatch($request->user()->id, null, "Deleted the server {$name}", $request->ip());
 
         return response()->json(null, 204);
     }
@@ -115,6 +119,8 @@ class ServersController extends Controller
 
         $server->update($request->validated());
 
+        ActivityOccurred::dispatch($request->user()->id, $server->id, 'Updated the server', $request->ip());
+
         return new ServerResource($server->fresh());
     }
 
@@ -129,6 +135,8 @@ class ServersController extends Controller
             ...$request->validated(),
             'created_by_user_id' => $request->user()->id,
         ]);
+
+        ActivityOccurred::dispatch($request->user()->id, $server->id, 'Created the server', $request->ip());
 
         return (new ServerResource($server))->response()->setStatusCode(201);
     }

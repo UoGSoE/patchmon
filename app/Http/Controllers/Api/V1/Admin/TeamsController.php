@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Events\ActivityOccurred;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\StoreTeamRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateTeamRequest;
 use App\Http\Resources\Api\V1\TeamResource;
 use App\Models\Team;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class TeamsController extends Controller
@@ -23,6 +25,8 @@ class TeamsController extends Controller
     {
         $team = Team::create($request->validated());
 
+        ActivityOccurred::dispatch($request->user()->id, null, "Created the team {$team->name}", $request->ip());
+
         return (new TeamResource($team))->response()->setStatusCode(201);
     }
 
@@ -35,10 +39,12 @@ class TeamsController extends Controller
     {
         $team->update($request->validated());
 
+        ActivityOccurred::dispatch($request->user()->id, null, "Updated the team {$team->name}", $request->ip());
+
         return new TeamResource($team->fresh());
     }
 
-    public function destroy(Team $team): JsonResponse
+    public function destroy(Request $request, Team $team): JsonResponse
     {
         if ($team->servers()->exists()) {
             return response()->json([
@@ -46,7 +52,10 @@ class TeamsController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        $name = $team->name;
         $team->delete();
+
+        ActivityOccurred::dispatch($request->user()->id, null, "Deleted the team {$name}", $request->ip());
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }

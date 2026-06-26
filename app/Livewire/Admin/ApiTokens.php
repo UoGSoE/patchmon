@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Events\ActivityOccurred;
 use App\Models\User;
 use Flux\Flux;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -36,6 +37,13 @@ class ApiTokens extends Component
         }
 
         PersonalAccessToken::where('id', $this->revokingTokenId)->delete();
+
+        ActivityOccurred::dispatch(
+            auth()->id(),
+            null,
+            "Revoked {$this->revokingTokenOwner}'s API token '{$this->revokingTokenName}'",
+            request()->ip(),
+        );
 
         Flux::modal('admin-revoke-api-token')->close();
         Flux::toast("Token '{$this->revokingTokenName}' revoked.", variant: 'success');

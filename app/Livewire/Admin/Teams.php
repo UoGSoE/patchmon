@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Events\ActivityOccurred;
 use App\Models\Team;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
@@ -56,6 +57,13 @@ class Teams extends Component
             'sender_email' => $this->editing['sender_email'] ?: null,
         ])->save();
 
+        ActivityOccurred::dispatch(
+            auth()->id(),
+            null,
+            $team->wasRecentlyCreated ? "Created the team {$team->name}" : "Updated the team {$team->name}",
+            request()->ip(),
+        );
+
         Flux::modal('edit-team')->close();
         Flux::toast('Team saved.', variant: 'success');
     }
@@ -71,7 +79,10 @@ class Teams extends Component
     public function deleteEmpty(): void
     {
         $team = Team::findOrFail($this->deletingId);
+        $name = $team->name;
         $team->delete();
+
+        ActivityOccurred::dispatch(auth()->id(), null, "Deleted the team {$name}", request()->ip());
 
         Flux::modal('delete-team')->close();
         Flux::toast('Team deleted.', variant: 'success');
@@ -85,8 +96,18 @@ class Teams extends Component
         ]);
 
         $team = Team::findOrFail($this->deletingId);
+        $target = Team::findOrFail($this->transferTargetTeamId);
+        $serverCount = $team->servers()->count();
+        $name = $team->name;
         $team->servers()->update(['team_id' => $this->transferTargetTeamId]);
         $team->delete();
+
+        ActivityOccurred::dispatch(
+            auth()->id(),
+            null,
+            "Deleted the team {$name} and transferred {$serverCount} ".str('server')->plural($serverCount)." to {$target->name}",
+            request()->ip(),
+        );
 
         Flux::modal('delete-team')->close();
         Flux::toast('Team deleted; servers transferred.', variant: 'success');
@@ -100,7 +121,16 @@ class Teams extends Component
             return;
         }
 
+        $serverCount = $team->servers()->count();
+        $name = $team->name;
         $team->delete();
+
+        ActivityOccurred::dispatch(
+            auth()->id(),
+            null,
+            "Deleted the team {$name} and its {$serverCount} ".str('server')->plural($serverCount),
+            request()->ip(),
+        );
 
         Flux::modal('delete-team')->close();
         Flux::toast('Team and its servers deleted.', variant: 'success');

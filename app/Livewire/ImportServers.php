@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Events\ActivityOccurred;
 use App\Jobs\SyncNetboxServers;
 use App\Models\Server;
 use App\Models\Team;
@@ -177,6 +178,8 @@ class ImportServers extends Component
                     'grace_units' => $this->grace_units,
                 ]);
 
+                ActivityOccurred::dispatch(auth()->id(), $server->id, 'Created the server (imported from spreadsheet)', request()->ip());
+
                 $patchedAt = $this->parseLastPatched($row['last_patched_at']);
 
                 if ($patchedAt instanceof Carbon) {
@@ -202,6 +205,8 @@ class ImportServers extends Component
     public function refreshFromNetbox(): void
     {
         SyncNetboxServers::dispatch();
+
+        ActivityOccurred::dispatch(auth()->id(), null, 'Started a NetBox sync', request()->ip());
 
         Flux::toast('Sync queued.', variant: 'success');
     }

@@ -3,6 +3,7 @@
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use App\Jobs\SyncNetboxServers;
+use App\Models\ActivityLog;
 use App\Models\Server;
 use App\Models\Team;
 use App\Services\Netbox\NetboxClient;
@@ -55,6 +56,39 @@ it('creates a new netbox device in triage with the configured default cadence', 
         ->and($server->interval_months)->toBe(3)
         ->and($server->grace_value)->toBe(2)
         ->and($server->grace_units)->toBe(GraceUnit::Weeks);
+});
+
+it('logs an automated activity row when netbox discovers a new server', function () {
+    runNetboxSync(devices: [netboxRecord(5, 'web01.example.com', 'Ubuntu 22.04')]);
+
+    $server = Server::where('netbox_id', 5)->first();
+    $log = ActivityLog::sole();
+
+    expect($log->user_id)->toBeNull();
+    expect($log->actorLabel())->toBe('Automated');
+    expect($log->server_id)->toBe($server->id);
+    expect($log->description)->toContain('NetBox');
+});
+
+it('logs an automated activity row when a server drops out of netbox', function () {
+    $gone = Server::factory()->fromNetbox(5)->create(['name' => 'gone.example.com']);
+
+    runNetboxSync(devices: [netboxRecord(6, 'still-here.example.com', 'Ubuntu 22.04')]);
+
+    $log = ActivityLog::where('server_id', $gone->id)->sole();
+    expect($log->user_id)->toBeNull();
+    expect($log->description)->toContain('inactive');
+});
+
+it('does not log when a netbox sync changes nothing on an existing server', function () {
+    Server::factory()->fromNetbox(5, false)->create([
+        'name' => 'web01.example.com',
+        'os_type' => OsType::Linux,
+    ]);
+
+    runNetboxSync(devices: [netboxRecord(5, 'web01.example.com', 'Ubuntu 22.04')]);
+
+    expect(ActivityLog::count())->toBe(0);
 });
 
 it('creates a new netbox virtual machine flagged as virtual', function () {

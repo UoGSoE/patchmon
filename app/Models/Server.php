@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
 use App\Events\ActivityOccurred;
+use App\Mail\ServerOverdueNotification;
 use Database\Factories\ServerFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -185,7 +187,7 @@ class Server extends Model
         return $patchEvent;
     }
 
-    public function regenerateToken(): void
+    public function regenerateToken(?User $actor = null, ?string $sourceIp = null): void
     {
         // Issues a fresh record-patch token (the old URL stops working) and clears any
         // provisioning claim, so a rebuilt machine can provision a new token on its next run.
@@ -193,6 +195,8 @@ class Server extends Model
             'patch_token' => (string) Str::uuid(),
             'patch_token_provisioned_at' => null,
         ]);
+
+        ActivityOccurred::dispatch($actor?->id, $this->id, 'Regenerated the patch token', $sourceIp);
     }
 
     public function silenceBetween(Carbon $from, Carbon $until, ?string $reason = null, ?User $actor = null, ?string $sourceIp = null): void
@@ -234,5 +238,35 @@ class Server extends Model
     public function isInactive(): bool
     {
         return $this->inactive_since !== null;
+    }
+
+    public function isAlerting(): bool
+    {
+        return $this->alerting_since !== null;
+    }
+
+    public function isntAlerting(): bool
+    {
+        return ! $this->isAlerting();
+    }
+
+    public function markAsAlerting(): void
+    {
+        $this->alerting_since = now();
+        $this->save();
+    }
+
+    public function shouldSendAnotherAlert(): bool
+    {
+        return $this->last_alerted_at === null
+            || $this->last_alerted_at->lessThanOrEqualTo(now()->subWeek());
+    }
+
+    public function sendAlert(): void
+    {
+        Mail::to($this->resolveNotificationEmail())->queue(new ServerOverdueNotification($this));
+
+        $this->last_alerted_at = now();
+        $this->save();
     }
 }

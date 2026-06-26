@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OsType;
+use App\Events\ActivityOccurred;
 use App\Models\Server;
 use App\Rules\Fqdn;
 use Illuminate\Http\JsonResponse;
@@ -54,6 +55,8 @@ class ProvisionPatchTokenController extends Controller
                 'grace_units' => config('patchmon.triage_defaults.grace_units'),
             ]);
             $created = true;
+
+            ActivityOccurred::dispatch(null, $server->id, 'Server auto-created via patch provisioning', $request->ip());
         }
 
         if ($server->patch_token_provisioned_at) {
@@ -66,6 +69,8 @@ class ProvisionPatchTokenController extends Controller
 
         $server->patch_token_provisioned_at = now();
         $server->save();
+
+        ActivityOccurred::dispatch(null, $server->id, 'Patch token provisioned', $request->ip());
 
         $this->logAttempt($request, $name, $created ? 'created' : 'revealed');
 

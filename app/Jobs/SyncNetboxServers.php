@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\ActivityOccurred;
 use App\Models\Server;
 use App\Rules\Fqdn;
 use App\Services\Netbox\NetboxClient;
@@ -77,12 +78,20 @@ class SyncNetboxServers implements ShouldQueue
                     'inactive_since' => null,
                 ]);
 
+                if ($existing->wasChanged()) {
+                    ActivityOccurred::dispatch(
+                        null,
+                        $existing->id,
+                        $wasInactive ? 'Server reactivated from NetBox' : 'Server updated from NetBox',
+                    );
+                }
+
                 $wasInactive ? $summary['reactivated']++ : $summary['updated']++;
 
                 continue;
             }
 
-            Server::create([
+            $created = Server::create([
                 'team_id' => null,
                 'created_by_user_id' => null,
                 'netbox_id' => $netboxServer->netboxId,
@@ -93,6 +102,8 @@ class SyncNetboxServers implements ShouldQueue
                 'grace_value' => config('patchmon.triage_defaults.grace_value'),
                 'grace_units' => config('patchmon.triage_defaults.grace_units'),
             ]);
+
+            ActivityOccurred::dispatch(null, $created->id, 'Server discovered from NetBox');
 
             $summary['created']++;
         }
@@ -139,6 +150,8 @@ class SyncNetboxServers implements ShouldQueue
                     'alerting_since' => null,
                     'last_alerted_at' => null,
                 ]);
+
+                ActivityOccurred::dispatch(null, $server->id, 'Server marked inactive (left NetBox)');
 
                 $count++;
             });

@@ -2,8 +2,36 @@
 
 use App\Enums\GraceUnit;
 use App\Mail\ServerOverdueNotification;
+use App\Models\ActivityLog;
 use App\Models\Server;
+use App\Models\Team;
 use Illuminate\Support\Facades\Mail;
+
+it('logs an automated activity row when a server first becomes overdue', function () {
+    Mail::fake();
+    $team = Team::factory()->create();
+    $server = Server::factory()->forTeam($team)->overdue()->create();
+
+    $this->artisan('patchmon:evaluate')->assertSuccessful();
+
+    $log = ActivityLog::where('server_id', $server->id)->sole();
+    expect($log->user_id)->toBeNull();
+    expect($log->description)->toBe('Server became overdue');
+});
+
+it('logs an automated activity row when a weekly overdue alert is re-sent', function () {
+    Mail::fake();
+    $team = Team::factory()->create();
+    $server = Server::factory()->forTeam($team)->overdue()->alerting()->create([
+        'last_alerted_at' => now()->subDays(8),
+    ]);
+
+    $this->artisan('patchmon:evaluate')->assertSuccessful();
+
+    $log = ActivityLog::where('server_id', $server->id)->sole();
+    expect($log->user_id)->toBeNull();
+    expect($log->description)->toBe('Overdue alert re-sent');
+});
 
 it('does not alert silenced servers even when they are overdue', function () {
     Mail::fake();

@@ -4,6 +4,7 @@ namespace App\Livewire\Forms;
 
 use App\Enums\GraceUnit;
 use App\Enums\OsType;
+use App\Events\ActivityOccurred;
 use App\Models\Server;
 use App\Rules\Fqdn;
 use Illuminate\Validation\Rule;
@@ -111,6 +112,13 @@ class ServerForm extends Form
         }
 
         $server->save();
+
+        ActivityOccurred::dispatch(
+            auth()->id(),
+            $server->id,
+            $server->wasRecentlyCreated ? 'Created the server' : 'Updated the server',
+            request()->ip(),
+        );
 
         return $server;
     }

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\ActivityOccurred;
 use App\Mail\ServerOverdueNotification;
 use App\Models\Server;
 use Illuminate\Console\Attributes\Description;
@@ -32,27 +33,20 @@ class PatchmonEvaluate extends Command
                 return;
             }
 
-            if ($server->alerting_since === null) {
-                $server->alerting_since = now();
-                $this->dispatchAlert($server);
+            if ($server->isntAlerting()) {
+                $server->markAsAlerting();
+                $server->sendAlert();
+                ActivityOccurred::dispatch(null, $server->id, 'Server became overdue');
 
                 return;
             }
 
-            if ($server->last_alerted_at === null
-                || $server->last_alerted_at->lessThanOrEqualTo(now()->subWeek())) {
-                $this->dispatchAlert($server);
+            if ($server->shouldSendAnotherAlert()) {
+                $server->sendAlert();
+                ActivityOccurred::dispatch(null, $server->id, 'Overdue alert re-sent');
             }
         });
 
         return self::SUCCESS;
-    }
-
-    private function dispatchAlert(Server $server): void
-    {
-        Mail::to($server->resolveNotificationEmail())->queue(new ServerOverdueNotification($server));
-
-        $server->last_alerted_at = now();
-        $server->save();
     }
 }

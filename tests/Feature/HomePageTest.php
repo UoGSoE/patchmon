@@ -142,6 +142,26 @@ it('bulk-allocates selected unassigned servers to a team and cadence', function 
         ->and($untouched->fresh()->created_by_user_id)->toBeNull();
 });
 
+it('logs creating a server from the web UI', function () {
+    $staff = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($staff);
+
+    Livewire::actingAs($staff)
+        ->test(HomePage::class)
+        ->call('openCreate')
+        ->set('form.name', 'newsrv.example.test')
+        ->set('form.team_id', $team->id)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $server = Server::firstWhere('name', 'newsrv.example.test');
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBe($staff->id);
+    expect($log->server_id)->toBe($server->id);
+    expect($log->description)->toBe('Created the server');
+});
+
 it('logs an activity row per server when bulk-allocating', function () {
     $staff = User::factory()->staff()->create();
     $team = Team::factory()->create(['name' => 'Networks']);

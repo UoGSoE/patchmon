@@ -27,6 +27,59 @@ it('does not show a non-admin the activity log link', function () {
         ->assertDontSee(route('admin.activity.index', ['server' => $server->id]), escape: false);
 });
 
+it('logs deleting a server from the detail page, keeping the name in the description', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create(['name' => 'doomed.example.test']);
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('delete');
+
+    expect(Server::find($server->id))->toBeNull();
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBe($owner->id);
+    expect($log->description)->toContain('doomed.example.test');
+    expect($log->description)->toContain('Deleted');
+});
+
+it('logs regenerating the patch token', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->provisioned()->create();
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('regenerateToken')
+        ->assertHasNoErrors();
+
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBe($owner->id);
+    expect($log->server_id)->toBe($server->id);
+    expect($log->description)->toContain('token');
+});
+
+it('logs updating a server from the detail page', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->users()->attach($owner);
+    $server = Server::factory()->forTeam($team, $owner)->create();
+
+    Livewire::actingAs($owner)
+        ->test(ServerDetail::class, ['server' => $server])
+        ->call('openEdit')
+        ->set('form.description', 'updated description')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $log = ActivityLog::sole();
+    expect($log->user_id)->toBe($owner->id);
+    expect($log->server_id)->toBe($server->id);
+    expect($log->description)->toBe('Updated the server');
+});
+
 it('logs the acting user when a server is silenced from the detail page', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create();
