@@ -111,11 +111,20 @@ class NetboxClient
         $platform = strtolower(trim((string) $platform));
 
         if ($platform === '') {
-            return OsType::Other;
+            return OsType::NetboxUnknown;
         }
 
         if (str_contains($platform, 'win')) {
             return OsType::Windows;
+        }
+
+        if (str_contains($platform, 'truenas')) {
+            // SCALE (year-based version, 22+) is Debian-based Linux; CORE (13
+            // and earlier) is FreeBSD and stays Other. A bare "truenas" can't
+            // tell them apart, so read the version.
+            return preg_match('/(\d+)/', $platform, $matches) === 1 && (int) $matches[1] >= 22
+                ? OsType::Linux
+                : OsType::Other;
         }
 
         $linuxMarkers = ['linux', 'ubuntu', 'debian', 'centos', 'rhel', 'red hat', 'redhat', 'rocky', 'alma', 'suse', 'sles', 'fedora', 'proxmox'];

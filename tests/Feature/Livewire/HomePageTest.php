@@ -96,7 +96,7 @@ it('persists the location field when set on the new-server form', function () {
         ->test(HomePage::class)
         ->call('openCreate')
         ->set('form.name', 'located-server.example.test')
-        ->set('form.location', 'Rankine')
+        ->set('form.location', 'Building-B')
         ->set('form.os_type', OsType::Linux->value)
         ->set('form.interval_months', 1)
         ->set('form.grace_value', 7)
@@ -107,7 +107,7 @@ it('persists the location field when set on the new-server form', function () {
 
     $server = Server::firstWhere('name', 'located-server.example.test');
     expect($server)->not->toBeNull()
-        ->and($server->location)->toBe('Rankine');
+        ->and($server->location)->toBe('Building-B');
 });
 
 it('lowercases and trims the name on save', function () {

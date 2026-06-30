@@ -329,7 +329,7 @@ it('clears the location when the edit form sets it to null', function () {
     $owner = User::factory()->create();
     $team = Team::factory()->create();
     $team->users()->attach($owner);
-    $server = Server::factory()->forTeam($team, $owner)->create(['location' => 'Rankine']);
+    $server = Server::factory()->forTeam($team, $owner)->create(['location' => 'Building-B']);
 
     Livewire::actingAs($owner)
         ->test(ServerDetail::class, ['server' => $server])

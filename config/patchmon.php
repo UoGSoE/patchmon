@@ -21,6 +21,40 @@ return [
 
         'change_ratio' => env('NETBOX_CHANGE_RATIO', 0.5),
         'default_domain' => env('NETBOX_DEFAULT_DOMAIN', 'example.ac.uk'),
+
+        /*
+        | The resolvable departmental subdomains under default_domain, used to
+        | recover the FQDN of a bare hostname during the cleanup pass: a bare
+        | name is tried as host.<subdomain>.<default_domain> against DNS. Each
+        | listed subdomain resolves in its own right, so it is never treated as
+        | an alias for another.
+        */
+        'subdomains' => ['eng', 'elec', 'civil', 'physics', 'ppe', 'astro', 'maths', 'chem', 'geog', 'cose'],
+
+        /*
+        | Single-department buildings act as a safe prior when recovering a bare
+        | hostname's FQDN: a host in one of these is tried only against that
+        | building's subdomain(s), cutting DNS lookups and avoiding false
+        | ambiguity. Buildings NOT listed here — shared buildings, data centres,
+        | and hosts with no site (most VMs) — fall back to the full subdomain
+        | set. Keys must match NetBox's site.name exactly.
+        */
+        'building_departments' => [
+            'James Watt South' => ['eng', 'elec', 'civil'],
+            'Rankine Building' => ['eng', 'elec', 'civil'],
+            'Boyd Orr Building' => ['maths'],
+            'Maths & Stats Building' => ['maths'],
+            'Joseph Black Building' => ['chem'],
+            'Observatory' => ['astro'],
+        ],
+
+        /*
+        | Department tokens that aren't resolvable subdomains in their own right
+        | but belong to one that is: a "host.<alias>" name is proposed as
+        | "host.<canonical>.<default_domain>". A token that is neither a subdomain
+        | nor listed here is left to flag for a human.
+        */
+        'department_aliases' => ['cognition' => 'cose'],
     ],
 
     /*

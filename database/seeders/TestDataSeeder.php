@@ -16,18 +16,18 @@ use Illuminate\Database\Seeder;
 class TestDataSeeder extends Seeder
 {
     private const LOCATIONS = [
-        'JWS',
-        'JWN',
-        'Rankine',
-        'Joseph Black',
-        'Maths',
-        'Boyd Orr',
-        'MDR',
-        'DataVita',
-        'Saughfield',
+        'Building-A',
+        'Building-G',
+        'Building-B',
+        'Building-E',
+        'Building-D',
+        'Building-C',
+        'DC-1',
+        'DC-2',
+        'Building-H',
     ];
 
-    private const DATA_CENTRE_LOCATIONS = ['MDR', 'DataVita'];
+    private const DATA_CENTRE_LOCATIONS = ['DC-1', 'DC-2'];
 
     public function run(): void
     {
@@ -246,7 +246,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $members->random())->alerting()->create([
             'name' => 'fileserver-prod-02.infra.example.test',
             'description' => 'Patches stalled since the kernel CVE rollout — investigating.',
-            'location' => 'MDR',
+            'location' => 'DC-1',
             'os_type' => OsType::Linux,
             'interval_months' => 1,
             'grace_value' => 7,
@@ -257,7 +257,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $admin)->silenced()->create([
             'name' => 'ad-dc-replica-02.infra.example.test',
             'description' => 'Active Directory replica — replication validation in progress.',
-            'location' => 'DataVita',
+            'location' => 'DC-2',
             'os_type' => OsType::Windows,
             'interval_months' => 3,
             'grace_value' => 2,
@@ -271,7 +271,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
             'name' => 'linux-srv-legacy-mailrelay.infra.example.test',
             'description' => 'Being decommissioned next month — alerts off.',
-            'location' => 'Boyd Orr',
+            'location' => 'Building-C',
             'os_type' => OsType::Linux,
             'interval_months' => 1,
             'grace_value' => 7,
@@ -339,7 +339,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $admin)->alerting()->create([
             'name' => 'conference-portal-payments-01.appdev.example.test',
             'description' => 'Stuck on a problematic .NET hotfix — vendor case open.',
-            'location' => 'DataVita',
+            'location' => 'DC-2',
             'os_type' => OsType::Windows,
             'interval_months' => 1,
             'grace_value' => 7,
@@ -363,7 +363,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
             'name' => 'exams-portal-db-01.appdev.example.test',
             'description' => 'Online exams portal database.',
-            'location' => 'MDR',
+            'location' => 'DC-1',
             'os_type' => OsType::Linux,
             'interval_months' => 1,
             'grace_value' => 5,
@@ -384,7 +384,7 @@ class TestDataSeeder extends Seeder
             Server::factory()->forTeam($team, $members->random())->create([
                 'name' => "{$cluster}-login-01.research.example.test",
                 'description' => "{$cluster} cluster login node.",
-                'location' => 'MDR',
+                'location' => 'DC-1',
                 'os_type' => OsType::Linux,
                 'interval_months' => 3,
                 'grace_value' => 2,
@@ -396,7 +396,7 @@ class TestDataSeeder extends Seeder
             Server::factory()->forTeam($team, $members->random())->create([
                 'name' => "{$cluster}-sched-01.research.example.test",
                 'description' => "{$cluster} Slurm scheduler.",
-                'location' => 'MDR',
+                'location' => 'DC-1',
                 'os_type' => OsType::Linux,
                 'interval_months' => 3,
                 'grace_value' => 2,
@@ -409,7 +409,7 @@ class TestDataSeeder extends Seeder
                 Server::factory()->forTeam($team, $members->random())->create([
                     'name' => sprintf('%s-node-%03d.research.example.test', $cluster, $i),
                     'description' => "{$cluster} compute node.",
-                    'location' => 'MDR',
+                    'location' => 'DC-1',
                     'os_type' => OsType::Linux,
                     'interval_months' => 6,
                     'grace_value' => 1,
@@ -424,7 +424,7 @@ class TestDataSeeder extends Seeder
             Server::factory()->forTeam($team, $members->random())->create([
                 'name' => sprintf('gpfs-ctrl-%02d.research.example.test', $i),
                 'description' => 'GPFS storage controller appliance.',
-                'location' => 'MDR',
+                'location' => 'DC-1',
                 'os_type' => OsType::Other,
                 'interval_months' => 3,
                 'grace_value' => 2,
@@ -437,7 +437,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
             'name' => 'orca-node-099.research.example.test',
             'description' => 'GPU node — vendor firmware update window.',
-            'location' => 'MDR',
+            'location' => 'DC-1',
             'os_type' => OsType::Linux,
             'interval_months' => 6,
             'grace_value' => 1,
@@ -450,7 +450,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $members->random())->silenced()->create([
             'name' => 'cetus-node-gpu-07.research.example.test',
             'description' => 'GPU node reserved for the vision group.',
-            'location' => 'MDR',
+            'location' => 'DC-1',
             'os_type' => OsType::Linux,
             'interval_months' => 6,
             'grace_value' => 1,
@@ -500,7 +500,7 @@ class TestDataSeeder extends Seeder
         Server::factory()->forTeam($team, $members->random())->alerting()->create([
             'name' => 'monitor-alerts-prod-02.resilience.example.test',
             'description' => 'Patches not running since the firewall change this morning.',
-            'location' => 'DataVita',
+            'location' => 'DC-2',
             'os_type' => OsType::Linux,
             'interval_months' => 1,
             'grace_value' => 7,

@@ -77,9 +77,9 @@ it('casts os_type and grace_units to enums', function () {
 });
 
 it('persists an optional location string on a server', function () {
-    $server = Server::factory()->create(['location' => 'Rankine']);
+    $server = Server::factory()->create(['location' => 'Building-B']);
 
-    expect($server->fresh()->location)->toBe('Rankine');
+    expect($server->fresh()->location)->toBe('Building-B');
 });
 
 it('returns a friendly label for common patching intervals and falls back for unusual ones', function () {

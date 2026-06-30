@@ -10,7 +10,12 @@ it('maps netbox platform names to os types', function () {
         ->and(NetboxClient::osTypeForPlatform('Red Hat Enterprise Linux 9'))->toBe(OsType::Linux)
         ->and(NetboxClient::osTypeForPlatform('Proxmox 8'))->toBe(OsType::Linux)
         ->and(NetboxClient::osTypeForPlatform('Cisco IOS'))->toBe(OsType::Other)
-        ->and(NetboxClient::osTypeForPlatform(null))->toBe(OsType::Other);
+        ->and(NetboxClient::osTypeForPlatform(null))->toBe(OsType::NetboxUnknown);
+});
+
+it('maps TrueNAS SCALE to Linux but leaves TrueNAS CORE as Other', function () {
+    expect(NetboxClient::osTypeForPlatform('TrueNAS 24.10'))->toBe(OsType::Linux)
+        ->and(NetboxClient::osTypeForPlatform('TrueNAS 13'))->toBe(OsType::Other);
 });
 
 it('fetches active devices and virtual machines across pages and normalises them', function () {
@@ -52,7 +57,7 @@ it('fetches active devices and virtual machines across pages and normalises them
         ->and($vm5->name)->toBe('vm-app-01.example.com')
         ->and($vm5->osType)->toBe(OsType::Linux)
         ->and($servers->firstWhere(fn ($s) => $s->netboxId === 6)->osType)->toBe(OsType::Windows)
-        ->and($servers->firstWhere(fn ($s) => $s->isVirtual && $s->netboxId === 9)->osType)->toBe(OsType::Other);
+        ->and($servers->firstWhere(fn ($s) => $s->isVirtual && $s->netboxId === 9)->osType)->toBe(OsType::NetboxUnknown);
 });
 
 it('returns raw untouched device and VM payloads, grouped and following pagination', function () {

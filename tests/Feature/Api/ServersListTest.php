@@ -56,17 +56,17 @@ it('filters the list by location', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'rankine-server.example.test', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'jws-server.example.test', 'location' => 'JWS']);
+    Server::factory()->forTeam($team)->create(['name' => 'building-b-server.example.test', 'location' => 'Building-B']);
+    Server::factory()->forTeam($team)->create(['name' => 'building-a-server.example.test', 'location' => 'Building-A']);
     Server::factory()->forTeam($team)->create(['name' => 'no-location-server.example.test', 'location' => null]);
 
     Sanctum::actingAs($alice, ['servers:read']);
 
-    $response = $this->getJson('/api/v1/servers?filter[location]=rankine')->assertOk();
+    $response = $this->getJson('/api/v1/servers?filter[location]=building-b')->assertOk();
     $names = collect($response->json('servers.data'))->pluck('name')->all();
 
-    expect($names)->toContain('rankine-server.example.test')
-        ->not->toContain('jws-server.example.test')
+    expect($names)->toContain('building-b-server.example.test')
+        ->not->toContain('building-a-server.example.test')
         ->not->toContain('no-location-server.example.test');
 });
 

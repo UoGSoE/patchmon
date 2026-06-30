@@ -84,17 +84,17 @@ it('persists the location field on the API create endpoint', function () {
 
     $this->postJson('/api/v1/servers', [
         'name' => 'located-server.example.test',
-        'location' => 'Rankine',
+        'location' => 'Building-B',
         'team_id' => $team->id,
         'os_type' => 'linux',
         'interval_months' => 1,
         'grace_value' => 7,
         'grace_units' => 'days',
     ])->assertCreated()
-        ->assertJsonPath('data.location', 'Rankine');
+        ->assertJsonPath('data.location', 'Building-B');
 
     $server = Server::firstWhere('name', 'located-server.example.test');
-    expect($server->location)->toBe('Rankine');
+    expect($server->location)->toBe('Building-B');
 });
 
 it('rejects a name that is not a valid FQDN', function () {

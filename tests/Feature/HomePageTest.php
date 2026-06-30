@@ -495,11 +495,11 @@ it('matches the filter against the location column', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'site-server.example.test', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'other-site-server.example.test', 'location' => 'JWS']);
+    Server::factory()->forTeam($team)->create(['name' => 'site-server.example.test', 'location' => 'Building-B']);
+    Server::factory()->forTeam($team)->create(['name' => 'other-site-server.example.test', 'location' => 'Building-A']);
     Server::factory()->forTeam($team)->create(['name' => 'no-location-server.example.test', 'location' => null]);
 
-    $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'rankine');
+    $component = Livewire::actingAs($alice)->test(HomePage::class)->set('filter', 'building-b');
 
     expect($component->instance()->teamServers->pluck('name')->all())
         ->toContain('site-server.example.test')
@@ -512,14 +512,14 @@ it('requires every whitespace-separated token to match', function () {
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
 
-    Server::factory()->forTeam($team)->create(['name' => 'linux-backup.example.test', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'linux-mirror.example.test', 'location' => 'JWS']);
-    Server::factory()->forTeam($team)->create(['name' => 'windows-backup.example.test', 'location' => 'Rankine']);
-    Server::factory()->forTeam($team)->create(['name' => 'unrelated.example.test', 'location' => 'MDR']);
+    Server::factory()->forTeam($team)->create(['name' => 'linux-backup.example.test', 'location' => 'Building-B']);
+    Server::factory()->forTeam($team)->create(['name' => 'linux-mirror.example.test', 'location' => 'Building-A']);
+    Server::factory()->forTeam($team)->create(['name' => 'windows-backup.example.test', 'location' => 'Building-B']);
+    Server::factory()->forTeam($team)->create(['name' => 'unrelated.example.test', 'location' => 'DC-1']);
 
     $component = Livewire::actingAs($alice)
         ->test(HomePage::class)
-        ->set('filter', 'linux rankine');
+        ->set('filter', 'linux building-b');
 
     expect($component->instance()->teamServers->pluck('name')->all())
         ->toContain('linux-backup.example.test')

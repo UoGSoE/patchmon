@@ -190,28 +190,28 @@ it('skips a netbox object whose name collides with a manual server', function ()
 it('skips and reports a netbox server whose name is not a valid hostname', function () {
     runNetboxSync(devices: [
         netboxRecord(5, 'good.example.com', 'Ubuntu 22.04'),
-        netboxRecord(6, 'jim.compsci (matlab server)', 'Ubuntu 22.04'),
+        netboxRecord(6, 'badhost.dept-k (matlab server)', 'Ubuntu 22.04'),
     ]);
 
     expect(Server::where('netbox_id', 5)->exists())->toBeTrue()
         ->and(Server::where('netbox_id', 6)->exists())->toBeFalse()
-        ->and(Cache::get('netbox.last_sync_summary')['invalid'])->toBe(['jim.compsci (matlab server)'])
+        ->and(Cache::get('netbox.last_sync_summary')['invalid'])->toBe(['badhost.dept-k (matlab server)'])
         ->and(Cache::get('netbox.last_sync_summary')['created'])->toBe(1);
 });
 
 it('keeps the first server and reports the second when a netbox device and VM share a name', function () {
     runNetboxSync(
-        devices: [netboxRecord(5, 'blitzen.physics', 'Ubuntu 22.04')],
-        vms: [netboxRecord(7, 'blitzen.physics', 'Debian 12')],
+        devices: [netboxRecord(5, 'server5.dept-d', 'Ubuntu 22.04')],
+        vms: [netboxRecord(7, 'server5.dept-d', 'Debian 12')],
     );
 
     // devices are fetched before VMs, so the device is kept and the VM is reported
-    $kept = Server::where('name', 'blitzen.physics')->get();
+    $kept = Server::where('name', 'server5.dept-d')->get();
 
     expect($kept)->toHaveCount(1)
         ->and($kept->first()->is_virtual)->toBeFalse()
         ->and($kept->first()->netbox_id)->toBe(5)
-        ->and(Cache::get('netbox.last_sync_summary')['conflicts'])->toBe(['blitzen.physics']);
+        ->and(Cache::get('netbox.last_sync_summary')['conflicts'])->toBe(['server5.dept-d']);
 });
 
 it('flags a synced server that has dropped out of the active set and clears its alerting', function () {

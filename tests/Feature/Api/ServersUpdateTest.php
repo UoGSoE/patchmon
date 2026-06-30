@@ -88,13 +88,13 @@ it('updates a server location and can clear it via the API', function () {
     $alice = User::factory()->create();
     $team = Team::factory()->create();
     $alice->teams()->attach($team);
-    $server = Server::factory()->forTeam($team)->create(['location' => 'Rankine']);
+    $server = Server::factory()->forTeam($team)->create(['location' => 'Building-B']);
     Sanctum::actingAs($alice, ['servers:write']);
 
-    $this->patchJson("/api/v1/servers/{$server->id}", ['location' => 'Joseph Black'])
+    $this->patchJson("/api/v1/servers/{$server->id}", ['location' => 'Building-E'])
         ->assertOk()
-        ->assertJsonPath('data.location', 'Joseph Black');
-    expect($server->fresh()->location)->toBe('Joseph Black');
+        ->assertJsonPath('data.location', 'Building-E');
+    expect($server->fresh()->location)->toBe('Building-E');
 
     $this->patchJson("/api/v1/servers/{$server->id}", ['location' => null])
         ->assertOk()
